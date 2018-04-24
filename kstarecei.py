@@ -36,7 +36,7 @@ class KstarEcei(object):
         global DIR
 
         self.shot = shot
-        self.trange = trange        
+        self.trange = trange
         self.clist = clist
 
         # set data folder
@@ -65,7 +65,7 @@ class KstarEcei(object):
             data = np.zeros((cnum, tnum))
             for i in range(0, cnum):
                 node = "/ECEI/" + clist[i] + "/Voltage"
-                
+
                 ov = f[node][oidx1:oidx2]/10000.0
                 v = f[node][idx1:idx2]/10000.0
 
@@ -86,21 +86,21 @@ class KstarEcei(object):
         return time, data
 
     def time_base(self, shot, dev, trange):
-        # set self.toff, self.fs, self.time 
+        # set self.toff, self.fs, self.time
 
         fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
         with h5py.File(fname, 'r') as f:
             # get attributes
             dset = f['ECEI']
             tt = dset.attrs['TriggerTime']
-            self.toff = tt[0]
+            self.toff = tt[0]+0.001
             self.fs = dset.attrs['SampleRate'][0]*1000.0  # in Hz
 
             if len(tt) == 2:
                 pl = tt[1] - tt[0] + 0.1
                 tt = [tt[0], pl, tt[1]]
 
-            fulltime = []        
+            fulltime = []
             for i in range(0, len(tt)/3):
                 t0 = tt[i*3]
                 pl = tt[i*3+1]
@@ -162,7 +162,7 @@ class KstarEcei(object):
 
                 # assume cold resonance
                 self.rpos[c] = 1.80*27.99*hn*bt/((fn - 1)*0.9 + 2.6 + lo)  # this assumes bt ~ 1/R
-                # bt should be bt[vn][fn] 
+                # bt should be bt[vn][fn]
 
                 # get vertical position and angle at rpos
                 self.zpos[c], self.apos[c] = beam_path(shot, dev, self.rpos[c], vn)
@@ -171,13 +171,13 @@ class KstarEcei(object):
 def beam_path(shot, dev, rpos, vn):
     # IN : shot, device name, R posistion [m], vertical channel number
     # OUT : a ray vertical position and angle at rpos [m] [rad]
-    # this will find a ray vertical position and angle at rpos [m] 
+    # this will find a ray vertical position and angle at rpos [m]
     # ray starting from the array box posistion
 
     fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
     with h5py.File(fname, 'r') as f:
         # get attributes
-        dset = f['ECEI']        
+        dset = f['ECEI']
         sf = dset.attrs['LensFocus']
         sz = dset.attrs['LensZoom']
 
