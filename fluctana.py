@@ -639,17 +639,26 @@ class FluctAna(object):
 
 
 def expand_clist(clist):
-    # IN : List of channel names (e.g. 'ECEI_G1201-G1208').
+    # IN : List of channel names (e.g. 'ECEI_G1201-1208' or 'ECEI_GT1201-1208').
     # OUT : Expanded list (e.g. 'ECEI_G1201', ..., 'ECEI_G1208')
 
     # KSTAR ECEI
     exp_clist = []
     for c in range(len(clist)):
-        if 'ECEI' in clist[c] and len(clist[c]) > 10:
+        if 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
             vi = int(clist[c][6:8])
             fi = int(clist[c][8:10])
             vf = int(clist[c][11:13])
             ff = int(clist[c][13:15])
+
+            for v in range(vi, vf+1):
+                for f in range(fi, ff+1):
+                    exp_clist.append(clist[c][0:6] + '%02d' % v + '%02d' % f)
+        elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
+            vi = int(clist[c][7:9])
+            fi = int(clist[c][9:11])
+            vf = int(clist[c][12:14])
+            ff = int(clist[c][14:16])
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
