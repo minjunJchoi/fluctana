@@ -59,7 +59,11 @@ class KstarEcei(object):
             atime, aidx1, aidx2, aoidx1, aoidx2 = self.time_base(shot, dev, atrange)
 
         # get data
-        fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+        if shot < 19392:
+            fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+        else:
+            fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(DIR, shot, shot, dev)
+
         with h5py.File(fname, 'r') as f:
             # time series length
             tnum = idx2 - idx1
