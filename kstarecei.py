@@ -42,11 +42,16 @@ class KstarEcei(object):
         # set data folder
         if 14941 < shot and shot < 17356:
             DIR = '/eceidata2/exp_2016/'
-        elif 17963 < shot and shot < 19391:
+        elif 17963 < shot and shot < 19392:
             DIR = '/eceidata2/exp_2017/'
+        elif 19391 < shot:
+            DIR = '/eceidata2/exp_2018/'
 
         # device [L, H, or G]
-        dev = clist[0][5]
+        if shot < 19392:
+            dev = clist[0][5]
+        else:
+            dev = clist[0][5:7]
 
         # get time base
         time, idx1, idx2, oidx1, oidx2 = self.time_base(shot, dev, trange)
@@ -87,8 +92,11 @@ class KstarEcei(object):
 
     def time_base(self, shot, dev, trange):
         # set self.toff, self.fs, self.time
+        if shot < 19392:
+            fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+        else:
+            fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(DIR, shot, shot, dev)
 
-        fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
         with h5py.File(fname, 'r') as f:
             # get attributes
             dset = f['ECEI']
@@ -140,7 +148,11 @@ class KstarEcei(object):
     def channel_position(self, shot, dev, clist):
         # set self.rpos, self.zpos, self.apos
 
-        fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+        if shot < 19392:
+            fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+        else:
+            fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(DIR, shot, shot, dev)
+
         with h5py.File(fname, 'r') as f:
             # get attributes
             dset = f['ECEI']
@@ -174,7 +186,11 @@ def beam_path(shot, dev, rpos, vn):
     # this will find a ray vertical position and angle at rpos [m]
     # ray starting from the array box posistion
 
-    fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+    if shot < 19392:
+        fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+    else:
+        fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(DIR, shot, shot, dev)
+
     with h5py.File(fname, 'r') as f:
         # get attributes
         dset = f['ECEI']
