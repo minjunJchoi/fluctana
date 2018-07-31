@@ -154,8 +154,10 @@ class KstarEcei(object):
 
         if shot < 19392:
             fname = "{:s}{:06d}/ECEI.{:06d}.{:s}FS.h5".format(DIR, shot, shot, dev)
+            cnidx1 = 6
         else:
             fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(DIR, shot, shot, dev)
+            cnidx1 = 7
 
         with h5py.File(fname, 'r') as f:
             # get attributes
@@ -173,8 +175,8 @@ class KstarEcei(object):
             self.zpos = np.zeros(cnum)  # z [m] of each channel
             self.apos = np.zeros(cnum)  # angle [rad] of each channel
             for c in range(0, cnum):
-                vn = int(clist[c][6:8])
-                fn = int(clist[c][8:10])
+                vn = int(clist[c][(cnidx1):(cnidx1+2)])
+                fn = int(clist[c][(cnidx1+2):(cnidx1+4)])
 
                 # assume cold resonance
                 self.rpos[c] = 1.80*27.99*hn*bt/((fn - 1)*0.9 + 2.6 + lo)  # this assumes bt ~ 1/R
