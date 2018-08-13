@@ -206,7 +206,7 @@ def beam_path(shot, dev, rpos, vn):
         rpos = rpos*1000  # [m] -> [mm] # for rpos = [1600:50:2300]
 
         # ABCD matrix for LFS, HFS, GFS
-        if dev is 'L' or 'GR':
+        if dev == 'L' or dev == 'GR':
             sp = 3350 - rpos
 
             abcd = np.array([[1,250+sp],[0,1]]).dot(
@@ -226,7 +226,7 @@ def beam_path(shot, dev, rpos, vn):
                    np.array([[1,90],[0,1]])).dot(
                    np.array([[1,0],[(1-1.52)/(1270*1.52),1/1.52]])).dot(
                    np.array([[1,539+35+sf],[0,1]]))
-        elif dev is 'H' or 'HT':
+        elif dev == 'H' or dev == 'HT':
             sp = 3350 - rpos
 
             abcd = np.array([[1,250+sp],[0,1]]).dot(
@@ -255,7 +255,7 @@ def beam_path(shot, dev, rpos, vn):
                    np.array([[1,70],[0,1]])).dot(
                    np.array([[1,0],[(1-1.52)/(1400*1.52),1/1.52]])).dot(
                    np.array([[1,446+35+sf],[0,1]]))
-        elif dev is 'G' or 'GT':
+        elif dev == 'G' or dev == 'GT':
             sp = 3150 - rpos
 
             abcd = np.array([[1,1350-sz+sp],[0,1]]).dot(
