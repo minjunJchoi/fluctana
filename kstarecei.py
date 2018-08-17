@@ -163,7 +163,7 @@ class KstarEcei(object):
             # get attributes
             dset = f['ECEI']
             bt = dset.attrs['TFcurrent']*0.0995556  # [kA] -> [T]
-            mode = dset.attrs['Mode']
+            mode = dset.attrs['Mode'].strip()
             if mode is 'O':
                 hn = 1  # harmonic number
             elif mode is 'X':
