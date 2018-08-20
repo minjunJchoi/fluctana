@@ -662,7 +662,7 @@ def expand_clist(clist):
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:6] + '%02d' % v + '%02d' % f)
+                    exp_clist.append(clist[c][0:7] + '%02d' % v + '%02d' % f)
         else:
             exp_clist.append(clist[c])
     clist = exp_clist
