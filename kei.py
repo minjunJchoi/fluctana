@@ -3,6 +3,7 @@
 # Author : Minjun J. Choi (mjchoi@nfri.re.kr)
 
 import h5py
+import numpy as np
 
 class KstarEceiInfo(object):
     def __init__(self, shot, clist):
@@ -23,12 +24,14 @@ class KstarEceiInfo(object):
         elif 19391 < shot:
             self.data_path = '/eceidata2/exp_2018/'
 
+        self.clist = expand_clist(clist)
+
         if shot < 19392:
             self.cnidx1 = 6
-            self.dev = clist[0][5]
+            self.dev = self.clist[0][5]
         else:
             self.cnidx1 = 7
-            self.dev = clist[0][5:7]
+            self.dev = self.clist[0][5:7]
 
         # file name
         if shot < 19392:
@@ -42,7 +45,7 @@ class KstarEceiInfo(object):
             dset = f['ECEI']
             self.tt = dset.attrs['TriggerTime'] # in [s]
             self.toff = self.tt[0]+0.001
-            self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz]
+            self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz] same sampling rate
             self.bt = dset.attrs['TFcurrent']*0.0995556  # [kA] -> [T]
             self.mode = dset.attrs['Mode'].strip()
             if self.mode is 'O':
@@ -53,7 +56,9 @@ class KstarEceiInfo(object):
             self.sf = dset.attrs['LensFocus']
             self.sz = dset.attrs['LensZoom']
 
-    def get_abcd(self, Rinit):
+            print 'ECEI file = {}'.format(self.fname)
+
+    def get_abcd(self, sf, sz, Rinit):
         # ABCD matrix
         if self.dev == 'L':
             sp = 3350 - Rinit*1000  # [m] -> [mm]
@@ -125,3 +130,35 @@ class KstarEceiInfo(object):
             abcd = np.array([[1,1350],[0,1]])
 
         return abcd
+
+
+def expand_clist(clist):
+    # IN : List of channel names (e.g. 'ECEI_G1201-1208' or 'ECEI_GT1201-1208').
+    # OUT : Expanded list (e.g. 'ECEI_G1201', ..., 'ECEI_G1208')
+
+    # KSTAR ECEI
+    exp_clist = []
+    for c in range(len(clist)):
+        if 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
+            vi = int(clist[c][6:8])
+            fi = int(clist[c][8:10])
+            vf = int(clist[c][11:13])
+            ff = int(clist[c][13:15])
+
+            for v in range(vi, vf+1):
+                for f in range(fi, ff+1):
+                    exp_clist.append(clist[c][0:6] + '%02d' % v + '%02d' % f)
+        elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
+            vi = int(clist[c][7:9])
+            fi = int(clist[c][9:11])
+            vf = int(clist[c][12:14])
+            ff = int(clist[c][14:16])
+
+            for v in range(vi, vf+1):
+                for f in range(fi, ff+1):
+                    exp_clist.append(clist[c][0:7] + '%02d' % v + '%02d' % f)
+        else:
+            exp_clist.append(clist[c])
+    clist = exp_clist
+
+    return clist

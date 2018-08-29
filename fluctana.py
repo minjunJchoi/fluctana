@@ -23,9 +23,8 @@ class FluctAna(object):
         self.Dlist = []
 
     def add_data(self, D, shot, trange, clist, norm=1, atrange=[1.0, 1.01], res=0):
-        clist = expand_clist(clist)
 
-        D.get_data(shot, trange, clist, norm=norm, atrange=atrange, res=res)
+        D.get_data(shot, trange, norm=norm, atrange=atrange, res=res)
         self.Dlist.append(D)
 
     def del_data(self, dnum):
@@ -49,7 +48,7 @@ class FluctAna(object):
         clist = [c for c in clist if c not in self.Dlist[dnum].clist]
 
         # add data
-        time, data = self.Dlist[dnum].get_data(self.Dlist[dnum].shot, self.Dlist[dnum].trange, clist, norm=norm, atrange=atrange, res=res)
+        time, data = self.Dlist[dnum].get_data(self.Dlist[dnum].trange, norm=norm, atrange=atrange, res=res)
         self.Dlist[dnum].data = np.concatenate((self.Dlist[dnum].data, data), axis=0)
 
         # update clist
@@ -75,30 +74,6 @@ class FluctAna(object):
             self.Dlist[dnum].clist = [self.Dlist[dnum].clist[k] for k in range(len(self.Dlist[dnum].clist)) if k not in del_idx]
 
         self.list_data()
-
-    def change_shot(self, dnum, shot):
-        if type(dnum) is list:
-            for i in dnum:
-                self.Dlist[i].time, self.Dlist[i].data = self.Dlist[i].get_data(shot, self.Dlist[i].trange, self.Dlist[i].clist, norm=norm, atrange=atrange, res=res)
-        else:
-            self.Dlist[dnum].time, self.Dlist[dnum].data = self.Dlist[dnum].get_data(shot, self.Dlist[dnum].trange, self.Dlist[dnum].clist, norm=norm, atrange=atrange, res=res)
-
-
-    def change_trange(self, dnum, trange):
-        if type(dnum) is list:
-            for i in dnum:
-                self.Dlist[i].time, self.Dlist[i].data = self.Dlist[i].get_data(self.Dlist[i].shot, trange, self.Dlist[i].clist, norm=norm, atrange=atrange, res=res)
-        else:
-            self.Dlist[dnum].time, self.Dlist[dnum].data = self.Dlist[dnum].get_data(self.Dlist[dnum].shot, trange, self.Dlist[dnum].clist, norm=norm, atrange=atrange, res=res)
-
-    def change_clist(self, dnum, clist):
-        clist = expand_clist(clist)
-
-        if type(dnum) is list:
-            for i in dnum:
-                self.Dlist[i].time, self.Dlist[i].data = self.Dlist[i].get_data(self.Dlist[i].shot, self.Dlist[i].trange, clist, norm=norm, atrange=atrange, res=res)
-        else:
-            self.Dlist[dnum].time, self.Dlist[dnum].data = self.Dlist[dnum].get_data(self.Dlist[dnum].shot, self.Dlist[dnum].trange, clist, norm=norm, atrange=atrange, res=res)
 
     def fftbins(self, nfft, window, overlap, detrend):
         # IN : self, data set number, nfft, window name, detrend or not
@@ -662,7 +637,7 @@ def expand_clist(clist):
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:6] + '%02d' % v + '%02d' % f)
+                    exp_clist.append(clist[c][0:7] + '%02d' % v + '%02d' % f)
         else:
             exp_clist.append(clist[c])
     clist = exp_clist
