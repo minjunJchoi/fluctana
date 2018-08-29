@@ -19,14 +19,9 @@ VN = 24  # number of vertical arrays
 
 
 class KstarEcei(KstarEceiInfo):
-        # ecei = KstarEceiInfo(shot, clist)
-        # self.trange = trange
-        # self.clist = clist
-        # self.tt = ecei.tt
-        # self.toff = tt[0] + 0.001
-        # self.fs = ecei.fs
-
     def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0):
+        self.trange = trange
+
         # norm = 0 : no normalization
         # norm = 1 : normalization by trange average
         # norm = 2 : normalization by atrange average
@@ -44,7 +39,7 @@ class KstarEcei(KstarEceiInfo):
             atime, aidx1, aidx2, aoidx1, aoidx2 = self.time_base(atrange)
 
         # get data
-        with h5py.File(ecei.fname, 'r') as f:
+        with h5py.File(self.fname, 'r') as f:
             # time series length
             tnum = idx2 - idx1
 
@@ -129,33 +124,33 @@ class KstarEcei(KstarEceiInfo):
         self.zpos = np.zeros(cnum)  # z [m] of each channel
         self.apos = np.zeros(cnum)  # angle [rad] of each channel
         for c in range(0, cnum):
-            vn = int(self.clist[c][(cnidx1):(cnidx1+2)])
-            fn = int(self.clist[c][(cnidx1+2):(cnidx1+4)])
+            vn = int(self.clist[c][(self.cnidx1):(self.cnidx1+2)])
+            fn = int(self.clist[c][(self.cnidx1+2):(self.cnidx1+4)])
 
             # assume cold resonance
             self.rpos[c] = 1.80*27.99*self.hn*self.bt/((fn - 1)*0.9 + 2.6 + self.lo)  # this assumes bt ~ 1/R
             # bt should be bt[vn][fn]
 
             # get vertical position and angle at rpos
-            self.zpos[c], self.apos[c] = beam_path(self.rpos[c], vn)
+            self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
 
 
-def beam_path(rpos, vn):
-    # IN : shot, device name, R posistion [m], vertical channel number
-    # OUT : a ray vertical position and angle at rpos [m] [rad]
-    # this will find a ray vertical position and angle at rpos [m]
-    # ray starting from the array box posistion
+    def beam_path(self, rpos, vn):
+        # IN : shot, device name, R posistion [m], vertical channel number
+        # OUT : a ray vertical position and angle at rpos [m] [rad]
+        # this will find a ray vertical position and angle at rpos [m]
+        # ray starting from the array box posistion
 
-    abcd = self.get_abcd(self.sf, self.sz, rpos)
+        abcd = self.get_abcd(self.sf, self.sz, rpos)
 
-    # vertical position from the reference axis (vertical center of all lens, z=0 line) at ECEI array box
-    zz = (np.arange(VN,0,-1) - 12.5)*14  # [mm]
-    # angle against the reference axis at ECEI array box
-    aa = np.zeros(np.size(zz))
+        # vertical position from the reference axis (vertical center of all lens, z=0 line) at ECEI array box
+        zz = (np.arange(VN,0,-1) - 12.5)*14  # [mm]
+        # angle against the reference axis at ECEI array box
+        aa = np.zeros(np.size(zz))
 
-    # vertical posistion and angle at rpos
-    za = np.dot(abcd, [zz, aa])
-    zpos = za[0][vn-1]/1000  # zpos [m]
-    apos = za[1][vn-1]  # angle [rad] positive means the (z+) up-directed (divering from array to plasma)
+        # vertical posistion and angle at rpos
+        za = np.dot(abcd, [zz, aa])
+        zpos = za[0][vn-1]/1000  # zpos [m]
+        apos = za[1][vn-1]  # angle [rad] positive means the (z+) up-directed (divering from array to plasma)
 
-    return zpos, apos
+        return zpos, apos

@@ -7,6 +7,8 @@ import numpy as np
 
 class KstarEceiInfo(object):
     def __init__(self, shot, clist):
+        self.shot = shot
+
         if 5073 < shot and shot < 6393:
             self.data_path = '/eceidata/exp_2011/ECEI/DATA_H5/'
         elif 7065 < shot and shot < 8225:

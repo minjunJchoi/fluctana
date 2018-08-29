@@ -22,9 +22,9 @@ class FluctAna(object):
     def __init__(self):
         self.Dlist = []
 
-    def add_data(self, D, shot, trange, clist, norm=1, atrange=[1.0, 1.01], res=0):
+    def add_data(self, D, trange, norm=1, atrange=[1.0, 1.01], res=0):
 
-        D.get_data(shot, trange, norm=norm, atrange=atrange, res=res)
+        D.get_data(trange, norm=norm, atrange=atrange, res=res)
         self.Dlist.append(D)
 
     def del_data(self, dnum):
