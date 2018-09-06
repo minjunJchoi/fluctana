@@ -9,7 +9,7 @@
 
 from MDSplus import Connection
 from MDSplus import DisconnectFromMds
-from MDSplus._mdsshr import MdsException 
+from MDSplus._mdsshr import MdsException
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,8 +25,11 @@ VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'E
             'RMP_B4':'PCRMPBBULI', 'RMP_B3':'PCRMPBFULI', 'RMP_B2':'PCRMPBJULI', 'RMP_B1':'PCRMPBNULI'}
 
 # nodes in PCS_KSTAR tree
-KSTAR_TREE = ['LMSR', 'LMSZ', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI', 'PCRMPTNULI',
+PCS_TREE = ['LMSR', 'LMSZ', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI', 'PCRMPTNULI',
             'PCRMPMBULI', 'PCRMPMFULI', 'PCRMPMJULI', 'PCRMPMNULI', 'PCRMPBBULI', 'PCRMPBFULI', 'PCRMPBJULI', 'PCRMPBNULI']
+
+# nodes in CSS tree
+CSS_TREE = ['CSS_I%02d:FOO' % i for i in range(1,5)] + ['CSS_Q%02d:FOO' % i for i in range(1,5)]
 
 # nodes in EFIT01 or EFIT02
 EFIT_TREE = ['VOLUME', 'KAPPA', 'BETAP', 'BETAN', 'q95', 'LI3', 'WMHD']
@@ -49,7 +52,10 @@ RES_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in rang
 
 class KstarMds(Connection):
     def __init__(self):
-        super(KstarMds,self).__init__('172.17.250.23:8005')  # call __init__ in Connection
+        # from iKSTAR
+        # super(KstarMds,self).__init__('172.17.250.23:8005')  # call __init__ in Connection
+        # from opi to CSS Host PC
+        super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
 
     def get_data(self, shot, trange, clist, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
@@ -74,16 +80,16 @@ class KstarMds(Connection):
 
         # --- loop starts --- #
         for i, cname in enumerate(self.clist):
-            
-            # get MDSplus node from channel name 
+
+            # get MDSplus node from channel name
             if cname in VAR_NODE:
                 node = '%s' % (VAR_NODE[cname])
             else:
                 node = cname
 
-            # segment loading 
+            # segment loading
             if node in SEG_NODE:
-                if node in RES_NODE and res is not 0:
+                if node in RES_NODE and res != 0:
                     snode = 'resample(\%s, %f, %f, %f)' % (node,self.trange[0],self.trange[1],res)  # segment loading with resampling
                 else:
                     snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
@@ -97,7 +103,7 @@ class KstarMds(Connection):
                 pnode = ''
             node = snode + pnode
 
-            # load data 
+            # load data
             expr = '[dim_of({0}), {0}]'.format(node)
             try:
                 time, v = self.get(expr).data()
@@ -105,18 +111,18 @@ class KstarMds(Connection):
             except:
                 time, v = None, None
                 print "Failed   %s" % node
-            
+
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))
             idx1 = int(idx[0][0])
-            idx2 = int(idx[0][-1]+2)            
+            idx2 = int(idx[0][-1]+2)
             time = time[idx1:idx2]
             v = v[idx1:idx2]
 
             if norm == 1:
                 v = v/np.mean(v) - 1
 
-            # expand dimension - concatenate 
+            # expand dimension - concatenate
             v = np.expand_dims(v, axis=0)
             if i == 0:
                 data = v
@@ -155,10 +161,12 @@ def find_tree(cname):
         node = cname
 
     # find tree
-    if node in KSTAR_TREE:
+    if node in PCS_TREE:
         tree = 'PCS_KSTAR'
+    elif node in CSS:
+        tree = 'CSS'
     elif node in EFIT_TREE:
-        tree = 'EFIT02'      
+        tree = 'EFIT01'
     else:
         tree = 'KSTAR'
 
