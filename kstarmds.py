@@ -51,13 +51,15 @@ RES_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in rang
 
 
 class KstarMds(Connection):
-    def __init__(self):
+    def __init__(self, shot ,clist):
         # from iKSTAR
         # super(KstarMds,self).__init__('172.17.250.23:8005')  # call __init__ in Connection
         # from opi to CSS Host PC
         super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
+        self.shot = shot
+        self.clist = clist
 
-    def get_data(self, shot, trange, clist, norm=0, atrange=[1.0, 1.1], res=0):
+    def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
             print 'data is not normalized'
         elif norm == 1:
@@ -65,12 +67,10 @@ class KstarMds(Connection):
         elif norm == 2:
             print 'data is normalized by atrange average'
 
-        self.shot = shot
         self.trange = trange
-        self.clist = clist
 
         # open tree
-        tree = find_tree(clist[0])
+        tree = find_tree(self.clist[0])
         try:
             self.openTree(tree,self.shot)
         except:
@@ -135,15 +135,15 @@ class KstarMds(Connection):
         self.data = data
 
         # get channel position
-        self.channel_position(shot,clist)
+        self.channel_position(self.shot,self.clist)
 
         # close tree
         self.closeTree(tree,self.shot)
 
         return time, data
 
-    def channel_position(self, shot, clist):  # Needs updates ####################
-        cnum = len(clist)
+    def channel_position(self):  # Needs updates ####################
+        cnum = len(self.clist)
         self.rpos = np.arange(cnum)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.arange(cnum)  # angle [rad]
