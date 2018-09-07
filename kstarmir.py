@@ -108,9 +108,9 @@ class KstarMir(object):
                     iv = iv/np.std(iav)
                     qv = qv/np.std(qav)
 
-                # complex iav, qav
-                # data[i][:] = iav + 1.0j*qav
-                data[i][:] = iav
+                # complex iv, qv
+                # data[i][:] = iv + 1.0j*qv
+                data[i][:] = iv
                 print 'return iav only'
 
             self.data = data
@@ -194,20 +194,3 @@ def expand_clist(clist):
     clist = exp_clist
 
     return clist
-
-
-# freq 1 I 의 1~16 번 채널
-# MD1 digitizer lemo 연결 : 1~8, 17~24
-# HDF5 node name : MD0101 ~ MD0116
-#
-# freq 1 Q의 1~16 번 채널
-# MD2 digitizer lemo 연결 : 1~8, 17~24
-# HDF5 node name : MD0201 ~ MD0216
-#
-# freq 2 I 의 1~16 번 채널
-# MD3 digitizer lemo 연결 : 1~8, 17~24
-# HDF5 node name : MD0301 ~ MD0316
-#
-# freq 2 Q의 1~16 번 채널
-# MD4 digitizer lemo 연결 : 1~8, 17~24
-# HDF5 node name : MD0401 ~ MD0416

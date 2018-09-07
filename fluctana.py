@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from scipy import signal
 
 from kstarecei import *
+from kstarmir import *
 from kstarmds import *
 
 

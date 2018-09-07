@@ -36,7 +36,7 @@ EFIT_TREE = ['VOLUME', 'KAPPA', 'BETAP', 'BETAN', 'q95', 'LI3', 'WMHD']
 
 # nodes need postprocessing
 POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_VAL_OUT:FOO':'/5',
-            'RC03':'*(-1)/1000', 'NE_INTER01':'/1.9', 'LMSR':'-1.8', 'VOLUME':'/10', 'KAPPA':'-1',
+            'RC03':'*(-1)/1000', 'NE_INTER01':'/1.9', 'VOLUME':'/10', 'KAPPA':'-1',
             'NE_INTER02':'/2.7'}
 
 # nodes support segment reading
@@ -53,9 +53,9 @@ RES_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in rang
 class KstarMds(Connection):
     def __init__(self, shot ,clist):
         # from iKSTAR
-        # super(KstarMds,self).__init__('172.17.250.23:8005')  # call __init__ in Connection
+        super(KstarMds,self).__init__('172.17.250.23:8005')  # call __init__ in Connection
         # from opi to CSS Host PC
-        super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
+        # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot
         self.clist = clist
 
@@ -77,6 +77,7 @@ class KstarMds(Connection):
             print "Failed to open tree %s" % tree
             time, data = None, None
             return time, data
+        print "Open tree %s" % tree
 
         # --- loop starts --- #
         for i, cname in enumerate(self.clist):
@@ -104,7 +105,7 @@ class KstarMds(Connection):
             node = snode + pnode
 
             # load data
-            expr = '[dim_of({0}), {0}]'.format(node)
+            expr = '[dim_of(\{0}), \{0}]'.format(node)
             try:
                 time, v = self.get(expr).data()
                 print "Read %s (number of data points = %d)" % (node, len(v))
@@ -135,7 +136,7 @@ class KstarMds(Connection):
         self.data = data
 
         # get channel position
-        self.channel_position(self.shot,self.clist)
+        self.channel_position()
 
         # close tree
         self.closeTree(tree,self.shot)
@@ -163,7 +164,7 @@ def find_tree(cname):
     # find tree
     if node in PCS_TREE:
         tree = 'PCS_KSTAR'
-    elif node in CSS:
+    elif node in CSS_TREE:
         tree = 'CSS'
     elif node in EFIT_TREE:
         tree = 'EFIT01'
