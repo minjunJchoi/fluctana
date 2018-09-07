@@ -109,7 +109,7 @@ class FluctAna(object):
 
                     sx = x[idx1:idx2]
 
-                    if detrend is 1:
+                    if detrend == 1:
                         sx = signal.detrend(sx, type='linear')
                         sx = signal.detrend(sx, type='constant')
                     else:
@@ -162,7 +162,7 @@ class FluctAna(object):
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number
-            if rnum is 1:
+            if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
             else:
                 #self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
@@ -173,7 +173,7 @@ class FluctAna(object):
 
             # calculate cross power for each channel and each bins
             for b in range(bins):
-                if rnum is 1:  # single reference channel
+                if rnum == 1:  # single reference channel
                     X = self.Dlist[done].fftdata[0,b,:]
                 else:  # number of ref channels = number of cmp channels
                     #X = self.Dlist[done].fftdata[c,b,:]
@@ -216,7 +216,7 @@ class FluctAna(object):
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel names
-            if rnum is 1:
+            if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
             else:
                 #self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
@@ -227,7 +227,7 @@ class FluctAna(object):
 
             # calculate cross power for each channel and each bins
             for b in range(bins):
-                if rnum is 1:  # single reference channel
+                if rnum == 1:  # single reference channel
                     X = self.Dlist[done].fftdata[0,b,:]
                 else:  # number of ref channels = number of cmp channels
                     #X = self.Dlist[done].fftdata[c,b,:]
@@ -274,7 +274,7 @@ class FluctAna(object):
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number and distance between ref and cmp channels
-            if rnum is 1:
+            if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
                 self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
                 (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
@@ -290,7 +290,7 @@ class FluctAna(object):
 
             # calculate cross power for each channel and each bins
             for b in range(bins):
-                if rnum is 1:  # single reference channel
+                if rnum == 1:  # single reference channel
                     X = self.Dlist[done].fftdata[0,b,:]
                 else:  # number of ref channels = number of cmp channels
                     #X = self.Dlist[done].fftdata[c,b,:]
@@ -314,14 +314,14 @@ class FluctAna(object):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         for i in cnum:
-            if type is 'time':
+            if type == 'time':
                 pbase = self.Dlist[dnum].time
                 pdata = self.Dlist[dnum].data[i,:]
-            elif type is 'val':
+            elif type == 'val':
                 pbase = self.Dlist[dnum].ax/1000
                 pdata = self.Dlist[dnum].val[i,:].real
                 rname = self.Dlist[dnum].rname[i]
-                if self.Dlist[dnum].vkind is 'coherence':
+                if self.Dlist[dnum].vkind == 'coherence':
                     plt.axhline(y=1/np.sqrt(self.Dlist[dnum].bins), color='r')
             pname = self.Dlist[dnum].clist[i]
             pshot = self.Dlist[dnum].shot
@@ -335,22 +335,22 @@ class FluctAna(object):
             else:
                 plt.xlim([pbase[0], pbase[-1]])
 
-            if type is 'time':
+            if type == 'time':
                 plt.title('SHOT = %d, %s' % (pshot, pname), fontsize=10)
-            elif type is 'val':
+            elif type == 'val':
                 plt.title('SHOT = %d, %s-%s' % (pshot, rname, pname), fontsize=10)
 
-            if type is 'time':
+            if type == 'time':
                 plt.xlabel('Time [s]')
                 plt.ylabel('ECEI signal')
-            elif type is 'val' and self.Dlist[dnum].vkind is 'cross_power':
+            elif type == 'val' and self.Dlist[dnum].vkind == 'cross_power':
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Cross power spectral density')
                 plt.yscale('log')
-            elif type is 'val' and self.Dlist[dnum].vkind is 'coherence':
+            elif type == 'val' and self.Dlist[dnum].vkind == 'coherence':
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Coherence')
-            elif type is 'val' and self.Dlist[dnum].vkind is 'cross_phase':
+            elif type == 'val' and self.Dlist[dnum].vkind == 'cross_phase':
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Cross phase [rad]')
 
@@ -361,22 +361,22 @@ class FluctAna(object):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         for i in cnum:
-            if type is 'time':
+            if type == 'time':
                 pbase = self.Dlist[dnum].time
                 pdata = self.Dlist[dnum].data[i,:]
-            elif type is 'val':
+            elif type == 'val':
                 pbase = self.Dlist[dnum].ax/1000
                 pdata = self.Dlist[dnum].val[i,:].real
                 rname = self.Dlist[dnum].rname[i]
-                if i == 0 and self.Dlist[dnum].vkind is 'coherence':
+                if i == 0 and self.Dlist[dnum].vkind == 'coherence':
                     plt.axhline(y=1/np.sqrt(self.Dlist[dnum].bins), color='r')
             pname = self.Dlist[dnum].clist[i]
 
             plt.plot(pbase, pdata)
 
-            if type is 'time':
+            if type == 'time':
                 print 'dnum %d : channel %s is plotted' % (dnum, pname)
-            elif type is 'val':
+            elif type == 'val':
                 print 'dnum %d : calculation %s-%s is plotted' % (dnum, rname, pname)
 
             if 'ylimits' in kwargs: # ylimits
@@ -386,17 +386,17 @@ class FluctAna(object):
             else:
                 plt.xlim([pbase[0], pbase[-1]])
 
-            if type is 'time':
+            if type == 'time':
                 plt.xlabel('Time [s]')
                 plt.ylabel('ECEI signal')
-            elif type is 'val' and self.Dlist[dnum].vkind is 'cross_power':
+            elif type == 'val' and self.Dlist[dnum].vkind == 'cross_power':
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Cross power spectral density')
                 plt.yscale('log')
-            elif type is 'val' and self.Dlist[dnum].vkind is 'coherence':
+            elif type == 'val' and self.Dlist[dnum].vkind == 'coherence':
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Coherence')
-            elif type is 'val' and self.Dlist[dnum].vkind is 'cross_phase':
+            elif type == 'val' and self.Dlist[dnum].vkind == 'cross_phase':
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Cross phase [rad]')
 
@@ -549,11 +549,11 @@ class FluctAna(object):
         idx2 = int(idx[0][-1]+1)
 
         # data
-        if self.Dlist[dnum].vkind is 'cross_power':  # rms
+        if self.Dlist[dnum].vkind == 'cross_power':  # rms
             pdata = np.sqrt(np.sum(self.Dlist[dnum].val[:,idx1:idx2], 1))
-        elif self.Dlist[dnum].vkind is 'coherence':  # mean coherence
+        elif self.Dlist[dnum].vkind == 'coherence':  # mean coherence
             pdata = np.mean(self.Dlist[dnum].val[:,idx1:idx2], 1)
-        elif self.Dlist[dnum].vkind is 'cross_phase':  # group velocity
+        elif self.Dlist[dnum].vkind == 'cross_phase':  # group velocity
             base = self.Dlist[dnum].ax[idx1:idx2]  # [Hz]
             pdata = np.zeros(len(self.Dlist[dnum].val))
             for c in range(len(self.Dlist[dnum].val)):
@@ -580,12 +580,12 @@ class FluctAna(object):
 
         # sample plot
         axs[0].plot(pbase, self.Dlist[dnum].val[snum,:])  # ax1.hold(True)
-        if self.Dlist[dnum].vkind is 'cross_phase':
+        if self.Dlist[dnum].vkind == 'cross_phase':
             axs[0].plot(sbase, sdata)
         axs[0].axvline(x=pbase[idx1], color='g')
         axs[0].axvline(x=pbase[idx2], color='g')
 
-        if self.Dlist[dnum].vkind is 'cross_power':
+        if self.Dlist[dnum].vkind == 'cross_power':
             axs[0].set_yscale('log')
         if 'ylimits' in kwargs: # ylimits
             axs[0].set_ylim([ylimits[0], ylimits[1]])
@@ -603,11 +603,11 @@ class FluctAna(object):
 
         axs[1].set_xlabel('R [m]')
         axs[1].set_ylabel('z [m]')
-        if self.Dlist[dnum].vkind is 'cross_power':
+        if self.Dlist[dnum].vkind == 'cross_power':
             axs[1].set_title('Cross power rms')
-        elif self.Dlist[dnum].vkind is 'coherence':
+        elif self.Dlist[dnum].vkind == 'coherence':
             axs[1].set_title('Coherence mean')
-        elif self.Dlist[dnum].vkind is 'cross_phase':
+        elif self.Dlist[dnum].vkind == 'cross_phase':
             axs[1].set_title('Group velocity [km/s]')
 
         self.Dlist[dnum].pdata = pdata
@@ -653,15 +653,15 @@ def fft_window(tnum, nfft, window, overlap):
     bins = int(np.fix((tnum/nfft - overlap)/(1 - overlap)))
 
     # window function
-    if window is 'rectwin':  # overlap = 0.5
+    if window == 'rectwin':  # overlap = 0.5
         win = np.ones(nfft)
-    elif window is 'hann':  # overlap = 0.5
+    elif window == 'hann':  # overlap = 0.5
         win = np.hanning(nfft)
-    elif window is 'hamm':  # overlap = 0.5
+    elif window == 'hamm':  # overlap = 0.5
         win = np.hamming(nfft)
-    elif window is 'kaiser':  # overlap = 0.62
+    elif window == 'kaiser':  # overlap = 0.62
         win = np.kaiser(nfft, beta=3)
-    elif window is 'HFT248D':  # overlap = 0.84
+    elif window == 'HFT248D':  # overlap = 0.84
         z = 2*np.pi/nfft*np.arange(0,nfft)
         win = 1 - 1.985844164102*np.cos(z) + 1.791176438506*np.cos(2*z) - 1.282075284005*np.cos(3*z) + \
             0.667777530266*np.cos(4*z) - 0.240160796576*np.cos(5*z) + 0.056656381764*np.cos(6*z) - \

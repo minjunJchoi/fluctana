@@ -1,5 +1,5 @@
 analysis/
 analysis/*
 examples/.ipynb_checkpoints/
-
+.DS_Store
 *.pyc
