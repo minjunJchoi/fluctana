@@ -73,6 +73,9 @@ class DiiidData():
                 data = np.concatenate((data, v), axis=0)
         # --- loop ends --- #
 
+        # [ms] -> [s]
+        time = time/1000.0
+
         self.time = time
         self.fs = round(1/(time[1] - time[0])/1000)*1000
         self.data = data
