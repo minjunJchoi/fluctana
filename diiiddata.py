@@ -48,7 +48,7 @@ class DiiidData():
 
             # load data
             try:
-                idl.pro('gadat,time,data,/double',node,self.shot,XMIN=self.trange[0],XMAX=self.trange[1])
+                idl.pro('gadat,time,data,/double',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
                 time, v = idl.time, idl.data
                 print "Read %d - %s (number of data points = %d)" % (self.shot, node, len(v))
             except:
