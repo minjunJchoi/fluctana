@@ -14,6 +14,7 @@ from scipy import signal
 from kstarecei import *
 from kstarmir import *
 from kstarmds import *
+from diiiddata import *
 
 
 CM = plt.cm.get_cmap('RdYlBu_r')
