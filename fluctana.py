@@ -17,7 +17,8 @@ from kstarmds import *
 from diiiddata import *
 
 
-CM = plt.cm.get_cmap('RdYlBu_r')
+#CM = plt.cm.get_cmap('RdYlBu_r')
+CM = plt.cm.get_cmap('spectral')
 
 
 class FluctAna(object):
@@ -613,6 +614,8 @@ class FluctAna(object):
             axs[1].set_title('Group velocity [km/s]')
 
         self.Dlist[dnum].pdata = pdata
+
+        plt.show()
 
 
 def expand_clist(clist):
