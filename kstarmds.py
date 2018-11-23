@@ -105,7 +105,7 @@ class KstarMds(Connection):
             node = snode + pnode
 
             # load data
-            expr = '[dim_of(\{0}), \{0}]'.format(node)
+            expr = '[dim_of({0}), {0}]'.format(node)
             try:
                 time, v = self.get(expr).data()
                 print "Read %s (number of data points = %d)" % (node, len(v))
