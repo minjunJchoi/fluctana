@@ -40,14 +40,13 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
             'NE_INTER02':'/2.7'}
 
 # nodes support segment reading
-SEG_NODE = ['ECE%02d' % i for i in range(2,150)] + ['MC1T%02d' % i for i in range(1,25)] + \
-            ['MC1P%02d' % i for i in range(1,25)] + ['LM%02d' % i for i in range(1,5)] + \
+SEG_NODE = ['ECE%02d' % i for i in range(2,150)] + ['LM%02d' % i for i in range(1,5)] + \
             ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
 SEG_NODE = SEG_NODE + ['NB11_pnb', 'NB12_pnb', 'NB13_pnb', 'ECH_VFWD1', 'ec1_rffwd1', 'I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO',
             'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
 
 # nodes need resampling
-RES_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
+#RES_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
 
 
 class KstarMds(Connection):
@@ -90,28 +89,33 @@ class KstarMds(Connection):
 
             # segment loading
             if node in SEG_NODE:
-                if node in RES_NODE and res != 0:
-                    snode = 'resample(\%s, %f, %f, %f)' % (node,self.trange[0],self.trange[1],res)  # segment loading with resampling
-                else:
-                    snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
+                snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
             else:
-                snode = node
+                snode = '\%s' % node 
+
+            # resampling
+            if res != 0:
+                snode = 'resample(\%s, %f, %f, %f)' % (node,self.trange[0],self.trange[1],res)  # resampling
+            else:
+                snode = '\%s' % node 
 
             # post processing
             if node in POST_NODE:
                 pnode = POST_NODE[node]
             else:
                 pnode = ''
-            node = snode + pnode
+            
+            # full node name
+            fnode = snode + pnode
 
             # load data
-            expr = '[dim_of({0}), {0}]'.format(node)
+            expr = '[dim_of({0}), {0}]'.format(fnode)
             try:
                 time, v = self.get(expr).data()
-                print "Read %s (number of data points = %d)" % (node, len(v))
+                print "Read %s (number of data points = %d)" % (fnode, len(v))
             except:
                 time, v = None, None
-                print "Failed   %s" % node
+                print "Failed   %s" % fnode
 
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))

@@ -18,7 +18,8 @@ from diiiddata import *
 
 
 #CM = plt.cm.get_cmap('RdYlBu_r')
-CM = plt.cm.get_cmap('spectral')
+#CM = plt.cm.get_cmap('spectral')
+CM = plt.cm.get_cmap('YlGn')
 
 
 class FluctAna(object):
@@ -405,7 +406,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def spec(self, dnum, cnum, nfft=516, climits=[-160, -60], **kwargs):
+    def spec(self, dnum, cnum, nfft=2048, climits=[-160, -60], **kwargs):
         if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
