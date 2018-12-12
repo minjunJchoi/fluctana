@@ -40,13 +40,12 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
             'NE_INTER02':'/2.7'}
 
 # nodes support segment reading
-SEG_NODE = ['ECE%02d' % i for i in range(2,150)] + ['LM%02d' % i for i in range(1,5)] + \
-            ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
-SEG_NODE = SEG_NODE + ['NB11_pnb', 'NB12_pnb', 'NB13_pnb', 'ECH_VFWD1', 'ec1_rffwd1', 'I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO',
-            'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
-
-# nodes need resampling
-#RES_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
+SEG_NODE = ['nothing']
+#SEG_NODE = ['ECE%02d' % i for i in range(2,150)] + ['LM%02d' % i for i in range(1,5)] + \
+#            ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
+#SEG_NODE = SEG_NODE + ['NB11_pnb', 'NB12_pnb', 'NB13_pnb', 'ECH_VFWD1', 'ec1_rffwd1', 'I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO',
+#            'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
+#SEG_NODE = SEG_NODE + ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
 
 
 class KstarMds(Connection):
@@ -96,8 +95,6 @@ class KstarMds(Connection):
             # resampling
             if res != 0:
                 snode = 'resample(\%s, %f, %f, %f)' % (node,self.trange[0],self.trange[1],res)  # resampling
-            else:
-                snode = '\%s' % node 
 
             # post processing
             if node in POST_NODE:
