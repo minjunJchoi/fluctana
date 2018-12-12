@@ -20,9 +20,9 @@ VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'E
             'Zp':'LMSZ', 'VOL':'VOLUME', 'KAP':'KAPPA', 'BETAp':'BETAP', 'BETAn':'BETAN', 'q95':'q95', 'Li':'LI3',
             'GASG':'G_GFLOW_IN:FOO', 'WTkp':'WTOT_KAPPA', 'WTdlm':'WTOT_DLM03', 'DaT11':'TOR_HA11', 'DaT10':'TOR_HA10',
             'DaP02':'POL_HA02', 'DaP04':'POL_HA04', 'neAVGF':'NE_INTER02',
-            'RMP_T4':'PCRMPTBULI', 'RMP_T3':'PCRMPTFULI', 'RMP_T2':'PCRMPTJULI', 'RMP_T1':'PCRMPTNULI',
-            'RMP_M4':'PCRMPMBULI', 'RMP_M3':'PCRMPMFULI', 'RMP_M2':'PCRMPMJULI', 'RMP_M1':'PCRMPMNULI',
-            'RMP_B4':'PCRMPBBULI', 'RMP_B3':'PCRMPBFULI', 'RMP_B2':'PCRMPBJULI', 'RMP_B1':'PCRMPBNULI'}
+            'RMP_T3':'PCRMPTBULI', 'RMP_T4':'PCRMPTFULI', 'RMP_T1':'PCRMPTJULI', 'RMP_T2':'PCRMPTNULI',
+            'RMP_M3':'PCRMPMBULI', 'RMP_M4':'PCRMPMFULI', 'RMP_M1':'PCRMPMJULI', 'RMP_M2':'PCRMPMNULI',
+            'RMP_B3':'PCRMPBBULI', 'RMP_B4':'PCRMPBFULI', 'RMP_B1':'PCRMPBJULI', 'RMP_B2':'PCRMPBNULI'}
 
 # nodes in PCS_KSTAR tree
 PCS_TREE = ['LMSR', 'LMSZ', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI', 'PCRMPTNULI',
@@ -40,13 +40,11 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
             'NE_INTER02':'/2.7'}
 
 # nodes support segment reading
-SEG_NODE = ['nothing']
-#SEG_NODE = ['ECE%02d' % i for i in range(2,150)] + ['LM%02d' % i for i in range(1,5)] + \
-#            ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
-#SEG_NODE = SEG_NODE + ['NB11_pnb', 'NB12_pnb', 'NB13_pnb', 'ECH_VFWD1', 'ec1_rffwd1', 'I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO',
-#            'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
-#SEG_NODE = SEG_NODE + ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
-
+SEG_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
+SEG_NODE = SEG_NODE + ['ECE%02d' % i for i in range(2,150)]
+SEG_NODE = SEG_NODE + ['LM%02d' % i for i in range(1,5)] 
+SEG_NODE = SEG_NODE + ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
+SEG_NODE = SEG_NODE + ['I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO', 'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
 
 class KstarMds(Connection):
     def __init__(self, shot ,clist):
