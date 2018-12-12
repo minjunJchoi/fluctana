@@ -51,7 +51,7 @@ class KstarMir(object):
             self.rf3 = dset.attrs['MRF3']
             self.rf4 = dset.attrs['MRF4']
 
-            print 'MIR file = {}'.format(self.fname)
+            print('MIR file = {}'.format(self.fname))
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.01], res=0):
         self.trange = trange
@@ -61,11 +61,11 @@ class KstarMir(object):
         # norm = 2 : normalization by atrange average
         # res  = 0 : no resampling
         if norm == 0:
-            print 'data is not normalized'
+            print('data is not normalized')
         elif norm == 1:
-            print 'data is normalized by trange average'
+            print('data is normalized by trange average')
         elif norm == 2:
-            print 'data is normalized by atrange average'
+            print('data is normalized by atrange average')
 
         # get time base
         time, idx1, idx2 = self.time_base(trange)
@@ -111,7 +111,7 @@ class KstarMir(object):
                 # complex iv, qv
                 # data[i][:] = iv + 1.0j*qv
                 data[i][:] = iv
-                print 'return iav only'
+                print('return iav only; filter iv and qv and return iv + 1.0j*qv')
 
             self.data = data
 
@@ -188,7 +188,7 @@ def expand_clist(clist):
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:4] + '%02d' % v + '%02d' % f)
+                    exp_clist.append(clist[c][0:4] + '{:02d}{:02d}'.format(v, f))
         else:
             exp_clist.append(clist[c])
     clist = exp_clist

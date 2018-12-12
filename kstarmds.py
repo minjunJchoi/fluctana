@@ -40,11 +40,12 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
             'NE_INTER02':'/2.7'}
 
 # nodes support segment reading
-SEG_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
-SEG_NODE = SEG_NODE + ['ECE%02d' % i for i in range(2,150)]
-SEG_NODE = SEG_NODE + ['LM%02d' % i for i in range(1,5)] 
-SEG_NODE = SEG_NODE + ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
-SEG_NODE = SEG_NODE + ['I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO', 'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
+SEG_NODE = ['nothing']
+#SEG_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
+#SEG_NODE = SEG_NODE + ['ECE%02d' % i for i in range(2,150)]
+#SEG_NODE = SEG_NODE + ['LM%02d' % i for i in range(1,5)] 
+#SEG_NODE = SEG_NODE + ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
+#SEG_NODE = SEG_NODE + ['I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO', 'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
 
 class KstarMds(Connection):
     def __init__(self, shot ,clist):
@@ -57,11 +58,11 @@ class KstarMds(Connection):
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
-            print 'data is not normalized'
+            print('data is not normalized')
         elif norm == 1:
-            print 'data is normalized by trange average'
+            print('data is normalized by trange average')
         elif norm == 2:
-            print 'data is normalized by atrange average'
+            print('data is normalized by atrange average')
 
         self.trange = trange
 
@@ -70,29 +71,29 @@ class KstarMds(Connection):
         try:
             self.openTree(tree,self.shot)
         except:
-            print "Failed to open tree %s" % tree
+            print('Failed to open tree {:s}'.format(tree))
             time, data = None, None
             return time, data
-        print "Open tree %s" % tree
+        print('Open tree {:s}'.format(tree))
 
         # --- loop starts --- #
         for i, cname in enumerate(self.clist):
 
             # get MDSplus node from channel name
             if cname in VAR_NODE:
-                node = '%s' % (VAR_NODE[cname])
+                node = VAR_NODE[cname]
             else:
                 node = cname
 
             # segment loading
-            if node in SEG_NODE:
-                snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
-            else:
-                snode = '\%s' % node 
+            #if node in SEG_NODE:
+            #    snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
+            #else:
+            snode = '\{:s}'.format(node)
 
             # resampling
             if res != 0:
-                snode = 'resample(\%s, %f, %f, %f)' % (node,self.trange[0],self.trange[1],res)  # resampling
+                snode = 'resample(\{:s}, {:f}, {:f}, {:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
 
             # post processing
             if node in POST_NODE:
@@ -107,10 +108,10 @@ class KstarMds(Connection):
             expr = '[dim_of({0}), {0}]'.format(fnode)
             try:
                 time, v = self.get(expr).data()
-                print "Read %s (number of data points = %d)" % (fnode, len(v))
+                print('Read {:s} (number of data points = {:d})'.format(fnode, len(v)))
             except:
                 time, v = None, None
-                print "Failed   %s" % fnode
+                print('Failed   {:s}'.format(fnode))
 
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))
@@ -156,7 +157,7 @@ class KstarMds(Connection):
 def find_tree(cname):
     # cname -> node
     if cname in VAR_NODE:
-        node = '%s' % (VAR_NODE[cname])
+        node = VAR_NODE[cname]
     else:
         node = cname
 
