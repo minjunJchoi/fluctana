@@ -8,8 +8,10 @@
 #  2018.03.23 : version 0.10; even nfft -> odd nfft (for symmetry)
 
 
-import matplotlib.pyplot as plt
 from scipy import signal
+import math
+
+import matplotlib.pyplot as plt
 
 from kstarecei import *
 from kstarmir import *
@@ -405,7 +407,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def spec(self, dnum, cnum, nfft=2048, climits=[-160, -60], **kwargs):
+    def spec(self, dnum, cnum, nfft=2048, **kwargs):
         if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
@@ -418,9 +420,13 @@ class FluctAna(object):
             pname = self.Dlist[dnum].clist[i]
             pshot = self.Dlist[dnum].shot
 
-            pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov, xextent=[pbase[0], pbase[-1]],
-                                                vmin=climits[0], vmax=climits[1], cmap=CM)  # spectrum
+            pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov, 
+                                                xextent=[pbase[0], pbase[-1]], cmap=CM)  # spectrum
 
+            maxP = math.log(np.amax(pxx),10)*10
+            minP = math.log(np.amin(pxx),10)*10
+            dP = maxP - minP
+            plt.clim([minP+dP*0.55, maxP])
             plt.colorbar(cax)
 
             if 'flimits' in kwargs:  # flimits
