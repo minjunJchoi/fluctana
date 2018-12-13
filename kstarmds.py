@@ -89,11 +89,13 @@ class KstarMds(Connection):
             #if node in SEG_NODE:
             #    snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
             #else:
-            snode = '\{:s}'.format(node)
 
             # resampling
             if res != 0:
-                snode = 'resample(\{:s}, {:f}, {:f}, {:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
+                snode = 'resample(\{:s},{:f},{:f},{:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
+            else:
+                #snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
+                snode = 'setTimeContext2RS(\{:s},{:f},{:f},0.000001)'.format(node,self.trange[0],self.trange[1])
 
             # post processing
             if node in POST_NODE:
@@ -153,21 +155,30 @@ class KstarMds(Connection):
         self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
         for c in range(cnum):
             # Mirnov coils
-            # ECE
+            rnode = 'nothing'
             if 'CES' in self.clist[0]: # CES
                 rnode = '\CES_RT{:02d}'.format(c+1) 
+            elif 'ECE' in self.clist[0]: # ECE
+                rnode = '\ECE{:02d}:RPOS2ND'.format(c+1)
+            try:
                 self.rpos[c] = self.get(rnode).data()[0]
+            except:
+                pass
 
     def meas_error(self):  # Needs updates ####################
         cnum = len(self.clist)
-        self.err = np.arange(cnum, dtype=np.float64)  # measurement error
+        self.err = np.zeros(cnum)  # measurement error
         for c in range(cnum):
             # Mirnov coils
             # ECE
             if 'CES_VT' in self.clist[0]: # CES_VT
                 enode = '\CES_VT{:02d}:err_bar'.format(c+1) 
+            elif 'CES_TI' in self.clist[0]: # CES_TI
+                enode = '\CES_TI{:02d}:err_bar'.format(c+1) 
+            try:
                 self.err[c] = np.mean(self.get(enode).data())
-
+            except:
+                pass
 
 def find_tree(cname):
     # cname -> node
