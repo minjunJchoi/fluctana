@@ -37,7 +37,7 @@ class FluctAna(object):
         for i in range(len(self.Dlist)):
             print('---- DATA SET # {:d} for [{:g}, {:g}] s ----'.format(i, self.Dlist[i].trange[0], self.Dlist[i].trange[1]))
             for j, c in enumerate(self.Dlist[i].clist):
-                print('{{:03d}:{:s}}'.format(j, c)),
+                print('[{:03d}:{:s}]'.format(j, c)),
                 if np.mod(j+1, 4) == 0 or j == len(self.Dlist[i].clist)-1:
                     print('')
             print('')
