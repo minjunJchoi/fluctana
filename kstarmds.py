@@ -29,7 +29,7 @@ PCS_TREE = ['LMSR', 'LMSZ', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI', 'PCRMPTNUL
             'PCRMPMBULI', 'PCRMPMFULI', 'PCRMPMJULI', 'PCRMPMNULI', 'PCRMPBBULI', 'PCRMPBFULI', 'PCRMPBJULI', 'PCRMPBNULI']
 
 # nodes in CSS tree
-CSS_TREE = ['CSS_I%02d:FOO' % i for i in range(1,5)] + ['CSS_Q%02d:FOO' % i for i in range(1,5)]
+CSS_TREE = ['CSS_I{:02d}:FOO'.format(i) for i in range(1,5)] + ['CSS_Q{:02d}:FOO'.format(i) for i in range(1,5)]
 
 # nodes in EFIT01 or EFIT02
 EFIT_TREE = ['VOLUME', 'KAPPA', 'BETAP', 'BETAN', 'q95', 'LI3', 'WMHD']
@@ -137,6 +137,9 @@ class KstarMds(Connection):
 
         # get channel position
         self.channel_position()
+        
+        # get measurement error
+        self.meas_error()
 
         # close tree
         self.closeTree(tree,self.shot)
@@ -145,13 +148,25 @@ class KstarMds(Connection):
 
     def channel_position(self):  # Needs updates ####################
         cnum = len(self.clist)
-        self.rpos = np.arange(cnum)  # R [m]
+        self.rpos = np.arange(cnum, dtype=np.float64)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
-        self.apos = np.arange(cnum)  # angle [rad]
+        self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
         for c in range(cnum):
             # Mirnov coils
             # ECE
-            pass
+            if 'CES' in self.clist[0]: # CES
+                rnode = '\CES_RT{:02d}'.format(c+1) 
+                self.rpos[c] = self.get(rnode).data()[0]
+
+    def meas_error(self):  # Needs updates ####################
+        cnum = len(self.clist)
+        self.err = np.arange(cnum, dtype=np.float64)  # measurement error
+        for c in range(cnum):
+            # Mirnov coils
+            # ECE
+            if 'CES_VT' in self.clist[0]: # CES_VT
+                enode = '\CES_VT{:02d}:err_bar'.format(c+1) 
+                self.err[c] = np.mean(self.get(enode).data())
 
 
 def find_tree(cname):
