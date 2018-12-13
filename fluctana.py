@@ -36,12 +36,12 @@ class FluctAna(object):
 
     def list_data(self):
         for i in range(len(self.Dlist)):
-            print '---- DATA SET # %d for [%g, %g] s ----' % (i, self.Dlist[i].trange[0], self.Dlist[i].trange[1])
+            print('---- DATA SET # {:d} for [{:g}, {:g}] s ----'.format(i, self.Dlist[i].trange[0], self.Dlist[i].trange[1]))
             for j, c in enumerate(self.Dlist[i].clist):
-                print '{%03d:%s}' % (j, c),
+                print('[{:03d}:{:s}]'.format(j, c)),
                 if np.mod(j+1, 4) == 0 or j == len(self.Dlist[i].clist)-1:
-                    print ''
-            print ''
+                    print('')
+            print('')
             # print '     # %d size : %s' % (i, self.Dlist[i].data.shape)
 
     def add_channel(self, dnum, clist):  # re-do fftbins after add channels
@@ -140,7 +140,7 @@ class FluctAna(object):
             self.Dlist[dnum].bins = bins
             self.Dlist[dnum].win = win
 
-            print 'dnum %d fftbins %d with %s size %d overlap %g detrend %d' % (dnum, bins, window, nfft, overlap, detrend)
+            print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d}'.format(dnum, bins, window, nfft, overlap, detrend))
 
     def cross_power(self, done, dtwo, dc=0):
         # IN : data number one (ref), data number two (cmp), etc
@@ -340,9 +340,9 @@ class FluctAna(object):
                 plt.xlim([pbase[0], pbase[-1]])
 
             if type == 'time':
-                plt.title('SHOT = %d, %s' % (pshot, pname), fontsize=10)
+                plt.title('SHOT = {:d}, {:s}'.format(pshot, pname), fontsize=10)
             elif type == 'val':
-                plt.title('SHOT = %d, %s-%s' % (pshot, rname, pname), fontsize=10)
+                plt.title('SHOT = {:d}, {:s}-{:s}'.format(pshot, rname, pname), fontsize=10)
 
             if type == 'time':
                 plt.xlabel('Time [s]')
@@ -379,9 +379,9 @@ class FluctAna(object):
             plt.plot(pbase, pdata)
 
             if type == 'time':
-                print 'dnum %d : channel %s is plotted' % (dnum, pname)
+                print('dnum {:d} : channel {:s} is plotted'.format(dnum, pname))
             elif type == 'val':
-                print 'dnum %d : calculation %s-%s is plotted' % (dnum, rname, pname)
+                print('dnum {:d} : calculation {:s}-{:s} is plotted'.format(dnum, rname, pname))
 
             if 'ylimits' in kwargs: # ylimits
                 plt.ylim([ylimits[0], ylimits[1]])
@@ -634,7 +634,7 @@ def expand_clist(clist):
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:6] + '%02d' % v + '%02d' % f)
+                    exp_clist.append(clist[c][0:6] + '{:02d}{:02d}'.format(v, f))
         elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
             vi = int(clist[c][7:9])
             fi = int(clist[c][9:11])
@@ -643,7 +643,7 @@ def expand_clist(clist):
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:7] + '%02d' % v + '%02d' % f)
+                    exp_clist.append(clist[c][0:7] + '{:02d}{:02d}'.format(v, f))
         else:
             exp_clist.append(clist[c])
     clist = exp_clist

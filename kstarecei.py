@@ -69,7 +69,7 @@ class KstarEcei(object):
             self.sf = dset.attrs['LensFocus']
             self.sz = dset.attrs['LensZoom']
 
-            print 'ECEI file = {}'.format(self.fname)
+            print('ECEI file = {}'.format(self.fname))
 
     def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0):
         self.trange = trange
@@ -79,11 +79,11 @@ class KstarEcei(object):
         # norm = 2 : normalization by atrange average
         # res  = 0 : no resampling
         if norm == 0:
-            print 'data is not normalized'
+            print('data is not normalized')
         elif norm == 1:
-            print 'data is normalized by trange average'
+            print('data is normalized by trange average')
         elif norm == 2:
-            print 'data is normalized by atrange average'
+            print('data is normalized by atrange average')
 
         # get time base
         time, idx1, idx2, oidx1, oidx2 = self.time_base(trange)
@@ -160,7 +160,7 @@ class KstarEcei(object):
             oidx1 = int(oidx[0][0])
             oidx2 = int(oidx[0][-1]+2)
         else:
-            print '#### offset from end in KstarEcei.time_base ####'
+            print('#### offset from end in KstarEcei.time_base ####')
             oidx1 = int(ENUM - 0.01*fs)
             oidx2 = int(ENUM - 1)
 
@@ -295,7 +295,7 @@ def expand_clist(clist):
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:6] + '%02d' % v + '%02d' % f)
+                    exp_clist.append(clist[c][0:6] + '{:02d}{:02d}'.format(v, f))
         elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
             vi = int(clist[c][7:9])
             fi = int(clist[c][9:11])
@@ -304,7 +304,7 @@ def expand_clist(clist):
 
             for v in range(vi, vf+1):
                 for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:7] + '%02d' % v + '%02d' % f)
+                    exp_clist.append(clist[c][0:7] + '{:02d}{:02d}'.format(v, f))
         else:
             exp_clist.append(clist[c])
     clist = exp_clist

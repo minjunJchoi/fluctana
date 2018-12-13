@@ -20,16 +20,16 @@ VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'E
             'Zp':'LMSZ', 'VOL':'VOLUME', 'KAP':'KAPPA', 'BETAp':'BETAP', 'BETAn':'BETAN', 'q95':'q95', 'Li':'LI3',
             'GASG':'G_GFLOW_IN:FOO', 'WTkp':'WTOT_KAPPA', 'WTdlm':'WTOT_DLM03', 'DaT11':'TOR_HA11', 'DaT10':'TOR_HA10',
             'DaP02':'POL_HA02', 'DaP04':'POL_HA04', 'neAVGF':'NE_INTER02',
-            'RMP_T4':'PCRMPTBULI', 'RMP_T3':'PCRMPTFULI', 'RMP_T2':'PCRMPTJULI', 'RMP_T1':'PCRMPTNULI',
-            'RMP_M4':'PCRMPMBULI', 'RMP_M3':'PCRMPMFULI', 'RMP_M2':'PCRMPMJULI', 'RMP_M1':'PCRMPMNULI',
-            'RMP_B4':'PCRMPBBULI', 'RMP_B3':'PCRMPBFULI', 'RMP_B2':'PCRMPBJULI', 'RMP_B1':'PCRMPBNULI'}
+            'RMP_T3':'PCRMPTBULI', 'RMP_T4':'PCRMPTFULI', 'RMP_T1':'PCRMPTJULI', 'RMP_T2':'PCRMPTNULI',
+            'RMP_M3':'PCRMPMBULI', 'RMP_M4':'PCRMPMFULI', 'RMP_M1':'PCRMPMJULI', 'RMP_M2':'PCRMPMNULI',
+            'RMP_B3':'PCRMPBBULI', 'RMP_B4':'PCRMPBFULI', 'RMP_B1':'PCRMPBJULI', 'RMP_B2':'PCRMPBNULI'}
 
 # nodes in PCS_KSTAR tree
 PCS_TREE = ['LMSR', 'LMSZ', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI', 'PCRMPTNULI',
             'PCRMPMBULI', 'PCRMPMFULI', 'PCRMPMJULI', 'PCRMPMNULI', 'PCRMPBBULI', 'PCRMPBFULI', 'PCRMPBJULI', 'PCRMPBNULI']
 
 # nodes in CSS tree
-CSS_TREE = ['CSS_I%02d:FOO' % i for i in range(1,5)] + ['CSS_Q%02d:FOO' % i for i in range(1,5)]
+CSS_TREE = ['CSS_I{:02d}:FOO'.format(i) for i in range(1,5)] + ['CSS_Q{:02d}:FOO'.format(i) for i in range(1,5)]
 
 # nodes in EFIT01 or EFIT02
 EFIT_TREE = ['VOLUME', 'KAPPA', 'BETAP', 'BETAN', 'q95', 'LI3', 'WMHD']
@@ -40,14 +40,12 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
             'NE_INTER02':'/2.7'}
 
 # nodes support segment reading
-SEG_NODE = ['ECE%02d' % i for i in range(2,150)] + ['LM%02d' % i for i in range(1,5)] + \
-            ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
-SEG_NODE = SEG_NODE + ['NB11_pnb', 'NB12_pnb', 'NB13_pnb', 'ECH_VFWD1', 'ec1_rffwd1', 'I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO',
-            'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
-
-# nodes need resampling
-#RES_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
-
+SEG_NODE = ['nothing']
+#SEG_NODE = ['MC1T%02d' % i for i in range(1,25)] + ['MC1P%02d' % i for i in range(1,25)]
+#SEG_NODE = SEG_NODE + ['ECE%02d' % i for i in range(2,150)]
+#SEG_NODE = SEG_NODE + ['LM%02d' % i for i in range(1,5)] 
+#SEG_NODE = SEG_NODE + ['TOR_HA%02d' % i for i in range(1,25)] + ['POL_HA%02d' % i for i in range(1,25)]
+#SEG_NODE = SEG_NODE + ['I_GFLOW_IN:FOO', 'K_GFLOW_IN:FOO', 'SM_VAL_OUT:FOO', 'G_GFLOW_IN:FOO', 'RC03']
 
 class KstarMds(Connection):
     def __init__(self, shot ,clist):
@@ -60,11 +58,11 @@ class KstarMds(Connection):
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
-            print 'data is not normalized'
+            print('data is not normalized')
         elif norm == 1:
-            print 'data is normalized by trange average'
+            print('data is normalized by trange average')
         elif norm == 2:
-            print 'data is normalized by atrange average'
+            print('data is normalized by atrange average')
 
         self.trange = trange
 
@@ -73,31 +71,31 @@ class KstarMds(Connection):
         try:
             self.openTree(tree,self.shot)
         except:
-            print "Failed to open tree %s" % tree
+            print('Failed to open tree {:s}'.format(tree))
             time, data = None, None
             return time, data
-        print "Open tree %s" % tree
+        print('Open tree {:s}'.format(tree))
 
         # --- loop starts --- #
         for i, cname in enumerate(self.clist):
 
             # get MDSplus node from channel name
             if cname in VAR_NODE:
-                node = '%s' % (VAR_NODE[cname])
+                node = VAR_NODE[cname]
             else:
                 node = cname
 
             # segment loading
-            if node in SEG_NODE:
-                snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
-            else:
-                snode = '\%s' % node 
+            #if node in SEG_NODE:
+            #    snode = '\%s[%g:%g]' % (node,self.trange[0],self.trange[1])  # segment loading
+            #else:
 
             # resampling
             if res != 0:
-                snode = 'resample(\%s, %f, %f, %f)' % (node,self.trange[0],self.trange[1],res)  # resampling
+                snode = 'resample(\{:s},{:f},{:f},{:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
             else:
-                snode = '\%s' % node 
+                #snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
+                snode = 'setTimeContext2RS(\{:s},{:f},{:f},0.000001)'.format(node,self.trange[0],self.trange[1])
 
             # post processing
             if node in POST_NODE:
@@ -112,10 +110,10 @@ class KstarMds(Connection):
             expr = '[dim_of({0}), {0}]'.format(fnode)
             try:
                 time, v = self.get(expr).data()
-                print "Read %s (number of data points = %d)" % (fnode, len(v))
+                print('Read {:s} (number of data points = {:d})'.format(fnode, len(v)))
             except:
                 time, v = None, None
-                print "Failed   %s" % fnode
+                print('Failed   {:s}'.format(fnode))
 
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))
@@ -141,6 +139,9 @@ class KstarMds(Connection):
 
         # get channel position
         self.channel_position()
+        
+        # get measurement error
+        self.meas_error()
 
         # close tree
         self.closeTree(tree,self.shot)
@@ -149,19 +150,40 @@ class KstarMds(Connection):
 
     def channel_position(self):  # Needs updates ####################
         cnum = len(self.clist)
-        self.rpos = np.arange(cnum)  # R [m]
+        self.rpos = np.arange(cnum, dtype=np.float64)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
-        self.apos = np.arange(cnum)  # angle [rad]
+        self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
+        for c in range(cnum):
+            # Mirnov coils
+            rnode = 'nothing'
+            if 'CES' in self.clist[0]: # CES
+                rnode = '\CES_RT{:02d}'.format(c+1) 
+            elif 'ECE' in self.clist[0]: # ECE
+                rnode = '\ECE{:02d}:RPOS2ND'.format(c+1)
+            try:
+                self.rpos[c] = self.get(rnode).data()[0]
+            except:
+                pass
+
+    def meas_error(self):  # Needs updates ####################
+        cnum = len(self.clist)
+        self.err = np.zeros(cnum)  # measurement error
         for c in range(cnum):
             # Mirnov coils
             # ECE
-            pass
-
+            if 'CES_VT' in self.clist[0]: # CES_VT
+                enode = '\CES_VT{:02d}:err_bar'.format(c+1) 
+            elif 'CES_TI' in self.clist[0]: # CES_TI
+                enode = '\CES_TI{:02d}:err_bar'.format(c+1) 
+            try:
+                self.err[c] = np.mean(self.get(enode).data())
+            except:
+                pass
 
 def find_tree(cname):
     # cname -> node
     if cname in VAR_NODE:
-        node = '%s' % (VAR_NODE[cname])
+        node = VAR_NODE[cname]
     else:
         node = cname
 
