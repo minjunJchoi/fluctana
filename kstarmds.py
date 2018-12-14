@@ -125,7 +125,7 @@ class KstarMds(Connection):
         # --- loop ends --- #
 
         self.time = time
-        self.fs = round(1/(time[1] - time[0])/1000)*1000
+        self.fs = round(1/(time[1] - time[0])/1000)*1000.0
         self.data = data
 
         # get channel position

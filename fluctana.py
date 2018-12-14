@@ -11,12 +11,13 @@
 from scipy import signal
 import math
 
-import matplotlib.pyplot as plt
-
 from kstarecei import *
 from kstarmir import *
 from kstarmds import *
 
+from filtdata import FiltData
+
+import matplotlib.pyplot as plt
 
 #CM = plt.cm.get_cmap('RdYlBu_r')
 #CM = plt.cm.get_cmap('spectral')
@@ -142,6 +143,27 @@ class FluctAna(object):
             self.Dlist[dnum].win = win
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d}'.format(dnum, bins, window, nfft, overlap, detrend))
+
+    def filt(self, name, fL, fH, b=0.08):
+        # for FIR filters
+        for dnum in range(len(self.Dlist)):
+            cnum = len(self.Dlist[dnum].data)
+            for c in range(cnum):
+                x = np.copy(self.Dlist[dnum].data[c,:])
+                if name == 'FIR_pass' and fH == 0: # high pass filter: original - low pass
+                    filter = FiltData(name, self.Dlist[dnum].fs, fH, fL, b)
+                    x = np.convolve(x, filter.coef)
+                    N = int(np.ceil(4/b))
+                    self.Dlist[dnum].data[c,:] -= x[(N/2):(N/2+len(self.Dlist[dnum].data[c,:]))]  
+                else:
+                    filter = FiltData(name, self.Dlist[dnum].fs, fL, fH, b)
+                    x = np.convolve(x, filter.coef)
+                    N = int(np.ceil(4/b))
+                    #self.Dlist[dnum].data[c,:] = x[0:(len(self.Dlist[dnum].data[c,:]))] # no shift correction  
+                    self.Dlist[dnum].data[c,:] = x[(N/2):(N/2+len(self.Dlist[dnum].data[c,:]))] # shift correction
+
+            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
+
 
     def cross_power(self, done, dtwo, dc=0):
         # IN : data number one (ref), data number two (cmp), etc
