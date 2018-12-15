@@ -38,11 +38,12 @@ class FluctAna(object):
     def list_data(self):
         for i in range(len(self.Dlist)):
             print('---- DATA SET # {:d} for [{:g}, {:g}] s ----'.format(i, self.Dlist[i].trange[0], self.Dlist[i].trange[1]))
+            cstr = ''
             for j, c in enumerate(self.Dlist[i].clist):
-                print('[{:03d}:{:s}]'.format(j, c), end='')
+                cstr += '[{:03d}:{:s}]'.format(j, c)
                 if np.mod(j+1, 4) == 0 or j == len(self.Dlist[i].clist)-1:
-                    print('')
-            print('')
+                    print(cstr)
+                    cstr = ''
             # print '     # %d size : %s' % (i, self.Dlist[i].data.shape)
 
     def add_channel(self, dnum, clist):  # re-do fftbins after add channels
