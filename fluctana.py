@@ -155,13 +155,13 @@ class FluctAna(object):
                     filter = FiltData(name, self.Dlist[dnum].fs, fH, fL, b)
                     x = np.convolve(x, filter.coef)
                     N = int(np.ceil(4/b))
-                    self.Dlist[dnum].data[c,:] -= x[(N/2):(N/2+len(self.Dlist[dnum].data[c,:]))]  
+                    self.Dlist[dnum].data[c,:] -= x[int(N/2):int(N/2+len(self.Dlist[dnum].data[c,:]))]  
                 else:
                     filter = FiltData(name, self.Dlist[dnum].fs, fL, fH, b)
                     x = np.convolve(x, filter.coef)
                     N = int(np.ceil(4/b))
                     #self.Dlist[dnum].data[c,:] = x[0:(len(self.Dlist[dnum].data[c,:]))] # no shift correction  
-                    self.Dlist[dnum].data[c,:] = x[(N/2):(N/2+len(self.Dlist[dnum].data[c,:]))] # shift correction
+                    self.Dlist[dnum].data[c,:] = x[int(N/2):int(N/2+len(self.Dlist[dnum].data[c,:]))] # shift correction
 
             print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
