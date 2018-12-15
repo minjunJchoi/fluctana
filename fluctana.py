@@ -662,7 +662,7 @@ def fft_window(tnum, nfft, window, overlap):
     # OUT : bins, 1 x nfft window function
 
     # use overlapping
-    bins = int(np.fix((tnum/nfft - overlap)/(1 - overlap)))
+    bins = int(np.fix((int(tnum/nfft) - overlap)/(1.0 - overlap)))
 
     # window function
     if window == 'rectwin':  # overlap = 0.5
