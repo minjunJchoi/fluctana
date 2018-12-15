@@ -8,14 +8,17 @@
 #  2018.03.23 : version 0.10; even nfft -> odd nfft (for symmetry)
 
 
-import matplotlib.pyplot as plt
 from scipy import signal
+import math
 
 from kstarecei import *
 from kstarmir import *
 from kstarmds import *
 from diiiddata import *
 
+from filtdata import FiltData
+
+import matplotlib.pyplot as plt
 
 #CM = plt.cm.get_cmap('RdYlBu_r')
 #CM = plt.cm.get_cmap('spectral')
@@ -37,11 +40,12 @@ class FluctAna(object):
     def list_data(self):
         for i in range(len(self.Dlist)):
             print('---- DATA SET # {:d} for [{:g}, {:g}] s ----'.format(i, self.Dlist[i].trange[0], self.Dlist[i].trange[1]))
+            cstr = ''
             for j, c in enumerate(self.Dlist[i].clist):
-                print('[{:03d}:{:s}]'.format(j, c)),
+                cstr += '[{:03d}:{:s}]'.format(j, c)
                 if np.mod(j+1, 4) == 0 or j == len(self.Dlist[i].clist)-1:
-                    print('')
-            print('')
+                    print(cstr)
+                    cstr = ''
             # print '     # %d size : %s' % (i, self.Dlist[i].data.shape)
 
     def add_channel(self, dnum, clist):  # re-do fftbins after add channels
@@ -94,7 +98,7 @@ class FluctAna(object):
             dt = self.Dlist[dnum].time[1] - self.Dlist[dnum].time[0]  # time step
             ax = np.fft.fftfreq(nfft, d=dt)
             if np.mod(nfft, 2) == 0:  # even nfft
-                ax = np.hstack([ax[0:(nfft/2)], -(ax[nfft/2]), ax[(nfft/2):nfft]])
+                ax = np.hstack([ax[0:int(nfft/2)], -(ax[int(nfft/2)]), ax[int(nfft/2):nfft]])
             self.Dlist[dnum].ax = ax
 
             # make fftdata # (default full length) 0~fN -fN~-f1
@@ -124,7 +128,7 @@ class FluctAna(object):
                     # get fft
                     if np.mod(nfft, 2) == 0:  # even nfft
                         fftdata = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
-                        fftdata = np.hstack([fftdata[0:(nfft/2)], np.conj(fftdata[nfft/2]), fftdata[(nfft/2):nfft]])
+                        fftdata = np.hstack([fftdata[0:int(nfft/2)], np.conj(fftdata[int(nfft/2)]), fftdata[int(nfft/2):nfft]])
                         self.Dlist[dnum].fftdata[c,b,:] = fftdata
                     else: # odd nfft
                         self.Dlist[dnum].fftdata[c,b,:] = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
@@ -142,6 +146,27 @@ class FluctAna(object):
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d}'.format(dnum, bins, window, nfft, overlap, detrend))
 
+    def filt(self, name, fL, fH, b=0.08):
+        # for FIR filters
+        for dnum in range(len(self.Dlist)):
+            cnum = len(self.Dlist[dnum].data)
+            for c in range(cnum):
+                x = np.copy(self.Dlist[dnum].data[c,:])
+                if name == 'FIR_pass' and fH == 0: # high pass filter: original - low pass
+                    filter = FiltData(name, self.Dlist[dnum].fs, fH, fL, b)
+                    x = np.convolve(x, filter.coef)
+                    N = int(np.ceil(4/b))
+                    self.Dlist[dnum].data[c,:] -= x[int(N/2):int(N/2+len(self.Dlist[dnum].data[c,:]))]  
+                else:
+                    filter = FiltData(name, self.Dlist[dnum].fs, fL, fH, b)
+                    x = np.convolve(x, filter.coef)
+                    N = int(np.ceil(4/b))
+                    #self.Dlist[dnum].data[c,:] = x[0:(len(self.Dlist[dnum].data[c,:]))] # no shift correction  
+                    self.Dlist[dnum].data[c,:] = x[int(N/2):int(N/2+len(self.Dlist[dnum].data[c,:]))] # shift correction
+
+            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
+
+
     def cross_power(self, done, dtwo, dc=0):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
@@ -158,10 +183,10 @@ class FluctAna(object):
         self.Dlist[dtwo].rname = []
 
         # half (0~fN) axis
-        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:(nfft/2+1)]
+        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:int(nfft/2+1)]
         # value dimension
         val = np.zeros((cnum, bins, nfft), dtype=np.complex_)  # (full length for calculation)
-        self.Dlist[dtwo].val = np.zeros((cnum, (nfft/2+1)))  # (half length for return)
+        self.Dlist[dtwo].val = np.zeros((cnum, int(nfft/2+1)))  # (half length for return)
 
         # calculation loop for multi channels
         for c in range(cnum):
@@ -193,7 +218,7 @@ class FluctAna(object):
             # average over bins
             Pxy = np.mean(val[c,:,:], 0)
             # result saved in val
-            self.Dlist[dtwo].val[c,:] = np.abs(Pxy[0:(nfft/2+1)]).real
+            self.Dlist[dtwo].val[c,:] = np.abs(Pxy[0:int(nfft/2+1)]).real
 
             # std saved in std
 
@@ -212,10 +237,10 @@ class FluctAna(object):
         self.Dlist[dtwo].rname = []
 
         # half (0~fN) axis
-        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:(nfft/2+1)]
+        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:int(nfft/2+1)]
         # value dimension
         val = np.zeros((cnum, bins, nfft), dtype=np.complex_)  # (full length for calculation)
-        self.Dlist[dtwo].val = np.zeros((cnum, (nfft/2+1)))  # (half length for return)
+        self.Dlist[dtwo].val = np.zeros((cnum, int(nfft/2+1)))  # (half length for return)
 
         # calculation loop for multi channels
         for c in range(cnum):
@@ -250,7 +275,7 @@ class FluctAna(object):
             # average over bins
             Gxy = np.mean(val[c,:,:], 0)
             # results saved in val
-            self.Dlist[dtwo].val[c,:] = np.abs(Gxy[0:(nfft/2+1)]).real
+            self.Dlist[dtwo].val[c,:] = np.abs(Gxy[0:int(nfft/2+1)]).real
 
     def cross_phase(self, done, dtwo, dc=0):
         # IN : data number one (ref), data number two (cmp)
@@ -270,10 +295,10 @@ class FluctAna(object):
         self.Dlist[dtwo].dist = np.zeros(cnum)
 
         # half (0~fN) axis
-        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:(nfft/2+1)]
+        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:int(nfft/2+1)]
         # value dimension
         val = np.zeros((cnum, bins, nfft), dtype=np.complex_)  # (full length for calculation)
-        self.Dlist[dtwo].val = np.zeros((cnum, (nfft/2+1)))  # (half length for return)
+        self.Dlist[dtwo].val = np.zeros((cnum, int(nfft/2+1)))  # (half length for return)
 
         # calculation loop for multi channels
         for c in range(cnum):
@@ -309,7 +334,7 @@ class FluctAna(object):
             # average over bins
             Pxy = np.mean(val[c,:,:], 0)
             # result saved in val
-            self.Dlist[dtwo].val[c,:] = np.arctan2(Pxy[0:(nfft/2+1)].imag, Pxy[0:(nfft/2+1)].real).real
+            self.Dlist[dtwo].val[c,:] = np.arctan2(Pxy[0:int(nfft/2+1)].imag, Pxy[0:int(nfft/2+1)].real).real
 
             # std saved in std
 
@@ -406,7 +431,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def spec(self, dnum, cnum, nfft=2048, climits=[-160, -60], **kwargs):
+    def spec(self, dnum, cnum, nfft=2048, **kwargs):
         if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
@@ -419,9 +444,13 @@ class FluctAna(object):
             pname = self.Dlist[dnum].clist[i]
             pshot = self.Dlist[dnum].shot
 
-            pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov, xextent=[pbase[0], pbase[-1]],
-                                                vmin=climits[0], vmax=climits[1], cmap=CM)  # spectrum
+            pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov, 
+                                                xextent=[pbase[0], pbase[-1]], cmap=CM)  # spectrum
 
+            maxP = math.log(np.amax(pxx),10)*10
+            minP = math.log(np.amin(pxx),10)*10
+            dP = maxP - minP
+            plt.clim([minP+dP*0.55, maxP])
             plt.colorbar(cax)
 
             if 'flimits' in kwargs:  # flimits
@@ -656,7 +685,7 @@ def fft_window(tnum, nfft, window, overlap):
     # OUT : bins, 1 x nfft window function
 
     # use overlapping
-    bins = int(np.fix((tnum/nfft - overlap)/(1 - overlap)))
+    bins = int(np.fix((int(tnum/nfft) - overlap)/(1.0 - overlap)))
 
     # window function
     if window == 'rectwin':  # overlap = 0.5

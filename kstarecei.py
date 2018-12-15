@@ -60,10 +60,10 @@ class KstarEcei(object):
             self.toff = self.tt[0]+0.001
             self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz] same sampling rate
             self.bt = dset.attrs['TFcurrent']*0.0995556  # [kA] -> [T]
-            self.mode = dset.attrs['Mode'].strip()
-            if self.mode is 'O':
+            self.mode = dset.attrs['Mode'].strip().decode()
+            if self.mode == 'O':
                 self.hn = 1  # harmonic number
-            elif self.mode is 'X':
+            elif self.mode == 'X':
                 self.hn = 2
             self.lo = dset.attrs['LoFreq']
             self.sf = dset.attrs['LensFocus']
@@ -127,12 +127,12 @@ class KstarEcei(object):
         toff = self.toff
         fs = self.fs
 
-        if len(tt) == 2:
+        if int(len(tt)) == 2:
             pl = tt[1] - tt[0] + 0.1
             tt = [tt[0], pl, tt[1]]
 
         fulltime = []
-        for i in range(0, len(tt)/3):
+        for i in range(0, int(len(tt)/3)):
             t0 = tt[i*3]
             pl = tt[i*3+1]
             t1 = tt[i*3+2]
