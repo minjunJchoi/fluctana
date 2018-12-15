@@ -40,7 +40,7 @@ class FluctAna(object):
         for i in range(len(self.Dlist)):
             print('---- DATA SET # {:d} for [{:g}, {:g}] s ----'.format(i, self.Dlist[i].trange[0], self.Dlist[i].trange[1]))
             for j, c in enumerate(self.Dlist[i].clist):
-                print('[{:03d}:{:s}]'.format(j, c)),
+                print('[{:03d}:{:s}]'.format(j, c), end='')
                 if np.mod(j+1, 4) == 0 or j == len(self.Dlist[i].clist)-1:
                     print('')
             print('')
@@ -96,7 +96,7 @@ class FluctAna(object):
             dt = self.Dlist[dnum].time[1] - self.Dlist[dnum].time[0]  # time step
             ax = np.fft.fftfreq(nfft, d=dt)
             if np.mod(nfft, 2) == 0:  # even nfft
-                ax = np.hstack([ax[0:(nfft/2)], -(ax[nfft/2]), ax[(nfft/2):nfft]])
+                ax = np.hstack([ax[0:int(nfft/2)], -(ax[int(nfft/2)]), ax[int(nfft/2):nfft]])
             self.Dlist[dnum].ax = ax
 
             # make fftdata # (default full length) 0~fN -fN~-f1
@@ -126,7 +126,7 @@ class FluctAna(object):
                     # get fft
                     if np.mod(nfft, 2) == 0:  # even nfft
                         fftdata = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
-                        fftdata = np.hstack([fftdata[0:(nfft/2)], np.conj(fftdata[nfft/2]), fftdata[(nfft/2):nfft]])
+                        fftdata = np.hstack([fftdata[0:int(nfft/2)], np.conj(fftdata[int(nfft/2)]), fftdata[int(nfft/2):nfft]])
                         self.Dlist[dnum].fftdata[c,b,:] = fftdata
                     else: # odd nfft
                         self.Dlist[dnum].fftdata[c,b,:] = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
@@ -181,10 +181,10 @@ class FluctAna(object):
         self.Dlist[dtwo].rname = []
 
         # half (0~fN) axis
-        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:(nfft/2+1)]
+        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:int(nfft/2+1)]
         # value dimension
         val = np.zeros((cnum, bins, nfft), dtype=np.complex_)  # (full length for calculation)
-        self.Dlist[dtwo].val = np.zeros((cnum, (nfft/2+1)))  # (half length for return)
+        self.Dlist[dtwo].val = np.zeros((cnum, int(nfft/2+1)))  # (half length for return)
 
         # calculation loop for multi channels
         for c in range(cnum):
@@ -216,7 +216,7 @@ class FluctAna(object):
             # average over bins
             Pxy = np.mean(val[c,:,:], 0)
             # result saved in val
-            self.Dlist[dtwo].val[c,:] = np.abs(Pxy[0:(nfft/2+1)]).real
+            self.Dlist[dtwo].val[c,:] = np.abs(Pxy[0:int(nfft/2+1)]).real
 
             # std saved in std
 
@@ -235,10 +235,10 @@ class FluctAna(object):
         self.Dlist[dtwo].rname = []
 
         # half (0~fN) axis
-        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:(nfft/2+1)]
+        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:int(nfft/2+1)]
         # value dimension
         val = np.zeros((cnum, bins, nfft), dtype=np.complex_)  # (full length for calculation)
-        self.Dlist[dtwo].val = np.zeros((cnum, (nfft/2+1)))  # (half length for return)
+        self.Dlist[dtwo].val = np.zeros((cnum, int(nfft/2+1)))  # (half length for return)
 
         # calculation loop for multi channels
         for c in range(cnum):
@@ -273,7 +273,7 @@ class FluctAna(object):
             # average over bins
             Gxy = np.mean(val[c,:,:], 0)
             # results saved in val
-            self.Dlist[dtwo].val[c,:] = np.abs(Gxy[0:(nfft/2+1)]).real
+            self.Dlist[dtwo].val[c,:] = np.abs(Gxy[0:int(nfft/2+1)]).real
 
     def cross_phase(self, done, dtwo, dc=0):
         # IN : data number one (ref), data number two (cmp)
@@ -293,10 +293,10 @@ class FluctAna(object):
         self.Dlist[dtwo].dist = np.zeros(cnum)
 
         # half (0~fN) axis
-        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:(nfft/2+1)]
+        self.Dlist[dtwo].ax = self.Dlist[dtwo].ax[0:int(nfft/2+1)]
         # value dimension
         val = np.zeros((cnum, bins, nfft), dtype=np.complex_)  # (full length for calculation)
-        self.Dlist[dtwo].val = np.zeros((cnum, (nfft/2+1)))  # (half length for return)
+        self.Dlist[dtwo].val = np.zeros((cnum, int(nfft/2+1)))  # (half length for return)
 
         # calculation loop for multi channels
         for c in range(cnum):
@@ -332,7 +332,7 @@ class FluctAna(object):
             # average over bins
             Pxy = np.mean(val[c,:,:], 0)
             # result saved in val
-            self.Dlist[dtwo].val[c,:] = np.arctan2(Pxy[0:(nfft/2+1)].imag, Pxy[0:(nfft/2+1)].real).real
+            self.Dlist[dtwo].val[c,:] = np.arctan2(Pxy[0:int(nfft/2+1)].imag, Pxy[0:int(nfft/2+1)].real).real
 
             # std saved in std
 
