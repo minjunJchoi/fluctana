@@ -14,7 +14,7 @@ import math
 from kstarecei import *
 from kstarmir import *
 from kstarmds import *
-from diiiddata import *
+#from diiiddata import *  # needs pidly
 
 from filtdata import FiltData
 

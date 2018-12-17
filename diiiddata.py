@@ -26,11 +26,11 @@ class DiiidData():
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
-            print 'data is not normalized'
+            print('data is not normalized')
         elif norm == 1:
-            print 'data is normalized by trange average'
+            print('data is normalized by trange average')
         elif norm == 2:
-            print 'data is normalized by atrange average'
+            print('data is normalized by atrange average')
 
         self.trange = trange
 
@@ -42,7 +42,7 @@ class DiiidData():
 
             # set node
             if cname in VAR_NODE:
-                node ='%s' % (VAR_NODE[cname])
+                node ='{:s}'.format(VAR_NODE[cname])
             else:
                 node = cname
 
@@ -51,10 +51,10 @@ class DiiidData():
                 #idl.pro('gadat,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
                 idl.pro('gadat2,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
                 time, v = idl.time, idl.data
-                print "Read %d - %s (number of data points = %d)" % (self.shot, node, len(v))
+                print("Read {:d} - {:s} (number of data points = {:d})".format(self.shot, node, len(v)))
             except:
                 time, v = None, None
-                print "Failed   %s" % node
+                print("Failed   {:s}".format(node))
 
             # [ms] -> [s]
             time = time/1000.0
