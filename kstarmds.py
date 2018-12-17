@@ -209,8 +209,8 @@ def find_tree(cname):
 if __name__ == "__main__":
     pass
 
-    # g = KstarMds()
-    # g.get_data(shot=17245,trange=[0,10],clist=['neAVGM'])
+    # g = KstarMds(shot=17245,clist=['neAVGM'])
+    # g.get_data(trange=[0,10])
     # plt.plot(g.time, g.data[0,:], color='k')
     # plt.show()
     # g.close
