@@ -11,6 +11,8 @@ from MDSplus import Connection
 from MDSplus import DisconnectFromMds
 from MDSplus._mdsshr import MdsException
 
+from kstarecei import KstarEcei
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -41,6 +43,11 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
 
 # nodes NOT support segment reading in 2018
 NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
+
+
+# ECE frequency 2016--2018
+FreqECE = [110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 109, 110] 
+
 
 class KstarMds(Connection):
     def __init__(self, shot ,clist):
@@ -140,6 +147,10 @@ class KstarMds(Connection):
         return time, data
 
     def channel_position(self):  # Needs updates ####################
+        if 'ECE' in self.clist[0]: # ECE cold resonance
+            E = KstarEcei(self.shot, ['ECEI_GT1201'])
+            self.bt = E.bt
+
         cnum = len(self.clist)
         self.rpos = np.arange(cnum, dtype=np.float64)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
@@ -155,6 +166,10 @@ class KstarMds(Connection):
                 self.rpos[c] = self.get(rnode).data()[0]
             except:
                 pass
+            
+            # ECE 2nd harmonics cold resonance
+            if 'ECE' in self.clist[0]:
+                self.rpos[c] = 1.80*27.99*2*self.bt/(FreqECE[c])
 
     def meas_error(self):  # Needs updates ####################
         cnum = len(self.clist)
