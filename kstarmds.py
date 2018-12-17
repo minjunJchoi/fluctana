@@ -48,6 +48,9 @@ NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
 # ECE frequency 2016--2018
 FreqECE = [110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 109, 110] 
 
+# TS position 2018
+PosCoreTS = [1807, 1830, 1851, 1874, 1897, 1920, 1943, 1968, 1993, 2018, 2043, 2070, 2096, 2124]
+PosEdgeTS = [2106, 2124, 2138, 2156, 2173, 2190, 2208, 2223, 2241, 2260, 2276, 2295, 2310]
 
 class KstarMds(Connection):
     def __init__(self, shot ,clist):
@@ -72,14 +75,15 @@ class KstarMds(Connection):
         tree = find_tree(self.clist[0])
         try:
             self.openTree(tree,self.shot)
+            print('Open tree {:s}'.format(tree))
         except:
             print('Failed to open tree {:s}'.format(tree))
             time, data = None, None
             return time, data
-        print('Open tree {:s}'.format(tree))
 
         # --- loop starts --- #
-        for i, cname in enumerate(self.clist):
+        clist_temp = self.clist.copy()
+        for i, cname in enumerate(clist_temp):
 
             # get MDSplus node from channel name
             if cname in VAR_NODE:
@@ -95,6 +99,10 @@ class KstarMds(Connection):
                 snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
                 tnode = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
 
+            if 'ECE' in clist_temp[0]:
+                snode = '\{:s}'.format(node)
+                tnode = 'dim_of(\{:s})'.format(node)
+
             # post processing for data
             if node in POST_NODE:
                 pnode = POST_NODE[node]
@@ -104,14 +112,16 @@ class KstarMds(Connection):
             # data node name
             dnode = snode + pnode
 
-            # get data
             try:
+                # get data
                 time = self.get(tnode).data()
                 v = self.get(dnode).data()
                 print('Read {:s} (number of data points = {:d})'.format(dnode, len(v)))
             except:
                 time, v = None, None
-                print('Failed   {:s}'.format(dnode))
+                self.clist.remove(cname)
+                print('Failed   {:s}. {:s} is removed'.format(dnode, cname))
+                continue
 
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))
@@ -119,7 +129,8 @@ class KstarMds(Connection):
             idx2 = int(idx[0][-1]+2)
             time = time[idx1:idx2]
             v = v[idx1:idx2]
-
+              
+            # normalize if necessary
             if norm == 1:
                 v = v/np.mean(v) - 1
 
@@ -151,36 +162,48 @@ class KstarMds(Connection):
             E = KstarEcei(self.shot, ['ECEI_GT1201'])
             self.bt = E.bt
 
+        # read from MDSplus node
         cnum = len(self.clist)
         self.rpos = np.arange(cnum, dtype=np.float64)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
         for c in range(cnum):
-            # Mirnov coils
-            rnode = 'nothing'
             if 'CES' in self.clist[0]: # CES
-                rnode = '\CES_RT{:02d}'.format(c+1) 
+                rnode = '\{:s}RT{:}'.format(self.clist[c][:4],self.clist[c][6:])
             elif 'ECE' in self.clist[0]: # ECE
-                rnode = '\ECE{:02d}:RPOS2ND'.format(c+1)
+                rnode = '\{:s}:RPOS2ND'.format(self.clist[c])
+            
             try:
                 self.rpos[c] = self.get(rnode).data()[0]
             except:
                 pass
             
-            # ECE 2nd harmonics cold resonance
+            # ECE 2018 2nd harmonics cold resonance
             if 'ECE' in self.clist[0]:
-                self.rpos[c] = 1.80*27.99*2*self.bt/(FreqECE[c])
+                cECE = int(self.clist[c][3:5])
+                self.rpos[c] = 1.80*27.99*2*self.bt/(FreqECE[cECE-1])
+
+            # TS 2018 position
+            if 'TS' in self.clist[0]:
+                dTS = self.clist[c][3:7]
+                prec = self.clist[c].split(':')[0]
+                if len(prec) == 8:
+                    cTS = int(prec[7:8])
+                elif len(prec) == 9:
+                    cTS = int(prec[7:9])
+                if dTS == 'CORE':
+                    self.rpos[c] = PosCoreTS[cTS-1]/1000.0
+                elif dTS == 'EDGE':
+                    self.rpos[c] = PosEdgeTS[cTS-1]/1000.0
 
     def meas_error(self):  # Needs updates ####################
+        # read from MDSplus node
         cnum = len(self.clist)
         self.err = np.zeros(cnum)  # measurement error
         for c in range(cnum):
-            # Mirnov coils
-            # ECE
-            if 'CES_VT' in self.clist[0]: # CES_VT
-                enode = '\CES_VT{:02d}:err_bar'.format(c+1) 
-            elif 'CES_TI' in self.clist[0]: # CES_TI
-                enode = '\CES_TI{:02d}:err_bar'.format(c+1) 
+            if 'CES' in self.clist[0]: # CES
+                enode = '\{:s}:err_bar'.format(self.clist[c])
+
             try:
                 self.err[c] = np.mean(self.get(enode).data())
             except:
