@@ -99,7 +99,7 @@ class KstarMds(Connection):
                 snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
                 tnode = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
 
-            if 'ECE' in clist_temp[0]:
+            if 'ECE' in clist_temp[0]: # do not use setTimeContext for ECE
                 snode = '\{:s}'.format(node)
                 tnode = 'dim_of(\{:s})'.format(node)
 
@@ -118,7 +118,6 @@ class KstarMds(Connection):
                 v = self.get(dnode).data()
                 print('Read {:s} (number of data points = {:d})'.format(dnode, len(v)))
             except:
-                time, v = None, None
                 self.clist.remove(cname)
                 print('Failed   {:s}. {:s} is removed'.format(dnode, cname))
                 continue
@@ -159,7 +158,7 @@ class KstarMds(Connection):
 
     def channel_position(self):  # Needs updates ####################
         if 'ECE' in self.clist[0]: # ECE cold resonance
-            E = KstarEcei(self.shot, ['ECEI_GT1201'])
+            E = KstarEcei(self.shot, ['ECEI_GT1201']) # to get Bt info
             self.bt = E.bt
 
         # read from MDSplus node
@@ -179,12 +178,12 @@ class KstarMds(Connection):
                 pass
             
             # ECE 2018 2nd harmonics cold resonance
-            if 'ECE' in self.clist[0]:
+            if 'ECE' in self.clist[0] and self.shot > 19390:
                 cECE = int(self.clist[c][3:5])
                 self.rpos[c] = 1.80*27.99*2*self.bt/(FreqECE[cECE-1])
 
             # TS 2018 position
-            if 'TS' in self.clist[0]:
+            if 'TS' in self.clist[0] and self.shot > 19390:
                 dTS = self.clist[c][3:7]
                 prec = self.clist[c].split(':')[0]
                 if len(prec) == 8:
