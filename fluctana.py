@@ -152,17 +152,8 @@ class FluctAna(object):
             cnum = len(self.Dlist[dnum].data)
             for c in range(cnum):
                 x = np.copy(self.Dlist[dnum].data[c,:])
-                if name == 'FIR_pass' and fH == 0: # high pass filter: original - low pass
-                    filter = FiltData(name, self.Dlist[dnum].fs, fH, fL, b)
-                    x = np.convolve(x, filter.coef)
-                    N = int(np.ceil(4/b))
-                    self.Dlist[dnum].data[c,:] -= x[int(N/2):int(N/2+len(self.Dlist[dnum].data[c,:]))]  
-                else:
-                    filter = FiltData(name, self.Dlist[dnum].fs, fL, fH, b)
-                    x = np.convolve(x, filter.coef)
-                    N = int(np.ceil(4/b))
-                    #self.Dlist[dnum].data[c,:] = x[0:(len(self.Dlist[dnum].data[c,:]))] # no shift correction  
-                    self.Dlist[dnum].data[c,:] = x[int(N/2):int(N/2+len(self.Dlist[dnum].data[c,:]))] # shift correction
+                filter = FiltData(name, self.Dlist[dnum].fs, fL, fH, b)
+                self.Dlist[dnum].data[c,:] = filter.apply(x)
 
             print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 

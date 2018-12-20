@@ -20,19 +20,28 @@ class FiltData(object):
         self.fH = fH
         self.b = b
 
+        # For FIR filters
         N = int(np.ceil((4 / b)))
         if not N % 2: N += 1
+        self.N = N
 
-        self.coef = np.ones(N)
-
+        self.fir_coef = np.ones(N)
         if name == 'FIR_pass' and fL == 0:
-            self.coef = self.fir_lowpass(float(fH/fs), N) 
+            self.fir_coef = self.fir_lowpass(float(fH/fs), N) 
         elif name == 'FIR_pass' and fH == 0:
-            self.coef = self.fir_highpass(float(fH/fs), N)
-#        elif name == 'FIR_pass' and fL != 0 and fH != 0:
-#            self.coef = self.fir_bandpass(fL/fs, fH/fs, N)
+            self.fir_coef = self.fir_lowpass(float(fL/fs), N)
         elif name == 'FIR_block':
-            self.coef = self.fir_bandblock(fL/fs, fH/fs, N)
+            self.fir_coef = self.fir_bandblock(fL/fs, fH/fs, N)
+
+    def apply(self, x):
+        # FIR filter
+        xlp = np.convolve(x, self.fir_coef)
+        if self.name == 'FIR_pass' and self.fH == 0: # high pass filter
+            x -= xlp[int(self.N/2):int(self.N/2 + len(x))]
+        else:
+            x = xlp[int(self.N/2):int(self.N/2 + len(x))]
+        
+        return x
 
     def fir_lowpass(self, fc, N):
         n = np.arange(N)
@@ -48,24 +57,6 @@ class FiltData(object):
 
         return h
 
-#    def fir_bandpass(self, fL, fH, N):  # do not use due to delay
-#        n = np.arange(N)
-
-#        # Compute a low-pass filter with cutoff frequency fH.
-#        hlpf = np.sinc(2 * fH * (n - (N - 1) / 2.))
-#        hlpf *= np.blackman(N)
-#        hlpf = hlpf / np.sum(hlpf)
-#        # Compute a high-pass filter with cutoff frequency fL.
-#        hhpf = np.sinc(2 * fL * (n - (N - 1) / 2.))
-#        hhpf *= np.blackman(N)
-#        hhpf = hhpf / np.sum(hhpf)
-#        hhpf = -hhpf
-#        hhpf[(N - 1) / 2] += 1
-#        # Convolve both filters.
-#        h = np.convolve(hlpf, hhpf)
-
-#        return h
-
     def fir_bandblock(self, fL, fH, N):
         n = np.arange(N)
 
@@ -78,8 +69,10 @@ class FiltData(object):
         hhpf *= np.blackman(N)
         hhpf /= np.sum(hhpf)
         hhpf = -hhpf
-        hhpf[(N - 1) / 2] += 1
+        hhpf[int((N - 1) / 2)] += 1
         # Add both filters.
         h = hlpf + hhpf
 
         return h
+
+
