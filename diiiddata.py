@@ -38,7 +38,8 @@ class DiiidData():
         idl = pidly.IDL('/fusion/usc/opt/idl/idl84/bin/idl')
 
         # --- loop starts --- #
-        for i, cname in enumerate(self.clist):
+        clist_temp = self.clist.copy()
+        for i, cname in enumerate(clist_temp):
 
             # set node
             if cname in VAR_NODE:
@@ -53,8 +54,9 @@ class DiiidData():
                 time, v = idl.time, idl.data
                 print("Read {:d} - {:s} (number of data points = {:d})".format(self.shot, node, len(v)))
             except:
-                time, v = None, None
+                self.clist.remove(cname)
                 print("Failed   {:s}".format(node))
+                continue
 
             # [ms] -> [s]
             time = time/1000.0
