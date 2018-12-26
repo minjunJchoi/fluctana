@@ -100,8 +100,8 @@ class KstarMds(Connection):
                 tnode = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
 
             if 'ECE' in clist_temp[0]: # do not use setTimeContext for ECE
-                snode = '\{:s}'.format(node)
-                tnode = 'dim_of(\{:s})'.format(node)
+                snode = 'setTimeContext(*,*,*),\{:s}'.format(node)
+                tnode = 'setTimeContext(*,*,*),dim_of(\{:s})'.format(node)
 
             # post processing for data
             if node in POST_NODE:
@@ -116,10 +116,10 @@ class KstarMds(Connection):
                 # get data
                 time = self.get(tnode).data()
                 v = self.get(dnode).data()
-                print('Read {:s} (number of data points = {:d})'.format(dnode, len(v)))
+                print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
             except:
                 self.clist.remove(cname)
-                print('Failed   {:s}. {:s} is removed'.format(dnode, cname))
+                print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                 continue
 
             # set data size

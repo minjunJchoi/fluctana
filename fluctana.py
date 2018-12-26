@@ -22,7 +22,8 @@ import matplotlib.pyplot as plt
 
 #CM = plt.cm.get_cmap('RdYlBu_r')
 #CM = plt.cm.get_cmap('spectral')
-CM = plt.cm.get_cmap('YlGn')
+#CM = plt.cm.get_cmap('YlGn')
+CM = plt.cm.get_cmap('jet')
 
 
 class FluctAna(object):
