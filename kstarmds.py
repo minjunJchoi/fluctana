@@ -82,7 +82,7 @@ class KstarMds(Connection):
             return time, data
 
         # --- loop starts --- #
-        clist_temp = self.clist.copy()
+        clist_temp = self.clist[:]
         for i, cname in enumerate(clist_temp):
 
             # get MDSplus node from channel name
