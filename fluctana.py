@@ -350,7 +350,7 @@ class FluctAna(object):
         nch = len(self.Dlist[dnum].data)
         row = 4
         col = math.ceil(nch/(row+0.1))
-
+        print(row, col)
         for i in cnum:
             # set axes
             if i == 0:
