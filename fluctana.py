@@ -348,8 +348,8 @@ class FluctAna(object):
 
         # plot dimension
         nch = len(self.Dlist[dnum].data)
-        row = 4.0
-        col = math.ceil(nch/row)
+        row = 4
+        col = math.ceil(nch/(row+0.1))
 
         for i in cnum:
             # set axes
