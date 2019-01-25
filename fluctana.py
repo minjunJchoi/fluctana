@@ -354,6 +354,7 @@ class FluctAna(object):
         for i in cnum:
             # set axes
             if i == 0:
+                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
                 ax1 = plt.subplot(row,col,i+1)
                 if type == 'time':
                     axprops = dict(sharex = ax1)
