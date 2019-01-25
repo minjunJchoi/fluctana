@@ -403,7 +403,7 @@ class FluctAna(object):
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Cross phase [rad]')
 
-            plt.show()
+        plt.show()
 
     def oplot(self, dnum, cnum, type='time', **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
