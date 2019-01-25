@@ -347,10 +347,10 @@ class FluctAna(object):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         # plot dimension
-        nch = len(self.Dlist[dnum].data)
-        row = 4
-        col = math.ceil(nch/(row+0.1))
-        print(row, col)
+        nch = len(cnum)
+        row = 4.0
+        col = math.ceil(nch/row)
+
         for i in cnum:
             # set axes
             if i == 0:
