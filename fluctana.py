@@ -384,10 +384,11 @@ class FluctAna(object):
             else:
                 plt.xlim([pbase[0], pbase[-1]])
 
+            chpos = '{:.1f}:{:.1f}'.format(self.Dlist[dnum].rpos[i]*100, self.Dlist[dnum].zpos[i]*100) # [cm]
             if type == 'time':
-                plt.title('SHOT = {:d}, {:s}'.format(pshot, pname), fontsize=10)
+                plt.title('#{:d}, {:s}, {:s}'.format(pshot, pname, chpos), fontsize=10)
             elif type == 'val':
-                plt.title('SHOT = {:d}, {:s}-{:s}'.format(pshot, rname, pname), fontsize=10)
+                plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             if type == 'time':
                 plt.xlabel('Time [s]')
