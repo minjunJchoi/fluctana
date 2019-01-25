@@ -348,7 +348,7 @@ class FluctAna(object):
 
         # plot dimension
         nch = len(self.Dlist[dnum].data)
-        row = 8.0
+        row = 4.0
         col = math.ceil(nch/row)
 
         for i in cnum:
@@ -384,7 +384,7 @@ class FluctAna(object):
             else:
                 plt.xlim([pbase[0], pbase[-1]])
 
-            chpos = '{:.1f}:{:.1f}'.format(self.Dlist[dnum].rpos[i]*100, self.Dlist[dnum].zpos[i]*100) # [cm]
+            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dnum].rpos[i]*100, self.Dlist[dnum].zpos[i]*100) # [cm]
             if type == 'time':
                 plt.title('#{:d}, {:s}, {:s}'.format(pshot, pname, chpos), fontsize=10)
             elif type == 'val':
