@@ -330,11 +330,39 @@ class FluctAna(object):
 
             # std saved in std
 
+    def xspec(self):
+
+        pass
+
+
+
+
+
+
+
+#### default plot functions ####
+
     def mplot(self, dnum, cnum, type='time', **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
+        # plot dimension
+        nch = len(self.Dlist[dnum].data)
+        row = 8.0
+        col = math.ceil(nch/row)
+
         for i in cnum:
+            # set axes
+            if i == 0:
+                ax1 = plt.subplot(row,col,i+1)
+                if type == 'time':
+                    axprops = dict(sharex = ax1)
+                else:
+                    axprops = dict(sharex = ax1, sharey = ax1)
+            else:
+                plt.subplot(row,col,i+1, **axprops)
+
+            # set data
             if type == 'time':
                 pbase = self.Dlist[dnum].time
                 pdata = self.Dlist[dnum].data[i,:]
@@ -436,7 +464,7 @@ class FluctAna(object):
             pname = self.Dlist[dnum].clist[i]
             pshot = self.Dlist[dnum].shot
 
-            pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov, 
+            pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov,
                                                 xextent=[pbase[0], pbase[-1]], cmap=CM)  # spectrum
 
             maxP = math.log(np.amax(pxx),10)*10
