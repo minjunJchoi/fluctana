@@ -35,23 +35,23 @@ class KstarMir(object):
         self.fname = "{:s}{:06d}/MIR.{:06d}.h5".format(self.data_path, shot, shot)
 
         # get attributes
-        with h5py.File(self.fname, 'r') as f:
-            # get attributes
-            dset = f['MIR']
-            self.tt = dset.attrs['TriggerTime'] # in [s]
-            self.toff = self.tt[0]+0.001
-            self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz] same sampling rate
-            self.bt = dset.attrs['TFcurrent']*0.0995556  # [kA] -> [T]
-            self.mfl = dset.attrs['MFL']
-            self.mirh = dset.attrs['MIRH']
-            self.mirf = dset.attrs['MIRF']
-            self.lo = dset.attrs['MLo']
-            self.rf1 = dset.attrs['MRF1']
-            self.rf2 = dset.attrs['MRF2']
-            self.rf3 = dset.attrs['MRF3']
-            self.rf4 = dset.attrs['MRF4']
-
-            print('MIR file = {}'.format(self.fname))
+        # with h5py.File(self.fname, 'r') as f:
+        #     # get attributes
+        #     dset = f['MIR']
+        #     self.tt = dset.attrs['TriggerTime'] # in [s]
+        #     self.toff = self.tt[0]+0.001
+        #     self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz] same sampling rate
+        #     self.bt = dset.attrs['TFcurrent']*0.0995556  # [kA] -> [T]
+        #     self.mfl = dset.attrs['MFL']
+        #     self.mirh = dset.attrs['MIRH']
+        #     self.mirf = dset.attrs['MIRF']
+        #     self.lo = dset.attrs['MLo']
+        #     self.rf1 = dset.attrs['MRF1']
+        #     self.rf2 = dset.attrs['MRF2']
+        #     self.rf3 = dset.attrs['MRF3']
+        #     self.rf4 = dset.attrs['MRF4']
+        #
+        #     print('MIR file = {}'.format(self.fname))
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.01], res=0):
         self.trange = trange
