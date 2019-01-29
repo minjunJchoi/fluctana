@@ -71,20 +71,48 @@ C = FluctAna()
 # C.xspec(thres=0.5)
 
 
-## Local SKw
-shot = 10186
-trange = [15.7,15.85]
-norm = 1
-# ref data
-clist = ['ECEI_L1003', 'ECEI_L1103', 'ECEI_L1203', 'ECEI_L1303', 'ECEI_L1403']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# cmp data
-clist = ['ECEI_L1103', 'ECEI_L1203', 'ECEI_L1303', 'ECEI_L1403', 'ECEI_L1503']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# fft
-C.fftbins(nfft=745, window='hann', overlap=0.5, detrend=0, full=1)
-# calculate with default options (single channel)
-C.skw()
+# ## Local SKw
+# shot = 10186
+# trange = [15.7,15.85]
+# norm = 1
+# # ref data
+# clist = ['ECEI_L1003', 'ECEI_L1103', 'ECEI_L1203', 'ECEI_L1303', 'ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # cmp data
+# clist = ['ECEI_L1103', 'ECEI_L1203', 'ECEI_L1303', 'ECEI_L1403', 'ECEI_L1503']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # fft
+# C.fftbins(nfft=745, window='hann', overlap=0.5, detrend=0, full=1)
+# # calculate with default options (single channel)
+# C.skw()
+# # C.cross_phase()
+# # C.mplot(dnum=1, cnl=[3], type='val')
 
+
+## Bicoherence
+
+
+## High order moments
+
+
+## Hurst number
+
+
+## BP probability (Rosso PRL 2007)
+
+
+## Multi-fractal analysis (Carreras PoP 2000)
+
+
+## Wavelet bicoherence
+
+
+## Transfer entropy
+
+
+## Nonlinear energy transfer
+
+
+## Threshold FFT
 
 # print(C.Dlist[0].tt, C.Dlist[0].toff, C.Dlist[0].bt, C.Dlist[0].fs, C.Dlist[0].mode, C.Dlist[0].lo, C.Dlist[0].sz, C.Dlist[0].sf)
