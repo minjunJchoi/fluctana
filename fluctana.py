@@ -326,7 +326,10 @@ class FluctAna(object):
 
         # plot dimension
         nch = len(self.Dlist[dtwo].data)
-        row = int(nch/4.0)*4 + 1
+        if nch < 4:
+            row = nch
+        else:
+            row = 4
         col = math.ceil(nch/row)
 
         for i in range(len(ctwo)):
@@ -373,15 +376,10 @@ class FluctAna(object):
             # thresholding
             pdata[(pdata < minP + dP*thres)] = -100
 
-            plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')  # plot
-
-            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dtwo].rpos[ctwo[i]]*100, self.Dlist[dtwo].zpos[ctwo[i]]*100) # [cm]
-            plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+            plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
 
             plt.clim([minP+dP*0.30, maxP])
             plt.colorbar()
-
-            print(np.amax(pdata), np.amin(pdata))
 
             if 'flimits' in kwargs:  # flimits
                 plt.ylim([flimits[0], flimits[1]])
@@ -390,8 +388,10 @@ class FluctAna(object):
             else:
                 plt.xlim([ptime[0], ptime[-1]])
 
+            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dtwo].rpos[ctwo[i]]*100, self.Dlist[dtwo].zpos[ctwo[i]]*100) # [cm]
+            plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
             plt.xlabel('Time [s]')
-            plt.ylabel('Frequency [Hz]')
+            plt.ylabel('Frequency [kHz]')
 
         plt.show()
 
@@ -500,16 +500,110 @@ class FluctAna(object):
             self.Dlist[dtwo].val[c,:] = cxy.real
             # std saved in std
 
+    def skw(self, done=0, dtwo=1, kstep=0.01):
+        # pairs of done and dtwo
+        # kstep [cm^-1]
 
-#### default plot functions ####
+        self.Dlist[dtwo].vkind = 'local_SKw'
 
-    def mplot(self, dnum, cnl, type='time', **kwargs):
+        rnum = len(self.Dlist[done].data)  # number of ref channels
+        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        bins = self.Dlist[dtwo].bins  # number of bins
+        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+
+        # reference channel names
+        self.Dlist[dtwo].rname = []
+
+        # distance
+        self.Dlist[dtwo].dist = np.zeros(cnum)
+        for c in range(cnum):
+            self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
+            (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
+
+        # k-axes
+        dmin = self.Dlist[dtwo].dist.min()*100 # [cm]
+        kax = np.arange(-np.pi/dmin, np.pi/dmin, kstep) # [cm^-1]
+        self.Dlist[dtwo].kax = kax
+
+        nkax = len(kax)
+        nfft = len(self.Dlist[dtwo].ax)
+
+        # value dimension
+        Pxx = np.zeros((bins, nfft), dtype=np.complex_)
+        Pyy = np.zeros((bins, nfft), dtype=np.complex_)
+        Kxy = np.zeros((bins, nfft), dtype=np.complex_)
+        val = np.zeros((cnum, nkax, nfft), dtype=np.complex_)
+        self.Dlist[dtwo].val = np.zeros((nkax, nfft))
+        sklw = np.zeros((nkax, nfft), dtype=np.complex_)
+        K = np.zeros((cnum, nfft), dtype=np.complex_)
+        sigK = np.zeros((cnum, nfft), dtype=np.complex_)
+
+        # calculation loop for multi channels
+        for c in range(cnum):
+            # reference channel number
+            self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
+            print(self.Dlist[dtwo].rname[c])
+
+            # calculate auto power and cross phase (wavenumber)
+            for b in range(bins):
+                X = self.Dlist[done].fftdata[c,b,:]
+                Y = self.Dlist[dtwo].fftdata[c,b,:]
+
+                Pxx[b,:] = X*np.matrix.conjugate(X) / win_factor
+                Pyy[b,:] = Y*np.matrix.conjugate(Y) / win_factor
+                Pxy = X*np.matrix.conjugate(Y)
+                Kxy[b,:] = np.arctan2(Pxy.imag, Pxy.real).real / (self.Dlist[dtwo].dist[c]*100) # [cm^-1]
+
+                # calculate SKw
+                for w in range(nfft):
+                    idx = (Kxy[b,w] - kstep/2 < kax) * (kax < Kxy[b,w] + kstep/2)
+                    val[c,:,w] = val[c,:,w] + (1/bins*(Pxx[b,w] + Pyy[b,w])/2) * idx
+
+            # calculate moments
+            sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
+            K[c, :] = np.sum(np.transpose(np.tile(kax, (nfft,1))) * sklw, 0)
+            for w in range(nfft):
+                sigK[c,w] = np.sqrt(np.sum( (kax - K[c,w])**2 * sklw[:,w] ))
+
+        self.Dlist[dtwo].val[:,:] = np.mean(val, 0).real
+        self.Dlist[dtwo].K = np.mean(K, 0)
+        self.Dlist[dtwo].sigK = np.mean(sigK, 0)
+
+        pshot = self.Dlist[dtwo].shot
+        pfreq = self.Dlist[dtwo].ax/1000
+        pdata = self.Dlist[dtwo].val + 1e-10
+
+        pdata = np.log10(pdata)
+
+        plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
+
+        plt.colorbar()
+
+        chpos = '{:.1f}, {:.1f}'.format(np.mean(self.Dlist[dtwo].rpos*100), np.mean(self.Dlist[dtwo].zpos*100)) # [cm]
+        plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
+        plt.xlabel('Frequency [kHz]')
+        plt.ylabel('Local wavenumber [rad/cm]')
+
+        # plt.plot(pfreq, self.Dlist[dtwo].K, 'k')
+        # plt.plot(pfreq, self.Dlist[dtwo].K + self.Dlist[dtwo].sigK, 'r')
+        # plt.plot(pfreq, self.Dlist[dtwo].K - self.Dlist[dtwo].sigK, 'r')
+
+        plt.show()
+
+
+
+############################# default plot functions #############################
+
+    def mplot(self, dnum=1, cnl=[0], type='time', **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         # plot dimension
         nch = len(cnl)
-        row = int(nch/4.0)*4 + 1
+        if nch < 4:
+            row = nch
+        else:
+            row = 4
         col = math.ceil(nch/row)
 
         for i in range(nch):
