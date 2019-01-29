@@ -28,6 +28,7 @@ class KstarEcei(object):
             self.data_path = '/eceidata/exp_2013/'
         elif 9741 < shot and shot < 11723:
             self.data_path = '/eceidata/exp_2014/'
+            self.data_path = '/Volumes/myNFRI/temp/'  # for test
         elif 12272 < shot and shot < 14942:
             self.data_path = '/eceidata/exp_2015/'
         elif 14941 < shot and shot < 17356:
@@ -288,7 +289,7 @@ class KstarEcei(object):
                    np.array([[1,0],[0,1.52]])).dot(
                    np.array([[1,30],[0,1]])).dot(
                    np.array([[1,0],[0,1/1.52]])).dot(
-                   np.array([[1,4940-(4520+30)],[0,1]]))               
+                   np.array([[1,4940-(4520+30)],[0,1]]))
         elif self.dev == 'GR':
             sp = 2300 - Rinit*1000
             abcd = np.array([[1,sp+(1954-sz)],[0,1]]).dot(

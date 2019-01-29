@@ -166,7 +166,7 @@ class FluctAna(object):
             print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
 
-    def cross_power(self, done, dtwo):
+    def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
 
@@ -212,7 +212,7 @@ class FluctAna(object):
             self.Dlist[dtwo].val[c,:] = np.abs(Pxy).real
             # std saved in std
 
-    def coherence(self, done, dtwo):
+    def coherence(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
 
@@ -257,7 +257,7 @@ class FluctAna(object):
             # results saved in val
             self.Dlist[dtwo].val[c,:] = np.abs(Gxy).real
 
-    def cross_phase(self, done, dtwo):
+    def cross_phase(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp)
         # OUT : x-axis (ax), y-axis (val)
 
@@ -326,7 +326,7 @@ class FluctAna(object):
 
         # plot dimension
         nch = len(self.Dlist[dtwo].data)
-        row = 1.0
+        row = int(nch/4.0)*4 + 1
         col = math.ceil(nch/row)
 
         for i in range(len(ctwo)):
@@ -395,7 +395,110 @@ class FluctAna(object):
 
         plt.show()
 
+    def corr(self, done=0, dtwo=1):
+        # reguire full FFT
+        # positive time lag = cmp is fater than ref (delay in ref)
+        self.Dlist[dtwo].vkind = 'correlation'
 
+        rnum = len(self.Dlist[done].data)  # number of ref channels
+        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        bins = self.Dlist[dtwo].bins  # number of bins
+        nfft = self.Dlist[dtwo].nfft
+        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+
+        # reference channel names
+        self.Dlist[dtwo].rname = []
+
+        # axes
+        fs = round(1/(self.Dlist[dtwo].time[1] - self.Dlist[dtwo].time[0])/1000)*1000.0
+        self.Dlist[dtwo].ax = int(nfft/2)*1.0/fs*np.linspace(1,-1,nfft)
+
+        # value dimension
+        val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
+        self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
+
+        # calculation loop for multi channels
+        for c in range(cnum):
+            # reference channel number
+            if rnum == 1:
+                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
+            else:
+                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
+
+            # calculate cross power for each channel and each bins
+            for b in range(bins):
+                if rnum == 1:  # single reference channel
+                    X = self.Dlist[done].fftdata[0,b,:]
+                else:  # number of ref channels = number of cmp channels
+                    X = self.Dlist[done].fftdata[c,b,:]
+
+                Y = self.Dlist[dtwo].fftdata[c,b,:]
+
+                val[b,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
+                val[b,:] = np.fft.ifft(val[b,:], n=nfft)*nfft
+                val[b,:] = np.fft.fftshift(val[b,:])
+
+            # average over bins
+            Cxy = np.mean(val, 0)
+            # result saved in val
+            self.Dlist[dtwo].val[c,:] = Cxy.real
+            # std saved in std
+
+    def corr_coef(self, done=0, dtwo=1):
+        # reguire full FFT
+        # positive time lag = cmp is fater than ref (delay in ref)
+        self.Dlist[dtwo].vkind = 'corr_coef'
+
+        rnum = len(self.Dlist[done].data)  # number of ref channels
+        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        bins = self.Dlist[dtwo].bins  # number of bins
+        nfft = self.Dlist[dtwo].nfft
+        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+
+        # reference channel names
+        self.Dlist[dtwo].rname = []
+
+        # axes
+        fs = round(1/(self.Dlist[dtwo].time[1] - self.Dlist[dtwo].time[0])/1000)*1000.0
+        self.Dlist[dtwo].ax = int(nfft/2)*1.0/fs*np.linspace(1,-1,nfft)
+
+        # value dimension
+        val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
+        self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
+
+        # calculation loop for multi channels
+        for c in range(cnum):
+            # reference channel number
+            if rnum == 1:
+                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
+            else:
+                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
+
+            # calculate cross power for each channel and each bins
+            for b in range(bins):
+                if rnum == 1:  # single reference channel
+                    X = self.Dlist[done].fftdata[0,b,:]
+                else:  # number of ref channels = number of cmp channels
+                    X = self.Dlist[done].fftdata[c,b,:]
+
+                Y = self.Dlist[dtwo].fftdata[c,b,:]
+
+                x = np.fft.ifft(np.fft.ifftshift(X), n=nfft)*nfft/np.sqrt(win_factor)
+                Rxx = np.mean(x**2)
+                y = np.fft.ifft(np.fft.ifftshift(Y), n=nfft)*nfft/np.sqrt(win_factor)
+                Ryy = np.mean(y**2)
+
+                val[b,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
+                val[b,:] = np.fft.ifft(val[b,:], n=nfft)*nfft
+                val[b,:] = np.fft.fftshift(val[b,:])
+
+                val[b,:] = val[b,:]/np.sqrt(Rxx*Ryy)
+
+            # average over bins
+            cxy = np.mean(val, 0)
+            # result saved in val
+            self.Dlist[dtwo].val[c,:] = cxy.real
+            # std saved in std
 
 
 #### default plot functions ####
@@ -406,7 +509,7 @@ class FluctAna(object):
 
         # plot dimension
         nch = len(cnl)
-        row = 4.0
+        row = int(nch/4.0)*4 + 1
         col = math.ceil(nch/row)
 
         for i in range(nch):
@@ -426,7 +529,10 @@ class FluctAna(object):
                 pbase = self.Dlist[dnum].time
                 pdata = self.Dlist[dnum].data[cnl[i],:]
             elif type == 'val':
-                pbase = self.Dlist[dnum].ax/1000
+                if self.Dlist[dnum].vkind == 'correlation' or self.Dlist[dnum].vkind == 'corr_coef':
+                    pbase = self.Dlist[dnum].ax*1e6
+                else:
+                    pbase = self.Dlist[dnum].ax/1000
                 pdata = self.Dlist[dnum].val[cnl[i],:].real
                 rname = self.Dlist[dnum].rname[cnl[i]]
                 if self.Dlist[dnum].vkind == 'coherence':
@@ -451,10 +557,10 @@ class FluctAna(object):
 
             if type == 'time':
                 plt.xlabel('Time [s]')
-                plt.ylabel('ECEI signal')
+                plt.ylabel('Signal')
             elif type == 'val' and self.Dlist[dnum].vkind == 'cross_power':
                 plt.xlabel('Frequency [kHz]')
-                plt.ylabel('Cross power spectral density')
+                plt.ylabel('Cross power')
                 plt.yscale('log')
             elif type == 'val' and self.Dlist[dnum].vkind == 'coherence':
                 plt.xlabel('Frequency [kHz]')
@@ -462,6 +568,12 @@ class FluctAna(object):
             elif type == 'val' and self.Dlist[dnum].vkind == 'cross_phase':
                 plt.xlabel('Frequency [kHz]')
                 plt.ylabel('Cross phase [rad]')
+            elif type == 'val' and self.Dlist[dnum].vkind == 'correlation':
+                plt.xlabel('Time lag [us]')
+                plt.ylabel('Correlation')
+            elif type == 'val' and self.Dlist[dnum].vkind == 'corr_coef':
+                plt.xlabel('Time lag [us]')
+                plt.ylabel('Corr. coef.')
 
         plt.show()
 
@@ -497,10 +609,10 @@ class FluctAna(object):
 
             if type == 'time':
                 plt.xlabel('Time [s]')
-                plt.ylabel('ECEI signal')
+                plt.ylabel('Signal')
             elif type == 'val' and self.Dlist[dnum].vkind == 'cross_power':
                 plt.xlabel('Frequency [kHz]')
-                plt.ylabel('Cross power spectral density')
+                plt.ylabel('Cross power')
                 plt.yscale('log')
             elif type == 'val' and self.Dlist[dnum].vkind == 'coherence':
                 plt.xlabel('Frequency [kHz]')
