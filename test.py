@@ -3,7 +3,7 @@ from fluctana import *
 # Load modules
 C = FluctAna()
 
-# ## test xspec with test signals
+# ## xspec with test signals
 # fs = 3000.0
 # t = np.arange(0,1,1/fs)
 #
@@ -49,7 +49,7 @@ C = FluctAna()
 # C.mplot(dnum=1, cnl=[0], type='val')
 
 
-# ## xspec test with ECEI data
+# ## xspec with ECEI data
 # shot = 10186
 # trange = [15.7,15.85]
 # norm = 1
