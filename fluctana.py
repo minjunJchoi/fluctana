@@ -306,96 +306,7 @@ class FluctAna(object):
             self.Dlist[dtwo].val[c,:] = np.arctan2(Pxy.imag, Pxy.real).real
             # std saved in std
 
-    def xspec(self, done=0, cone=[0], dtwo=1, ctwo=[0], thres=0, **kwargs):
-        # IN : data number one (ref), data number two (cmp), channels to plot
-        if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
-        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
-
-        self.Dlist[dtwo].vkind = 'xspec'
-
-        rnum = len(cone)  # number of ref channels
-        bins = self.Dlist[dtwo].bins  # number of bins
-        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
-
-        # reference channel names
-        self.Dlist[dtwo].rname = []
-
-        pshot = self.Dlist[dtwo].shot
-        ptime = self.Dlist[dtwo].time
-        pfreq = self.Dlist[dtwo].ax/1000
-
-        # plot dimension
-        nch = len(self.Dlist[dtwo].data)
-        if nch < 4:
-            row = nch
-        else:
-            row = 4
-        col = math.ceil(nch/row)
-
-        for i in range(len(ctwo)):
-            # set axes
-            if i == 0:
-                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                ax1 = plt.subplot(row,col,i+1)
-                axprops = dict(sharex = ax1, sharey = ax1)
-            else:
-                plt.subplot(row,col,i+1, **axprops)
-
-            # reference channel
-            if rnum == 1:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-            else:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[cone[i]])
-            rname = self.Dlist[dtwo].rname[i]
-            # cmp channel
-            pname = self.Dlist[dtwo].clist[ctwo[i]]
-            # pdata
-            pdata = np.zeros((bins, len(self.Dlist[dtwo].ax)))  # (full length for calculation)
-            # calculate cross power for each channel and each bins
-            for b in range(bins):
-                if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].fftdata[0,b,:]
-                else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].fftdata[cone[i],b,:]
-
-                Y = self.Dlist[dtwo].fftdata[ctwo[i],b,:]
-
-                if pfreq[1] < 0:
-                    Pxy = X*np.matrix.conjugate(Y) / win_factor
-                else:
-                    Pxy = 2*X*np.matrix.conjugate(Y) / win_factor  # product 2 for half return
-
-                pdata[b,:] = np.abs(Pxy).real
-
-            pdata = np.log10(np.transpose(pdata))
-
-            maxP = np.amax(pdata)
-            minP = np.amin(pdata)
-            dP = maxP - minP
-
-            # thresholding
-            pdata[(pdata < minP + dP*thres)] = -100
-
-            plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
-
-            plt.clim([minP+dP*0.30, maxP])
-            plt.colorbar()
-
-            if 'flimits' in kwargs:  # flimits
-                plt.ylim([flimits[0], flimits[1]])
-            if 'xlimits' in kwargs:  # xlimits
-                plt.ylim([xlimits[0], xlimits[1]])
-            else:
-                plt.xlim([ptime[0], ptime[-1]])
-
-            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dtwo].rpos[ctwo[i]]*100, self.Dlist[dtwo].zpos[ctwo[i]]*100) # [cm]
-            plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
-            plt.xlabel('Time [s]')
-            plt.ylabel('Frequency [kHz]')
-
-        plt.show()
-
-    def corr(self, done=0, dtwo=1):
+    def correlation(self, done=0, dtwo=1):
         # reguire full FFT
         # positive time lag = cmp is fater than ref (delay in ref)
         self.Dlist[dtwo].vkind = 'correlation'
@@ -500,8 +411,91 @@ class FluctAna(object):
             self.Dlist[dtwo].val[c,:] = cxy.real
             # std saved in std
 
-    def skw(self, done=0, dtwo=1, kstep=0.01):
-        # pairs of done and dtwo
+    # def xspec(self, done=0, cone=[0], dtwo=1, ctwo=[0], thres=0, **kwargs):
+    def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
+        # number of cmp channels = number of ref channels
+        if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
+        self.Dlist[dtwo].vkind = 'xspec'
+
+        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        bins = self.Dlist[dtwo].bins  # number of bins
+        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+
+        # plot dimension
+        if cnum < 4:
+            row = cnum
+        else:
+            row = 4
+        col = math.ceil(cnum/row)
+
+        # reference channel names
+        self.Dlist[dtwo].rname = []
+
+        pshot = self.Dlist[dtwo].shot
+        ptime = self.Dlist[dtwo].time
+        pfreq = self.Dlist[dtwo].ax/1000
+
+        for c in range(cnum):
+            # set axes
+            if c == 0:
+                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                axes1 = plt.subplot(row,col,c+1)
+                axprops = dict(sharex = axes1, sharey = axes1)
+            else:
+                plt.subplot(row,col,c+1, **axprops)
+
+            # reference channel
+            rname = self.Dlist[done].clist[c]
+            self.Dlist[dtwo].rname.append(rname)
+            # cmp channel
+            pname = self.Dlist[dtwo].clist[c]
+            # pdata
+            pdata = np.zeros((bins, len(self.Dlist[dtwo].ax)))  # (full length for calculation)
+            # calculate cross power for each channel and each bins
+            for b in range(bins):
+                X = self.Dlist[done].fftdata[c,b,:]
+                Y = self.Dlist[dtwo].fftdata[c,b,:]
+
+                if pfreq[1] < 0:
+                    Pxy = X*np.matrix.conjugate(Y) / win_factor
+                else:
+                    Pxy = 2*X*np.matrix.conjugate(Y) / win_factor  # product 2 for half return
+
+                pdata[b,:] = np.abs(Pxy).real
+
+            pdata = np.log10(np.transpose(pdata))
+
+            maxP = np.amax(pdata)
+            minP = np.amin(pdata)
+            dP = maxP - minP
+
+            # thresholding
+            pdata[(pdata < minP + dP*thres)] = -100
+
+            plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
+
+            plt.clim([minP+dP*0.30, maxP])
+            plt.colorbar()
+
+            if 'flimits' in kwargs:  # flimits
+                plt.ylim([flimits[0], flimits[1]])
+            if 'xlimits' in kwargs:  # xlimits
+                plt.ylim([xlimits[0], xlimits[1]])
+            else:
+                plt.xlim([ptime[0], ptime[-1]])
+
+            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+            plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+            plt.xlabel('Time [s]')
+            plt.ylabel('Frequency [kHz]')
+
+        plt.show()
+
+    def skw(self, done=0, dtwo=1, kstep=0.01, **kwargs):
+        # calculate for each pair of done and dtwo and average
+        # number of cmp channels = number of ref channels
         # kstep [cm^-1]
 
         self.Dlist[dtwo].vkind = 'local_SKw'
@@ -540,9 +534,9 @@ class FluctAna(object):
 
         # calculation loop for multi channels
         for c in range(cnum):
-            # reference channel number
+            # reference channel name
             self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-            print(self.Dlist[dtwo].rname[c])
+            print(self.Dlist[dtwo].rname[c], self.Dlist[dtwo].clist[c])
 
             # calculate auto power and cross phase (wavenumber)
             for b in range(bins):
@@ -561,7 +555,7 @@ class FluctAna(object):
 
             # calculate moments
             sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
-            K[c, :] = np.sum(np.transpose(np.tile(kax, (nfft,1))) * sklw, 0)
+            K[c, :] = np.sum(np.transpose(np.tile(kax, (nfft, 1))) * sklw, 0)
             for w in range(nfft):
                 sigK[c,w] = np.sqrt(np.sum( (kax - K[c,w])**2 * sklw[:,w] ))
 
@@ -590,6 +584,92 @@ class FluctAna(object):
 
         plt.show()
 
+    def bicoherence(self, done=0, dtwo=1, **kwargs):
+        # fftbins full = 1
+        # number of cmp channels = number of ref channels
+        self.Dlist[dtwo].vkind = 'bicoherence'
+
+        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        nfft = self.Dlist[dtwo].nfft
+        bins = self.Dlist[dtwo].bins  # number of bins
+
+        # plot dimension
+        if cnum < 4:
+            row = cnum
+        else:
+            row = 4
+        col = math.ceil(cnum/row)
+
+        # reference channel names
+        self.Dlist[dtwo].rname = []
+
+        # axes
+        ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
+        ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
+        ax2 = ax2[0:int(nfft/2+1)] # half 0 ~ fN
+
+        # value dimension
+        self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
+
+        # calculation loop for multi channels
+        for c in range(cnum):
+            # reference channel name
+            rname = self.Dlist[done].clist[c]
+            self.Dlist[dtwo].rname.append(rname)
+            # cmp channel name
+            pname = self.Dlist[dtwo].clist[c]
+
+            # calculate bicoherence
+            B = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
+            P12 = np.zeros((len(ax1), len(ax2)))
+            P3 = np.zeros((len(ax1), len(ax2)))
+
+            for b in range(bins):
+                X = self.Dlist[done].fftdata[c,b,:] # full -fN ~ fN
+                Y = self.Dlist[dtwo].fftdata[c,b,:] # full -fN ~ fN
+
+                Xhalf = np.fft.ifftshift(X) # full 0 ~ fN, -fN ~ -f1
+                Xhalf = Xhalf[0:int(nfft/2+1)] # half 0 ~ fN
+
+                X1 = np.transpose(np.tile(X, (len(ax2), 1)))
+                X2 = np.tile(Xhalf, (len(ax1), 1))
+                X3 = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
+                for j in range(len(ax2)):
+                    if j == 0:
+                        X3[0:, j] = Y[j:]
+                    else:
+                        X3[0:(-j), j] = Y[j:]
+
+                B = B + X1 * X2 * np.matrix.conjugate(X3) / bins #  complex bin average
+                P12 = P12 + (np.abs(X1 * X2).real)**2 / bins # real average
+                P3 = P3 + (np.abs(X3).real)**2 / bins # real average
+
+            # self.Dlist[dtwo].val[c,:,:] = np.log10(np.abs(B)**2) # bispectrum
+            self.Dlist[dtwo].val[c,:,:] = (np.abs(B)**2) / P12 / P3 # bicoherence
+
+            # set axes
+            if c == 0:
+                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                axes1 = plt.subplot(row,col,c+1)
+                axprops = dict(sharex = axes1, sharey = axes1)
+            else:
+                plt.subplot(row,col,c+1, **axprops)
+
+            pshot = self.Dlist[dtwo].shot
+            pax1 = ax1/1000 # [kHz]
+            pax2 = ax2/1000 # [kHz]
+            pdata = self.Dlist[dtwo].val[c,:,:]
+
+            plt.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower')
+
+            plt.colorbar()
+
+            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+            plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+            plt.xlabel('F1 [kHz]')
+            plt.ylabel('F2 [kHz]')
+
+            plt.show()
 
 
 ############################# default plot functions #############################
@@ -933,6 +1013,91 @@ class FluctAna(object):
 
         plt.show()
 
+
+    def fftbins_bicoh_test(self, nfft, window, overlap, detrend, full=1):
+        # self.list_data()
+
+        for dnum in range(len(self.Dlist)):
+            # get bins and window function
+            tnum = len(self.Dlist[dnum].data[0,:])
+            bins, win = fft_window(tnum, nfft, window, overlap)
+
+            # make an x-axis #
+            dt = self.Dlist[dnum].time[1] - self.Dlist[dnum].time[0]  # time step
+            ax = np.fft.fftfreq(nfft, d=dt) # full 0~fN -fN~-f1
+            if np.mod(nfft, 2) == 0:  # even nfft
+                ax = np.hstack([ax[0:int(nfft/2)], -(ax[int(nfft/2)]), ax[int(nfft/2):nfft]])
+            if full == 1: # full shift to -fN ~ 0 ~ fN
+                ax = np.fft.fftshift(ax)
+            else: # half 0~fN
+                ax = ax[0:int(nfft/2+1)]
+            self.Dlist[dnum].ax = ax
+
+            # make fftdata
+            cnum = len(self.Dlist[dnum].data)
+            if full == 1: # full shift to -fN ~ 0 ~ fN
+                if np.mod(nfft, 2) == 0:  # even nfft
+                    self.Dlist[dnum].fftdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
+                else:  # odd nfft
+                    self.Dlist[dnum].fftdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
+            else: # half 0 ~ fN
+                self.Dlist[dnum].fftdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
+
+            pbs = 2*np.pi*(0.5 - np.random.randn(bins))
+            pcs = 2*np.pi*(0.5 - np.random.randn(bins))
+            pds = 2*np.pi*(0.5 - np.random.randn(bins))
+
+            for c in range(cnum):
+                x = self.Dlist[dnum].data[c,:]
+
+                for b in range(bins):
+                    idx1 = int(b*np.fix(nfft*(1 - overlap)))
+                    idx2 = idx1 + nfft
+
+                    sx = x[idx1:idx2]
+                    st = self.Dlist[dnum].time[idx1:idx2]
+
+                    # test signal for bicoherence test
+                    fb = 54*1000
+                    fc = 94*1000
+                    fd = fb + fc
+
+                    pb = pbs[b]
+                    pc = pcs[b]
+                    # pd = pb + pc # coherent case
+                    pd = pds[b] # non-coherent case
+
+                    sx = np.cos(2*np.pi*fb*st + pb) + np.cos(2*np.pi*fc*st + pc) + 1/2*np.cos(2*np.pi*fd*st + pd) + 1/2*np.random.randn(len(sx))
+                    sx = sx + np.cos(2*np.pi*fb*st + pb)*np.cos(2*np.pi*fc*st + pc)
+
+                    if detrend == 1:
+                        sx = signal.detrend(sx, type='linear')
+                    sx = signal.detrend(sx, type='constant')  # subtract mean
+
+                    sx = sx * win  # apply window function
+
+                    # get fft
+                    fftdata = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
+                    if np.mod(nfft, 2) == 0:  # even nfft
+                        fftdata = np.hstack([fftdata[0:int(nfft/2)], np.conj(fftdata[int(nfft/2)]), fftdata[int(nfft/2):nfft]])
+                    if full == 1: # shift to -fN ~ 0 ~ fN
+                        fftdata = np.fft.fftshift(fftdata)
+                    else: # half 0 ~ fN
+                        fftdata = fftdata[0:int(nfft/2+1)]
+                    self.Dlist[dnum].fftdata[c,b,:] = fftdata
+
+            # update attributes
+            if np.mod(nfft, 2) == 0:
+                self.Dlist[dnum].nfft = nfft + 1
+            else:
+                self.Dlist[dnum].nfft = nfft
+            self.Dlist[dnum].window = window
+            self.Dlist[dnum].overlap = overlap
+            self.Dlist[dnum].detrend = detrend
+            self.Dlist[dnum].bins = bins
+            self.Dlist[dnum].win = win
+
+            print('TEST :: dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(dnum, bins, window, nfft, overlap, detrend, full))
 
 def expand_clist(clist):
     # IN : List of channel names (e.g. 'ECEI_G1201-1208' or 'ECEI_GT1201-1208').

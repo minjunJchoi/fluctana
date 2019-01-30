@@ -7,10 +7,10 @@ C = FluctAna()
 # fs = 3000.0
 # t = np.arange(0,1,1/fs)
 #
-# A = KstarMir(12345, ['ECEI_GT1201'])
+# A = KstarEcei(10186, ['ECEI_L1201'])
 # data = np.zeros((1, len(t)), dtype=np.complex_)
-# # x1 = signal.chirp(t,300,t[-1],1300,method='quadratic')# + np.random.randn(len(t))/100
-# x1 = np.cos(2*np.pi*2*t + np.pi/8)# + np.random.randn(len(t))/100
+# x1 = signal.chirp(t,300,t[-1],1300,method='quadratic')# + np.random.randn(len(t))/100
+# # x1 = np.cos(2*np.pi*2*t + np.pi/8)# + np.random.randn(len(t))/100
 # data[0][:] = x1 - np.mean(x1)
 # A.data = data
 # A.time = t
@@ -18,10 +18,10 @@ C = FluctAna()
 # A.zpos = np.zeros(1)
 # C.Dlist.append(A)
 #
-# B = KstarMir(12345, ['ECEI_GR1201'])
+# B = KstarEcei(10186, ['ECEI_L1201'])
 # data = np.zeros((1, len(t)), dtype=np.complex_)
-# # x2 = np.exp(2.0j*np.pi*100*np.cos(2*np.pi*2*t))# + np.random.randn(len(t))/100
-# x2 = np.cos(2*np.pi*2*t)# + np.random.randn(len(t))/100
+# x2 = np.exp(2.0j*np.pi*100*np.cos(2*np.pi*2*t))# + np.random.randn(len(t))/100
+# # x2 = np.cos(2*np.pi*2*t)# + np.random.randn(len(t))/100
 # data[0][:] = x2 - np.mean(x2)
 # B.data = data
 # B.time = t
@@ -89,7 +89,20 @@ C = FluctAna()
 # # C.mplot(dnum=1, cnl=[3], type='val')
 
 
-## Bicoherence
+# ## Bicoherence
+# shot = 10186
+# trange = [15.8,15.85]
+# norm = 1
+# # ref data
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # cmp data
+# clist = ['ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # fft
+# C.fftbins_bicoh_test(nfft=249, window='hann', overlap=0.5, detrend=0, full=1)
+# # calculate cross power with default options (single channel)
+# C.bicoherence(done=0,dtwo=0) # for test
 
 
 ## High order moments
