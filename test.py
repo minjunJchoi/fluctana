@@ -44,7 +44,7 @@ C = FluctAna()
 # detrend = 0
 # full = 1
 # C.fftbins(nfft, 'hann', overlap, detrend, full=full)
-# C.corr_coef()
+# C.cross_power()
 # # C.mplot(dnum=1, cnl=[0], type='time')
 # C.mplot(dnum=1, cnl=[0], type='val')
 
@@ -121,10 +121,13 @@ C = FluctAna()
 # C.cwt(df=3000)
 
 
-## High order moments
-
-
-## Hurst number
+# ## Hurst number
+# shot = 10186
+# trange = [15.8,15.9]
+# norm = 0
+# clist = ['ECEI_L1303', 'ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# C.hurst(cnl=[0,1],bins=100)
 
 
 ## BP probability (Rosso PRL 2007)
@@ -133,15 +136,21 @@ C = FluctAna()
 ## Multi-fractal analysis (Carreras PoP 2000)
 
 
-## Wavelet bicoherence
-
-
 ## Transfer entropy
+
+
+## Wavelet bicoherence
 
 
 ## Nonlinear energy transfer
 
 
 ## Threshold FFT
+
+
+## High order moments
+
+
+
 
 # print(C.Dlist[0].tt, C.Dlist[0].toff, C.Dlist[0].bt, C.Dlist[0].fs, C.Dlist[0].mode, C.Dlist[0].lo, C.Dlist[0].sz, C.Dlist[0].sf)

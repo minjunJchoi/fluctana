@@ -90,13 +90,13 @@ class FluctAna(object):
 
         # self.list_data()
 
-        for dnum in range(len(self.Dlist)):
+        for d, D in enumerate(self.Dlist):
             # get bins and window function
-            tnum = len(self.Dlist[dnum].data[0,:])
+            tnum = len(D.data[0,:])
             bins, win = fft_window(tnum, nfft, window, overlap)
 
             # make an x-axis #
-            dt = self.Dlist[dnum].time[1] - self.Dlist[dnum].time[0]  # time step
+            dt = D.time[1] - D.time[0]  # time step
             ax = np.fft.fftfreq(nfft, d=dt) # full 0~fN -fN~-f1
             if np.mod(nfft, 2) == 0:  # even nfft
                 ax = np.hstack([ax[0:int(nfft/2)], -(ax[int(nfft/2)]), ax[int(nfft/2):nfft]])
@@ -104,20 +104,20 @@ class FluctAna(object):
                 ax = np.fft.fftshift(ax)
             else: # half 0~fN
                 ax = ax[0:int(nfft/2+1)]
-            self.Dlist[dnum].ax = ax
+            D.ax = ax
 
             # make fftdata
-            cnum = len(self.Dlist[dnum].data)
+            cnum = len(D.data)
             if full == 1: # full shift to -fN ~ 0 ~ fN
                 if np.mod(nfft, 2) == 0:  # even nfft
-                    self.Dlist[dnum].fftdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
+                    D.fftdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
                 else:  # odd nfft
-                    self.Dlist[dnum].fftdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
+                    D.fftdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
             else: # half 0 ~ fN
-                self.Dlist[dnum].fftdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
+                D.fftdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
 
             for c in range(cnum):
-                x = self.Dlist[dnum].data[c,:]
+                x = D.data[c,:]
 
                 for b in range(bins):
                     idx1 = int(b*np.fix(nfft*(1 - overlap)))
@@ -139,31 +139,31 @@ class FluctAna(object):
                         fftdata = np.fft.fftshift(fftdata)
                     else: # half 0 ~ fN
                         fftdata = fftdata[0:int(nfft/2+1)]
-                    self.Dlist[dnum].fftdata[c,b,:] = fftdata
+                    D.fftdata[c,b,:] = fftdata
 
             # update attributes
             if np.mod(nfft, 2) == 0:
-                self.Dlist[dnum].nfft = nfft + 1
+                D.nfft = nfft + 1
             else:
-                self.Dlist[dnum].nfft = nfft
-            self.Dlist[dnum].window = window
-            self.Dlist[dnum].overlap = overlap
-            self.Dlist[dnum].detrend = detrend
-            self.Dlist[dnum].bins = bins
-            self.Dlist[dnum].win = win
+                D.nfft = nfft
+            D.window = window
+            D.overlap = overlap
+            D.detrend = detrend
+            D.bins = bins
+            D.win = win
 
-            print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(dnum, bins, window, nfft, overlap, detrend, full))
+            print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
     def filt(self, name, fL, fH, b=0.08):
         # for FIR filters
-        for dnum in range(len(self.Dlist)):
-            cnum = len(self.Dlist[dnum].data)
+        for d, D in enumerate(self.Dlist):
+            cnum = len(D.data)
             for c in range(cnum):
-                x = np.copy(self.Dlist[dnum].data[c,:])
-                filter = FiltData(name, self.Dlist[dnum].fs, fL, fH, b)
-                self.Dlist[dnum].data[c,:] = filter.apply(x)
+                x = np.copy(D.data[c,:])
+                filter = FiltData(name, D.fs, fL, fH, b)
+                D.data[c,:] = filter.apply(x)
 
-            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
+            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
 
 
     def cross_power(self, done=0, dtwo=1):
@@ -414,6 +414,7 @@ class FluctAna(object):
     # def xspec(self, done=0, cone=[0], dtwo=1, ctwo=[0], thres=0, **kwargs):
     def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
         # number of cmp channels = number of ref channels
+        # add x- and y- cut plot with a given mouse input
         if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
@@ -486,8 +487,8 @@ class FluctAna(object):
             else:
                 plt.xlim([ptime[0], ptime[-1]])
 
-            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
-            plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+            plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
             plt.xlabel('Time [s]')
             plt.ylabel('Frequency [kHz]')
 
@@ -573,7 +574,7 @@ class FluctAna(object):
 
         plt.colorbar()
 
-        chpos = '{:.1f}, {:.1f}'.format(np.mean(self.Dlist[dtwo].rpos*100), np.mean(self.Dlist[dtwo].zpos*100)) # [cm]
+        chpos = '({:.1f}, {:.1f})'.format(np.mean(self.Dlist[dtwo].rpos*100), np.mean(self.Dlist[dtwo].zpos*100)) # [cm]
         plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
         plt.xlabel('Frequency [kHz]')
         plt.ylabel('Local wavenumber [rad/cm]')
@@ -664,19 +665,18 @@ class FluctAna(object):
 
             plt.colorbar()
 
-            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
-            plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+            plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
             plt.xlabel('F1 [kHz]')
             plt.ylabel('F2 [kHz]')
 
             plt.show()
 
     def cwt(self, df): ## problem in recovering the signal
-        dnum = len(self.Dlist)
-        for d in range(dnum):
+        for d, D in enumerate(self.Dlist):
             # make a t-axis
-            dt = self.Dlist[d].time[1] - self.Dlist[d].time[0]  # time step
-            tnum = len(self.Dlist[d].time)
+            dt = D.time[1] - D.time[0]  # time step
+            tnum = len(D.time)
             nfft = nextpow2(tnum) # power of 2
             t = np.arange(nfft)*dt
 
@@ -698,11 +698,11 @@ class FluctAna(object):
             ts = np.sqrt(2)*np.abs(sj) # e-folding time for Morlet wavelet with omega0 = 6
             wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
 
-            cnum = len(self.Dlist[d].data)  # number of cmp channels
+            cnum = len(D.data)  # number of cmp channels
             # value dimension
-            self.Dlist[d].cwtdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
+            D.cwtdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
             for c in range(cnum):
-                x = self.Dlist[d].data[c,:]
+                x = D.data[c,:]
 
                 # FFT of signal
                 X = np.fft.fft(x, n=nfft)/nfft
@@ -718,37 +718,41 @@ class FluctAna(object):
                     Wns[:,j] = np.fft.fftshift(np.fft.ifft(X * WF) * nfft**2)
 
                 # return resized
-                self.Dlist[d].cwtdata[c,:,:] = Wns[0:tnum,:]
+                D.cwtdata[c,:,:] = Wns[0:tnum,:]
 
                 # plot (not default)
-                pshot = self.Dlist[d].shot
-                pname = self.Dlist[d].clist[c]
-                ptime = self.Dlist[d].time
+                pshot = D.shot
+                pname = D.clist[c]
+                ptime = D.time
                 pfreq = f/1000.0
-                pdata = np.transpose(np.abs(self.Dlist[d].cwtdata[c,:,:])**2)
+                pdata = np.transpose(np.abs(D.cwtdata[c,:,:])**2)
 
                 plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
 
-                chpos = '{:.1f}, {:.1f}'.format(self.Dlist[d].rpos[c]*100, self.Dlist[d].zpos[c]*100) # [cm]
-                plt.title('#{:d}, {:s}, {:s}'.format(pshot, pname, chpos), fontsize=10)
+                chpos = '({:.1f}, {:.1f})'.format(D.rpos[c]*100, D.zpos[c]*100) # [cm]
+                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
                 plt.xlabel('Time [s]')
                 plt.ylabel('Frequency [kHz]')
 
                 plt.show()
 
-            self.Dlist[d].cwtf = f
-            self.Dlist[d].cwtdf = df
-            self.Dlist[d].cwtsj = sj
-            self.Dlist[d].cwtdj = dj
-            self.Dlist[d].cwtts = ts
+            D.cwtf = f
+            D.cwtdf = df
+            D.cwtsj = sj
+            D.cwtdj = dj
+            D.cwtts = ts
 
-
-
-############################# default plot functions #############################
-
-    def mplot(self, dnum=1, cnl=[0], type='time', **kwargs):
+    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fit_lag=[10,1000], **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
+        pshot = self.Dlist[dnum].shot
+        dt = self.Dlist[dnum].time[1] - self.Dlist[dnum].time[0]  # time step
+        fs = round(1/(dt)/1000)*1000.0 # [Hz]
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        # data dimension
+        self.Dlist[dnum].hurst = np.zeros(cnum)
 
         # plot dimension
         nch = len(cnl)
@@ -758,33 +762,119 @@ class FluctAna(object):
             row = 4
         col = math.ceil(nch/row)
 
-        for i in range(nch):
+        for i, c in enumerate(cnl):
             # set axes
             if i == 0:
                 plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                ax1 = plt.subplot(row,col,i+1)
-                if type == 'time':
-                    axprops = dict(sharex = ax1)
-                else:
-                    axprops = dict(sharex = ax1, sharey = ax1)
+                axes1 = plt.subplot(row,col,i+1)
+                axprops = dict(sharex = axes1, sharey = axes1)
             else:
                 plt.subplot(row,col,i+1, **axprops)
+
+            pname = self.Dlist[dnum].clist[c]
+            x = self.Dlist[dnum].data[c,:]
+
+            bsize = int(1.0*len(x)/bins)
+
+            ax = np.floor( 10**(np.arange(1.0,np.log10(bsize),0.01)) )
+
+            ers = np.zeros((bins, len(ax)))
+            self.Dlist[dnum].val = np.zeros((cnum, 2, len(ax)))
+
+            for b in range(bins):
+                idx1 = b*bsize
+                idx2 = idx1 + bsize
+
+                sx = x[idx1:idx2]
+
+                if detrend == 1:
+                    sx = signal.detrend(sx, type='linear')
+
+                for i in range(len(ax)):
+                    ls = int( ax[i] ) # length of each sub-region
+                    ns = int( 1.0*ax[-1]/ls ) # number of sub-region
+
+                    delta = np.zeros((ls + 1, 1))
+                    for j in range(ns):
+                        jdx1 = j*ls
+                        jdx2 = jdx1 + ls
+
+                        ssx = sx[jdx1:jdx2]
+
+                        delta[1:,0] = np.cumsum(ssx) - np.cumsum(np.ones(ls))*sum(ssx)/ls
+
+                        r = np.max(delta) - np.min(delta)
+                        s = np.sqrt(np.sum(ssx**2)/ls - (np.sum(ssx)/ls)**2)
+
+                        ers[b,i] = ers[b,i] + r/s/ns
+
+            self.Dlist[dnum].val[c, 0,:] = np.mean(ers, 0)
+            self.Dlist[dnum].val[c, 1,:] = np.std(ers, axis=0)
+
+            ptime = ax/fs*1e6 # time lag [us]
+            pdata = self.Dlist[dnum].val[c, 0,:]
+
+            plt.plot(ptime, pdata, '-x')
+
+            fidx = (fit_lag[0] <= ptime) * (ptime <= fit_lag[1])
+            fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
+            fit_data = 10**(fit[1])*ptime**(fit[0])
+            plt.plot(ptime, fit_data, 'r')
+            self.Dlist[dnum].hurst[c] = fit[0]
+
+            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
+            plt.title('#{:d}, {:s} {:s}; H={:g}'.format(pshot, pname, chpos, fit[0]), fontsize=10)
+            plt.xlabel('Time lag [us]')
+            plt.ylabel('R/S')
+
+            plt.xscale('log')
+            plt.yscale('log')
+
+        plt.show()
+
+############################# default plot functions #############################
+
+    def mplot(self, dnum=1, cnl=[0], type='time', **kwargs):
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
+        pshot = self.Dlist[dnum].shot
+
+        # plot dimension
+        nch = len(cnl)
+        if nch < 4:
+            row = nch
+        else:
+            row = 4
+        col = math.ceil(nch/row)
+
+        for i, c in enumerate(cnl):
+            # set axes
+            if i == 0:
+                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                axes1 = plt.subplot(row,col,i+1)
+                if type == 'time':
+                    axprops = dict(sharex = axes1)
+                else:
+                    axprops = dict(sharex = axes1, sharey = axes1)
+            else:
+                plt.subplot(row,col,i+1, **axprops)
+
+            pname = self.Dlist[dnum].clist[c]
 
             # set data
             if type == 'time':
                 pbase = self.Dlist[dnum].time
-                pdata = self.Dlist[dnum].data[cnl[i],:]
+                pdata = self.Dlist[dnum].data[c,:]
             elif type == 'val':
                 if self.Dlist[dnum].vkind == 'correlation' or self.Dlist[dnum].vkind == 'corr_coef':
                     pbase = self.Dlist[dnum].ax*1e6
                 else:
                     pbase = self.Dlist[dnum].ax/1000
-                pdata = self.Dlist[dnum].val[cnl[i],:].real
-                rname = self.Dlist[dnum].rname[cnl[i]]
+                pdata = self.Dlist[dnum].val[c,:].real
+                rname = self.Dlist[dnum].rname[c]
                 if self.Dlist[dnum].vkind == 'coherence':
                     plt.axhline(y=1/np.sqrt(self.Dlist[dnum].bins), color='r')
-            pname = self.Dlist[dnum].clist[cnl[i]]
-            pshot = self.Dlist[dnum].shot
 
             plt.plot(pbase, pdata)  # plot
 
@@ -795,11 +885,11 @@ class FluctAna(object):
             else:
                 plt.xlim([pbase[0], pbase[-1]])
 
-            chpos = '{:.1f}, {:.1f}'.format(self.Dlist[dnum].rpos[cnl[i]]*100, self.Dlist[dnum].zpos[cnl[i]]*100) # [cm]
+            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
             if type == 'time':
-                plt.title('#{:d}, {:s}, {:s}'.format(pshot, pname, chpos), fontsize=10)
+                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
             elif type == 'val':
-                plt.title('#{:d}, {:s}-{:s}, {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+                plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             if type == 'time':
                 plt.xlabel('Time [s]')
@@ -827,17 +917,18 @@ class FluctAna(object):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
-        for i in cnl:
+        for c in cnl:
+            pname = self.Dlist[dnum].clist[c]
+
             if type == 'time':
                 pbase = self.Dlist[dnum].time
-                pdata = self.Dlist[dnum].data[i,:]
+                pdata = self.Dlist[dnum].data[c,:]
             elif type == 'val':
                 pbase = self.Dlist[dnum].ax/1000
-                pdata = self.Dlist[dnum].val[i,:].real
-                rname = self.Dlist[dnum].rname[i]
+                pdata = self.Dlist[dnum].val[c,:].real
+                rname = self.Dlist[dnum].rname[c]
                 if i == 0 and self.Dlist[dnum].vkind == 'coherence':
                     plt.axhline(y=1/np.sqrt(self.Dlist[dnum].bins), color='r')
-            pname = self.Dlist[dnum].clist[i]
 
             plt.plot(pbase, pdata)
 
@@ -876,11 +967,11 @@ class FluctAna(object):
         fs = self.Dlist[dnum].fs
         nov = nfft*0.9
 
-        for i in cnl:
-            pbase = self.Dlist[dnum].time
-            pdata = self.Dlist[dnum].data[i,:]
-            pname = self.Dlist[dnum].clist[i]
+        for c in cnl:
             pshot = self.Dlist[dnum].shot
+            pname = self.Dlist[dnum].clist[c]
+            pbase = self.Dlist[dnum].time
+            pdata = self.Dlist[dnum].data[c,:]
 
             pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov,
                                                 xextent=[pbase[0], pbase[-1]], cmap=CM)  # spectrum
