@@ -105,6 +105,22 @@ C = FluctAna()
 # C.bicoherence(done=0,dtwo=0) # for test
 
 
+# ## Wavelet
+# A = KstarEcei(10186, ['ECEI_L1201'])
+# fs = 500000.0
+# t = np.arange(0,0.0007,1/fs)
+# data = np.zeros((1, len(t)), dtype=np.complex_)
+# x1 = signal.chirp(t,10000,t[-1],130000,method='quadratic')# + np.random.randn(len(t))/100
+# data[0][:] = x1 - np.mean(x1)
+# A.data = data
+# A.time = t
+# A.rpos = np.zeros(1)
+# A.zpos = np.zeros(1)
+# C.Dlist.append(A)
+#
+# C.cwt(df=3000)
+
+
 ## High order moments
 
 

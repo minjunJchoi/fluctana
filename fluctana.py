@@ -671,6 +671,78 @@ class FluctAna(object):
 
             plt.show()
 
+    def cwt(self, df): ## problem in recovering the signal
+        dnum = len(self.Dlist)
+        for d in range(dnum):
+            # make a t-axis
+            dt = self.Dlist[d].time[1] - self.Dlist[d].time[0]  # time step
+            tnum = len(self.Dlist[d].time)
+            nfft = nextpow2(tnum) # power of 2
+            t = np.arange(nfft)*dt
+
+            # make a f-axis
+            fs = round(1/(dt)/1000)*1000.0 # [Hz]
+            s0 = 2/fs # the smallest scale
+            fmin = 0 # fmin
+            f = np.sign(df) * np.arange(fmin, 1.0/(1.03*s0), np.abs(df))
+
+            # scales
+            old_settings = np.seterr(divide='ignore')
+            sj = 1.0/(1.03*f)
+            np.seterr(**old_settings)
+            dj = np.log2(sj/s0) / np.arange(len(sj)) # dj
+            dj[0] = 0 # remove infinity point due to fmin = 0
+
+            # Morlet wavelet function (unnormalized)
+            omega0 = 6.0 # nondimensional wavelet frequency
+            ts = np.sqrt(2)*np.abs(sj) # e-folding time for Morlet wavelet with omega0 = 6
+            wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
+
+            cnum = len(self.Dlist[d].data)  # number of cmp channels
+            # value dimension
+            self.Dlist[d].cwtdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
+            for c in range(cnum):
+                x = self.Dlist[d].data[c,:]
+
+                # FFT of signal
+                X = np.fft.fft(x, n=nfft)/nfft
+
+                # calculate
+                Wns = np.zeros((nfft, len(sj)), dtype=np.complex_)
+                for j, s in enumerate(sj):
+                    # nondimensional time axis at scale s
+                    eta = t/s
+                    # FFT of wavelet function with normalization
+                    WF = np.fft.fft(wf0(eta - np.mean(eta))*np.abs(dt/s)) / nfft
+                    # Wavelet transform at scae s for all n time
+                    Wns[:,j] = np.fft.fftshift(np.fft.ifft(X * WF) * nfft**2)
+
+                # return resized
+                self.Dlist[d].cwtdata[c,:,:] = Wns[0:tnum,:]
+
+                # plot (not default)
+                pshot = self.Dlist[d].shot
+                pname = self.Dlist[d].clist[c]
+                ptime = self.Dlist[d].time
+                pfreq = f/1000.0
+                pdata = np.transpose(np.abs(self.Dlist[d].cwtdata[c,:,:])**2)
+
+                plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
+
+                chpos = '{:.1f}, {:.1f}'.format(self.Dlist[d].rpos[c]*100, self.Dlist[d].zpos[c]*100) # [cm]
+                plt.title('#{:d}, {:s}, {:s}'.format(pshot, pname, chpos), fontsize=10)
+                plt.xlabel('Time [s]')
+                plt.ylabel('Frequency [kHz]')
+
+                plt.show()
+
+            self.Dlist[d].cwtf = f
+            self.Dlist[d].cwtdf = df
+            self.Dlist[d].cwtsj = sj
+            self.Dlist[d].cwtdj = dj
+            self.Dlist[d].cwtts = ts
+
+
 
 ############################# default plot functions #############################
 
@@ -1155,3 +1227,9 @@ def fft_window(tnum, nfft, window, overlap):
             0.000000132974*np.cos(10*z)
 
     return bins, win
+
+
+def nextpow2(i):
+    n = 1
+    while n < i: n *= 2
+    return n
