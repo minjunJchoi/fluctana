@@ -125,12 +125,18 @@ C = FluctAna()
 # shot = 10186
 # trange = [15.8,15.9]
 # norm = 0
-# clist = ['ECEI_L1303', 'ECEI_L1403']
+# clist = ['ECEI_L1303']
 # C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# C.hurst(cnl=[0,1],bins=100)
+# C.hurst(cnl=[0],bins=100,fitlims=[10,1000])
 
 
 ## BP probability (Rosso PRL 2007)
+shot = 10186
+trange = [15.01,15.02]
+norm = 0
+clist = ['ECEI_L1303', 'ECEI_L1403']
+C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+C.chplane(cnl=[0,1], d=5, bins=1)
 
 
 ## Multi-fractal analysis (Carreras PoP 2000)

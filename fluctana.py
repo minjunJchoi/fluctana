@@ -10,6 +10,7 @@
 
 from scipy import signal
 import math
+import itertools
 
 from kstarecei import *
 from kstarmir import *
@@ -742,7 +743,7 @@ class FluctAna(object):
             D.cwtdj = dj
             D.cwtts = ts
 
-    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fit_lag=[10,1000], **kwargs):
+    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
@@ -751,9 +752,6 @@ class FluctAna(object):
         fs = round(1/(dt)/1000)*1000.0 # [Hz]
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
 
-        # data dimension
-        self.Dlist[dnum].hurst = np.zeros(cnum)
-
         # plot dimension
         nch = len(cnl)
         if nch < 4:
@@ -761,6 +759,16 @@ class FluctAna(object):
         else:
             row = 4
         col = math.ceil(nch/row)
+
+        # axis
+        bsize = int(1.0*len(self.Dlist[dnum].time)/bins)
+        ax = np.floor( 10**(np.arange(1.0,np.log10(bsize),0.01)) )
+        self.Dlist[dnum].ax = ax/fs*1e6
+
+        # data dimension
+        self.Dlist[dnum].val = np.zeros((cnum, len(ax)))
+        self.Dlist[dnum].std = np.zeros((cnum, len(ax)))
+        self.Dlist[dnum].hurst = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
             # set axes
@@ -774,12 +782,7 @@ class FluctAna(object):
             pname = self.Dlist[dnum].clist[c]
             x = self.Dlist[dnum].data[c,:]
 
-            bsize = int(1.0*len(x)/bins)
-
-            ax = np.floor( 10**(np.arange(1.0,np.log10(bsize),0.01)) )
-
             ers = np.zeros((bins, len(ax)))
-            self.Dlist[dnum].val = np.zeros((cnum, 2, len(ax)))
 
             for b in range(bins):
                 idx1 = b*bsize
@@ -808,15 +811,15 @@ class FluctAna(object):
 
                         ers[b,i] = ers[b,i] + r/s/ns
 
-            self.Dlist[dnum].val[c, 0,:] = np.mean(ers, 0)
-            self.Dlist[dnum].val[c, 1,:] = np.std(ers, axis=0)
+            self.Dlist[dnum].val[c,:] = np.mean(ers, 0)
+            self.Dlist[dnum].std[c,:] = np.std(ers, axis=0)
 
-            ptime = ax/fs*1e6 # time lag [us]
-            pdata = self.Dlist[dnum].val[c, 0,:]
+            ptime = self.Dlist[dnum].ax # time lag [us]
+            pdata = self.Dlist[dnum].val[c,:]
 
             plt.plot(ptime, pdata, '-x')
 
-            fidx = (fit_lag[0] <= ptime) * (ptime <= fit_lag[1])
+            fidx = (fitlims[0] <= ptime) * (ptime <= fitlims[1])
             fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
             fit_data = 10**(fit[1])*ptime**(fit[0])
             plt.plot(ptime, fit_data, 'r')
@@ -831,6 +834,108 @@ class FluctAna(object):
             plt.yscale('log')
 
         plt.show()
+
+    def chplane(self, dnum=0, cnl=[0], d=6, bins=30, **kwargs):
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
+        self.Dlist[dnum].vkind = 'BP_probability'
+
+        pshot = self.Dlist[dnum].shot
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        # plot dimension
+        nch = len(cnl)
+        if nch < 4:
+            row = nch
+        else:
+            row = 4
+        col = math.ceil(nch/row)
+
+        # axis
+        nst = math.factorial(d) # number of possible states
+        ax = np.arange(nst) + 1 # state number
+        self.Dlist[dnum].ax = ax
+
+        bsize = int(1.0*len(self.Dlist[dnum].time)/bins)
+        print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
+
+        # possible orders
+        orders = np.empty((0,d))
+        for p in itertools.permutations(np.arange(d)):
+            orders = np.append(orders,np.atleast_2d(p),axis=0)
+
+        # data dimension
+        self.Dlist[dnum].val = np.zeros((cnum, nst))
+        self.Dlist[dnum].std = np.zeros((cnum, nst))
+        self.Dlist[dnum].jscom = np.zeros(cnum)
+        self.Dlist[dnum].nsent = np.zeros(cnum)
+        self.Dlist[dnum].pment = np.zeros(cnum)
+
+        for i, c in enumerate(cnl):
+            # set axes
+            if i == 0:
+                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                axes1 = plt.subplot(row,col,i+1)
+                axprops = dict(sharex = axes1, sharey = axes1)
+            else:
+                plt.subplot(row,col,i+1, **axprops)
+
+            pname = self.Dlist[dnum].clist[c]
+
+            x = self.Dlist[dnum].data[c,:]
+
+            val = np.zeros((nst, bins))
+
+            for b in range(bins):
+                idx1 = b*bsize
+                idx2 = idx1 + bsize
+
+                sx = x[idx1:idx2]
+
+                # calculate permutation probability
+                jnum = len(sx) - d + 1
+                for j in range(jnum):
+                    ssx = sx[j:(j+d)]
+
+                    sso = np.argsort(ssx)
+                    bingo = np.sum(np.abs(orders - np.tile(sso, (nst, 1))), 1) == 0
+                    val[bingo, b] = val[bingo, b] + 1.0/jnum
+
+            pi = np.mean(val, 1) # bin averaged pi
+            pierr = np.std(val, 1)
+            pio = np.argsort(-pi)
+
+            self.Dlist[dnum].val[c,:] = pi[pio]     # bin averaged sorted pi
+            self.Dlist[dnum].std[c,:] = pierr[pio]
+
+            # Jensen Shannon complexity, normalized Shannon entropy, Permutation entropy
+            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c], self.Dlist[dnum].pment[c] = complexity_measure(pi, nst)
+
+            # plot BP probability
+            pax = self.Dlist[dnum].ax
+            pdata = self.Dlist[dnum].val[c,:]
+
+            plt.plot(pax, pdata, '-x')
+
+            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
+            plt.title('#{:d}, {:s} {:s}; C={:g}, H={:g}'.format(pshot, pname, chpos, self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c]), fontsize=10)
+            plt.xlabel('order number')
+            plt.ylabel('BP probability')
+
+            plt.yscale('log')
+
+        plt.show()
+
+        # plot CH plane
+        plt.plot(self.Dlist[dnum].nsent, self.Dlist[dnum].jscom, '-o')
+
+        plt.xlabel('Entropy (H)')
+        plt.ylabel('Complexity (C)')
+
+        plt.show()
+
+
 
 ############################# default plot functions #############################
 
@@ -1324,3 +1429,21 @@ def nextpow2(i):
     n = 1
     while n < i: n *= 2
     return n
+
+
+def complexity_measure(pi, nst):
+    # complexity, entropy measure with a given BP probability
+    pinz = pi[pi != 0]
+    spi = np.sum(-pinz * np.log2(pinz)) # permutation entropy
+    pe = np.ones(nst)/nst
+    spe = np.sum(-pe * np.log2(pe))
+    pieh = (pi + pe)/2
+    spieh = np.sum(-pieh * np.log2(pieh))
+    hpi = spi/np.log2(nst) # normalized Shannon entropy
+
+    # Jensen Shannon complexity
+    jscom = -2*(spieh - spi/2 - spe/2)/((nst + 1.0)/nst*np.log2(nst+1) - 2*np.log2(2*nst) + np.log2(nst))*hpi
+    nsent = hpi
+    pment = spi
+
+    return jscom, nsent, pment
