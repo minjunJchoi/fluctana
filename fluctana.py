@@ -762,7 +762,7 @@ class FluctAna(object):
 
         # axis
         bsize = int(1.0*len(self.Dlist[dnum].time)/bins)
-        ax = np.floor( 10**(np.arange(1.0,np.log10(bsize),0.01)) )
+        ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
         self.Dlist[dnum].ax = ax/fs*1e6
 
         # data dimension
@@ -836,6 +836,9 @@ class FluctAna(object):
         plt.show()
 
     def chplane(self, dnum=0, cnl=[0], d=6, bins=30, **kwargs):
+        # CH plane [Rosso PRL 2007]
+        # chaotic : moderate C and H, above fBm
+        # stochastic : low C and high H, below fBm
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
@@ -935,7 +938,122 @@ class FluctAna(object):
 
         plt.show()
 
+    def intermittency(self, dnum=0, cnl=[0], bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], **kwargs):
+        # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
+        # this ranges from 0 (mono-fractal) to 1
+        # add D fitting later
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
+        self.Dlist[dnum].vkind = 'intermittency'
+
+        pshot = self.Dlist[dnum].shot
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        # axis
+        qax = np.arange(-2,8,qstep) # order axis
+        N = len(self.Dlist[dnum].time)
+        Tmax = int( N/(bins - overlap*(bins - 1.0)) ) # minimum bin -> maximum data length
+        Tax = np.floor( 10**(np.arange(1, np.log10(Tmax), 0.1)) ) # sub-data length axis
+        nTax = Tax/N # normalized axis
+
+        # data dimension
+        eTq = np.zeros((cnum, len(Tax), len(qax)))
+        K = np.zeros((cnum, len(qax)))
+        C = np.zeros((cnum, len(qax)))
+        D = np.zeros((cnum, len(qax)))
+
+        for i, c in enumerate(cnl):
+            # first axes
+            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+            axes1 = plt.subplot(5,1,1)
+
+            pname = self.Dlist[dnum].clist[c]
+
+            x = self.Dlist[dnum].data[c,:]
+            x = signal.detrend(x, type='linear')
+
+            plt.plot(self.Dlist[dnum].time, x)
+
+            ndxe = (x - np.mean(x))**2 / np.mean((x - np.mean(x))**2) # Eq.(7)
+
+            for t, T in enumerate(Tax): # loop over different length T
+                bins = int( N/(T - overlap*(T-1)) ) # number of bins with length T
+
+                eT = np.zeros(bins)
+                bstep = int(T*(1 - overlap))
+                for j in range(bins):
+                    idx1 = j*bstep
+                    idx2 = int(idx1 + T)
+
+                    eT[j] = np.mean(ndxe[idx1:idx2]) # Eq.(9)
+
+                # calculate moments
+                for k, q in enumerate(qax):
+                    eTq[c, t, k] = np.mean(eT**(q)) # Eq.(10)
+
+            # second axes
+            plt.subplot(5,1,2)
+            # calculate K
+            for k, q in enumerate(qax):
+                plt.plot(nTax, eTq[c,:,k], 'o')
+
+                # fit range
+                nT1 = fitlims[0]/N
+                nT2 = fitlims[1]/N
+                idx = (nT1 < nTax) * (nTax < nT2)
+
+                lx = np.log(nTax[idx])
+                ly = np.log(eTq[c,idx,k])
+
+                fit = np.polyfit(lx, ly, 1)
+                fit_func = np.poly1d(fit)
+                K[c,k] = -fit[0]
+
+                fx = np.arange(nTax.min(), nTax.max(), 1.0/N)
+                fy = np.exp(fit_func(np.log(fx)))
+                plt.plot(fx, fy)
+
+                plt.axvline(x=nT1, color='r')
+                plt.axvline(x=nT2, color='r')
+
+            plt.title('Linear fit of loglog plot is -K(q)')
+            plt.xlabel('T/N')
+            plt.ylabel('eTq moments')
+            plt.xscale('log')
+            plt.yscale('log')
+
+            # third axes
+            plt.subplot(5,1,3)
+            plt.plot(qax, K[c,:], '-o')
+            plt.xlabel('q')
+            plt.ylabel('K(q)')
+
+            # calculate C and D
+            for k, q in enumerate(qax):
+                if (0.9 <= q) and (q <= 1.1):
+                    Kgrad = np.gradient(K[c,:], qax[1] - qax[0])
+                    C[c,k] = Kgrad[k]
+
+                    print('C({:g}) intermittency parameter is {:g}'.format(q, C[c,k]))
+                else:
+                    C[c,k] = K[c,k] / (q - 1)
+
+                D[c,k] = 1 - C[c,k]
+
+            # fourth axes
+            plt.subplot(5,1,4)
+            plt.plot(qax, C[c,:], '-o')
+            plt.xlabel('q')
+            plt.ylabel('C(q)')
+
+            # fifth axes
+            plt.subplot(5,1,5)
+            plt.plot(qax, D[c,:], '-o')
+            plt.xlabel('q')
+            plt.ylabel('D(q)')
+
+            plt.show()
 
 ############################# default plot functions #############################
 
