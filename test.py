@@ -139,13 +139,14 @@ C = FluctAna()
 # C.chplane(cnl=[0,1], d=5, bins=1)
 
 
-## Multi-fractal analysis (Carreras PoP 2000)
-shot = 10186
-trange = [15.1,15.17]
-norm = 0
-clist = ['ECEI_L1303']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-C.intermittency()
+# ## Multi-fractal analysis (Carreras PoP 2000)
+# shot = 10186
+# trange = [15.1,15.17]
+# norm = 0
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# C.intermittency()
+
 
 ## Wavelet bicoherence
 

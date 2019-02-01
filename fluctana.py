@@ -85,6 +85,8 @@ class FluctAna(object):
 
         self.list_data()
 
+############################# fft spectral methods #############################
+
     def fftbins(self, nfft, window, overlap, detrend, full=0):
         # IN : self, data set number, nfft, window name, detrend or not
         # OUT : bins x N FFT of time series data; frequency axis
@@ -154,18 +156,6 @@ class FluctAna(object):
             D.win = win
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
-
-    def filt(self, name, fL, fH, b=0.08):
-        # for FIR filters
-        for d, D in enumerate(self.Dlist):
-            cnum = len(D.data)
-            for c in range(cnum):
-                x = np.copy(D.data[c,:])
-                filter = FiltData(name, D.fs, fL, fH, b)
-                D.data[c,:] = filter.apply(x)
-
-            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
-
 
     def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -673,6 +663,8 @@ class FluctAna(object):
 
             plt.show()
 
+############################# wavelet spectral methods #########################
+
     def cwt(self, df): ## problem in recovering the signal
         for d, D in enumerate(self.Dlist):
             # make a t-axis
@@ -742,6 +734,8 @@ class FluctAna(object):
             D.cwtsj = sj
             D.cwtdj = dj
             D.cwtts = ts
+
+############################# statistical methods ##############################
 
     def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
@@ -1055,7 +1049,20 @@ class FluctAna(object):
 
             plt.show()
 
-############################# default plot functions #############################
+############################# data filtering functions #########################
+
+    def filt(self, name, fL, fH, b=0.08):
+        # for FIR filters
+        for d, D in enumerate(self.Dlist):
+            cnum = len(D.data)
+            for c in range(cnum):
+                x = np.copy(D.data[c,:])
+                filter = FiltData(name, D.fs, fL, fH, b)
+                D.data[c,:] = filter.apply(x)
+
+            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
+
+############################# default plot functions ###########################
 
     def mplot(self, dnum=1, cnl=[0], type='time', **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
@@ -1399,6 +1406,7 @@ class FluctAna(object):
 
         plt.show()
 
+############################# test functions ###################################
 
     def fftbins_bicoh_test(self, nfft, window, overlap, detrend, full=1):
         # self.list_data()
