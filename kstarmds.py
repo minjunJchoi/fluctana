@@ -122,6 +122,9 @@ class KstarMds(Connection):
                 print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                 continue
 
+            if tree == 'EFIT01':
+                time = time*0.001
+
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))
             idx1 = int(idx[0][0])
