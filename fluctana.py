@@ -14,7 +14,7 @@ import itertools
 
 from kstarecei import *
 from kstarmir import *
-# from kstarmds import *
+from kstarmds import *
 #from diiiddata import *  # needs pidly
 
 from filtdata import FiltData
