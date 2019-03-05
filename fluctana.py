@@ -14,9 +14,10 @@ import itertools
 
 from kstarecei import *
 from kstarmir import *
-from kstarmds import *
+#from kstarmds import *
 #from diiiddata import *  # needs pidly
 
+import spec as sp
 from filtdata import FiltData
 
 import matplotlib.pyplot as plt
@@ -95,19 +96,9 @@ class FluctAna(object):
 
         for d, D in enumerate(self.Dlist):
             # get bins and window function
-            tnum = len(D.data[0,:])
-            bins, win = fft_window(tnum, nfft, window, overlap)
-
-            # make an x-axis #
+            tnum = len(D.time)
+            bins, win = sp.fft_window(tnum, nfft, window, overlap)
             dt = D.time[1] - D.time[0]  # time step
-            ax = np.fft.fftfreq(nfft, d=dt) # full 0~fN -fN~-f1
-            if np.mod(nfft, 2) == 0:  # even nfft
-                ax = np.hstack([ax[0:int(nfft/2)], -(ax[int(nfft/2)]), ax[int(nfft/2):nfft]])
-            if full == 1: # full shift to -fN ~ 0 ~ fN
-                ax = np.fft.fftshift(ax)
-            else: # half 0~fN
-                ax = ax[0:int(nfft/2+1)]
-            D.ax = ax
 
             # make fftdata
             cnum = len(D.data)
@@ -121,28 +112,7 @@ class FluctAna(object):
 
             for c in range(cnum):
                 x = D.data[c,:]
-
-                for b in range(bins):
-                    idx1 = int(b*np.fix(nfft*(1 - overlap)))
-                    idx2 = idx1 + nfft
-
-                    sx = x[idx1:idx2]
-
-                    if detrend == 1:
-                        sx = signal.detrend(sx, type='linear')
-                    sx = signal.detrend(sx, type='constant')  # subtract mean
-
-                    sx = sx * win  # apply window function
-
-                    # get fft
-                    fftdata = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
-                    if np.mod(nfft, 2) == 0:  # even nfft
-                        fftdata = np.hstack([fftdata[0:int(nfft/2)], np.conj(fftdata[int(nfft/2)]), fftdata[int(nfft/2):nfft]])
-                    if full == 1: # shift to -fN ~ 0 ~ fN
-                        fftdata = np.fft.fftshift(fftdata)
-                    else: # half 0 ~ fN
-                        fftdata = fftdata[0:int(nfft/2+1)]
-                    D.fftdata[c,b,:] = fftdata
+                D.ax, D.fftdata[c,:,:] = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
 
             # update attributes
             if np.mod(nfft, 2) == 0:
@@ -165,14 +135,11 @@ class FluctAna(object):
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bins = self.Dlist[dtwo].bins  # number of bins
-        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
 
         # reference channel names
         self.Dlist[dtwo].rname = []
 
         # value dimension
-        val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
         self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
 
         # calculation loop for multi channels
@@ -180,28 +147,17 @@ class FluctAna(object):
             # reference channel number
             if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
+                XX = self.Dlist[done].fftdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
+                XX = self.Dlist[done].fftdata[c,:,:]
 
-            # calculate cross power for each channel and each bins
-            for b in range(bins):
-                if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].fftdata[0,b,:]
-                else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].fftdata[c,b,:]
+            YY = self.Dlist[dtwo].fftdata[c,:,:]
 
-                Y = self.Dlist[dtwo].fftdata[c,b,:]
-
-                if self.Dlist[dtwo].ax[1] < 0: # full range
-                    val[b,:] = X*np.matrix.conjugate(Y) / win_factor
-                else: # half
-                    val[b,:] = 2*X*np.matrix.conjugate(Y) / win_factor  # product 2 for half return
-
-            # average over bins
-            Pxy = np.mean(val, 0)
-            # result saved in val
-            self.Dlist[dtwo].val[c,:] = np.abs(Pxy).real
-            # std saved in std
+            if self.Dlist[dtwo].ax[1] < 0: # full range
+                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win)
+            else: # half
+                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win)  # product 2 for half return
 
     def coherence(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -211,13 +167,11 @@ class FluctAna(object):
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bins = self.Dlist[dtwo].bins  # number of bins
 
         # reference channel names
         self.Dlist[dtwo].rname = []
 
         # value dimension
-        val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
         self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
 
         # calculation loop for multi channels
@@ -225,28 +179,14 @@ class FluctAna(object):
             # reference channel names
             if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
+                XX = self.Dlist[done].fftdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
+                XX = self.Dlist[done].fftdata[c,:,:]
 
-            # calculate cross power for each channel and each bins
-            for b in range(bins):
-                if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].fftdata[0,b,:]
-                else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].fftdata[c,b,:]
+            YY = self.Dlist[dtwo].fftdata[c,:,:]
 
-                Y = self.Dlist[dtwo].fftdata[c,b,:]
-
-                Pxx = X * np.matrix.conjugate(X)
-                Pyy = Y * np.matrix.conjugate(Y)
-
-                val[b,:] = X*np.matrix.conjugate(Y) / np.sqrt(Pxx*Pyy)
-                # saturated data gives zero Pxx!!
-
-            # average over bins
-            Gxy = np.mean(val, 0)
-            # results saved in val
-            self.Dlist[dtwo].val[c,:] = np.abs(Gxy).real
+            self.Dlist[dtwo].val[c,:] = sp.coherence(XX, YY)
 
     def cross_phase(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp)
@@ -256,7 +196,7 @@ class FluctAna(object):
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bins = self.Dlist[dtwo].bins  # number of bins
+        # bins = self.Dlist[dtwo].bins  # number of bins
 
         # reference channel names
         self.Dlist[dtwo].rname = []
@@ -265,7 +205,6 @@ class FluctAna(object):
         self.Dlist[dtwo].dist = np.zeros(cnum)
 
         # value dimension
-        val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
         self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
 
         # calculation loop for multi channels
@@ -275,27 +214,16 @@ class FluctAna(object):
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
                 self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
                 (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
+                XX = self.Dlist[done].fftdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
                 self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
                 (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
+                XX = self.Dlist[done].fftdata[c,:,:]
 
-            # calculate cross power for each channel and each bins
-            for b in range(bins):
-                if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].fftdata[0,b,:]
-                else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].fftdata[c,b,:]
+            YY = self.Dlist[dtwo].fftdata[c,:,:]
 
-                Y = self.Dlist[dtwo].fftdata[c,b,:]
-
-                val[b,:] = X*np.matrix.conjugate(Y)
-
-            # average over bins
-            Pxy = np.mean(val, 0)
-            # result saved in val
-            self.Dlist[dtwo].val[c,:] = np.arctan2(Pxy.imag, Pxy.real).real
-            # std saved in std
+            self.Dlist[dtwo].val[c,:] = sp.cross_phase(XX, YY)
 
     def correlation(self, done=0, dtwo=1):
         # reguire full FFT
@@ -1523,32 +1451,6 @@ def expand_clist(clist):
     clist = exp_clist
 
     return clist
-
-
-def fft_window(tnum, nfft, window, overlap):
-    # IN : full length of time series, nfft, window name, overlap ratio
-    # OUT : bins, 1 x nfft window function
-
-    # use overlapping
-    bins = int(np.fix((int(tnum/nfft) - overlap)/(1.0 - overlap)))
-
-    # window function
-    if window == 'rectwin':  # overlap = 0.5
-        win = np.ones(nfft)
-    elif window == 'hann':  # overlap = 0.5
-        win = np.hanning(nfft)
-    elif window == 'hamm':  # overlap = 0.5
-        win = np.hamming(nfft)
-    elif window == 'kaiser':  # overlap = 0.62
-        win = np.kaiser(nfft, beta=30)
-    elif window == 'HFT248D':  # overlap = 0.84
-        z = 2*np.pi/nfft*np.arange(0,nfft)
-        win = 1 - 1.985844164102*np.cos(z) + 1.791176438506*np.cos(2*z) - 1.282075284005*np.cos(3*z) + \
-            0.667777530266*np.cos(4*z) - 0.240160796576*np.cos(5*z) + 0.056656381764*np.cos(6*z) - \
-            0.008134974479*np.cos(7*z) + 0.000624544650*np.cos(8*z) - 0.000019808998*np.cos(9*z) + \
-            0.000000132974*np.cos(10*z)
-
-    return bins, win
 
 
 def nextpow2(i):
