@@ -757,7 +757,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def chplane(self, dnum=0, cnl=[0], d=6, bins=30, **kwargs):
+    def chplane(self, dnum=0, cnl=[0], d=6, bins=30, verbose=1, **kwargs):
         # CH plane [Rosso PRL 2007]
         # chaotic : moderate C and H, above fBm
         # stochastic : low C and high H, below fBm
@@ -799,11 +799,11 @@ class FluctAna(object):
 
         for i, c in enumerate(cnl):
             # set axes
-            if i == 0:
+            if verbose == 1 and i == 0:
                 plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
                 axes1 = plt.subplot(row,col,i+1)
                 axprops = dict(sharex = axes1, sharey = axes1)
-            else:
+            elif verbose == 1 and i > 0:
                 plt.subplot(row,col,i+1, **axprops)
 
             pname = self.Dlist[dnum].clist[c]
@@ -838,27 +838,29 @@ class FluctAna(object):
             self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c], self.Dlist[dnum].pment[c] = complexity_measure(pi, nst)
 
             # plot BP probability
-            pax = self.Dlist[dnum].ax
-            pdata = self.Dlist[dnum].val[c,:]
+            if verbose == 1:
+                pax = self.Dlist[dnum].ax
+                pdata = self.Dlist[dnum].val[c,:]
 
-            plt.plot(pax, pdata, '-x')
+                plt.plot(pax, pdata, '-x')
 
-            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-            plt.title('#{:d}, {:s} {:s}; C={:g}, H={:g}'.format(pshot, pname, chpos, self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c]), fontsize=10)
-            plt.xlabel('order number')
-            plt.ylabel('BP probability')
+                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
+                plt.title('#{:d}, {:s} {:s}; C={:g}, H={:g}'.format(pshot, pname, chpos, self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c]), fontsize=10)
+                plt.xlabel('order number')
+                plt.ylabel('BP probability')
 
-            plt.yscale('log')
+                plt.yscale('log')
 
-        plt.show()
+        if verbose == 1: plt.show()
 
         # plot CH plane
-        plt.plot(self.Dlist[dnum].nsent, self.Dlist[dnum].jscom, '-o')
+        if verbose == 1:
+            plt.plot(self.Dlist[dnum].nsent, self.Dlist[dnum].jscom, '-o')
 
-        plt.xlabel('Entropy (H)')
-        plt.ylabel('Complexity (C)')
+            plt.xlabel('Entropy (H)')
+            plt.ylabel('Complexity (C)')
 
-        plt.show()
+            plt.show()
 
     def intermittency(self, dnum=0, cnl=[0], bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], **kwargs):
         # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
