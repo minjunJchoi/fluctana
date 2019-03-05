@@ -49,26 +49,26 @@ C = FluctAna()
 # C.mplot(dnum=1, cnl=[0], type='val')
 
 
-## xspec with ECEI data
-shot = 10186
-trange = [15.7,15.85]
-norm = 1
-# ref data
-clist = ['ECEI_L1303']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# cmp data
-clist = ['ECEI_L1403']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# fft
-C.fftbins(nfft=745, window='hann', overlap=0.5, detrend=0, full=0)
-# calculate with default options (single channel)
-C.cross_phase()
-# plot
-C.mplot(dnum=1, cnl=[0], type='val', ylimits=[-3,3])
-# for xspec
-C.fftbins(nfft=256, window='kaiser', overlap=0.5, detrend=0, full=1)
-# xspec
-C.xspec(thres=0.5)
+# ## xspec with ECEI data
+# shot = 10186
+# trange = [15.7,15.85]
+# norm = 1
+# # ref data
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # cmp data
+# clist = ['ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # fft
+# C.fftbins(nfft=745, window='hann', overlap=0.5, detrend=0, full=0)
+# # calculate with default options (single channel)
+# C.cross_phase()
+# # plot
+# C.mplot(dnum=1, cnl=[0], type='val', ylimits=[-3,3])
+# # for xspec
+# C.fftbins(nfft=256, window='kaiser', overlap=0.5, detrend=0, full=1)
+# # xspec
+# C.xspec(thres=0.5)
 
 
 # ## Local SKw
@@ -121,13 +121,13 @@ C.xspec(thres=0.5)
 # C.cwt(df=3000)
 
 
-# ## Hurst number
-# shot = 10186
-# trange = [15.8,15.9]
-# norm = 0
-# clist = ['ECEI_L1303']
-# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# C.hurst(cnl=[0],bins=100,fitlims=[10,1000])
+## Hurst number
+shot = 10186
+trange = [15.8,15.9]
+norm = 0
+clist = ['ECEI_L1303']
+C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+C.hurst(cnl=[0],bins=100,fitlims=[100,1000])
 
 
 # ## BP probability (Rosso PRL 2007) ## add fBm, fGn lines
