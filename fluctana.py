@@ -17,7 +17,8 @@ from kstarmir import *
 #from kstarmds import *
 #from diiiddata import *  # needs pidly
 
-import spec as sp
+import specs as sp
+import stats as st
 from filtdata import FiltData
 
 import matplotlib.pyplot as plt
@@ -704,37 +705,39 @@ class FluctAna(object):
             pname = self.Dlist[dnum].clist[c]
             x = self.Dlist[dnum].data[c,:]
 
-            ers = np.zeros((bins, len(ax)))
+            # ers = np.zeros((bins, len(ax)))
+            #
+            # for b in range(bins):
+            #     idx1 = b*bsize
+            #     idx2 = idx1 + bsize
+            #
+            #     sx = x[idx1:idx2]
+            #
+            #     if detrend == 1:
+            #         sx = signal.detrend(sx, type='linear')
+            #
+            #     for i in range(len(ax)):
+            #         ls = int( ax[i] ) # length of each sub-region
+            #         ns = int( 1.0*ax[-1]/ls ) # number of sub-region
+            #
+            #         delta = np.zeros((ls + 1, 1))
+            #         for j in range(ns):
+            #             jdx1 = j*ls
+            #             jdx2 = jdx1 + ls
+            #
+            #             ssx = sx[jdx1:jdx2]
+            #
+            #             delta[1:,0] = np.cumsum(ssx) - np.cumsum(np.ones(ls))*sum(ssx)/ls
+            #
+            #             r = np.max(delta) - np.min(delta)
+            #             s = np.sqrt(np.sum(ssx**2)/ls - (np.sum(ssx)/ls)**2)
+            #
+            #             ers[b,i] = ers[b,i] + r/s/ns
+            #
+            # self.Dlist[dnum].val[c,:] = np.mean(ers, 0)
+            # self.Dlist[dnum].std[c,:] = np.std(ers, axis=0)
 
-            for b in range(bins):
-                idx1 = b*bsize
-                idx2 = idx1 + bsize
-
-                sx = x[idx1:idx2]
-
-                if detrend == 1:
-                    sx = signal.detrend(sx, type='linear')
-
-                for i in range(len(ax)):
-                    ls = int( ax[i] ) # length of each sub-region
-                    ns = int( 1.0*ax[-1]/ls ) # number of sub-region
-
-                    delta = np.zeros((ls + 1, 1))
-                    for j in range(ns):
-                        jdx1 = j*ls
-                        jdx2 = jdx1 + ls
-
-                        ssx = sx[jdx1:jdx2]
-
-                        delta[1:,0] = np.cumsum(ssx) - np.cumsum(np.ones(ls))*sum(ssx)/ls
-
-                        r = np.max(delta) - np.min(delta)
-                        s = np.sqrt(np.sum(ssx**2)/ls - (np.sum(ssx)/ls)**2)
-
-                        ers[b,i] = ers[b,i] + r/s/ns
-
-            self.Dlist[dnum].val[c,:] = np.mean(ers, 0)
-            self.Dlist[dnum].std[c,:] = np.std(ers, axis=0)
+            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].hurst[c] = st.hurst(self.Dlist[dnum].time, x, bins, detrend, fitlims, **kwargs)
 
             ptime = self.Dlist[dnum].ax # time lag [us]
             pdata = self.Dlist[dnum].val[c,:]

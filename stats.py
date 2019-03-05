@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import signal
 
+
 def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     # axis
     bsize = int(1.0*len(t)/bins)
