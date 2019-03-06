@@ -666,13 +666,11 @@ class FluctAna(object):
 
 ############################# statistical methods ##############################
 
-    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], **kwargs):
+    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], verbose=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         pshot = self.Dlist[dnum].shot
-        dt = self.Dlist[dnum].time[1] - self.Dlist[dnum].time[0]  # time step
-        fs = round(1/(dt)/1000)*1000.0 # [Hz]
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
 
         # plot dimension
@@ -686,7 +684,6 @@ class FluctAna(object):
         # axis
         bsize = int(1.0*len(self.Dlist[dnum].time)/bins)
         ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
-        self.Dlist[dnum].ax = ax/fs*1e6
 
         # data dimension
         self.Dlist[dnum].val = np.zeros((cnum, len(ax)))
@@ -695,70 +692,41 @@ class FluctAna(object):
 
         for i, c in enumerate(cnl):
             # set axes
-            if i == 0:
+            if verbose == 1 and i == 0:
                 plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
                 axes1 = plt.subplot(row,col,i+1)
                 axprops = dict(sharex = axes1, sharey = axes1)
-            else:
+            elif verbose == 1 and i > 0:
                 plt.subplot(row,col,i+1, **axprops)
 
             pname = self.Dlist[dnum].clist[c]
+            t = self.Dlist[dnum].time
             x = self.Dlist[dnum].data[c,:]
 
-            # ers = np.zeros((bins, len(ax)))
-            #
-            # for b in range(bins):
-            #     idx1 = b*bsize
-            #     idx2 = idx1 + bsize
-            #
-            #     sx = x[idx1:idx2]
-            #
-            #     if detrend == 1:
-            #         sx = signal.detrend(sx, type='linear')
-            #
-            #     for i in range(len(ax)):
-            #         ls = int( ax[i] ) # length of each sub-region
-            #         ns = int( 1.0*ax[-1]/ls ) # number of sub-region
-            #
-            #         delta = np.zeros((ls + 1, 1))
-            #         for j in range(ns):
-            #             jdx1 = j*ls
-            #             jdx2 = jdx1 + ls
-            #
-            #             ssx = sx[jdx1:jdx2]
-            #
-            #             delta[1:,0] = np.cumsum(ssx) - np.cumsum(np.ones(ls))*sum(ssx)/ls
-            #
-            #             r = np.max(delta) - np.min(delta)
-            #             s = np.sqrt(np.sum(ssx**2)/ls - (np.sum(ssx)/ls)**2)
-            #
-            #             ers[b,i] = ers[b,i] + r/s/ns
-            #
-            # self.Dlist[dnum].val[c,:] = np.mean(ers, 0)
-            # self.Dlist[dnum].std[c,:] = np.std(ers, axis=0)
+            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:], self.Dlist[dnum].hurst[c] = \
+            st.hurst(t, x, bins, detrend, fitlims, **kwargs)
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].hurst[c] = st.hurst(self.Dlist[dnum].time, x, bins, detrend, fitlims, **kwargs)
+            if verbose == 1:
+                ptime = self.Dlist[dnum].ax # time lag [us]
+                pdata = self.Dlist[dnum].val[c,:]
 
-            ptime = self.Dlist[dnum].ax # time lag [us]
-            pdata = self.Dlist[dnum].val[c,:]
+                plt.plot(ptime, pdata, '-x')
 
-            plt.plot(ptime, pdata, '-x')
+                fidx = (fitlims[0] <= ptime) * (ptime <= fitlims[1])
+                fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
+                fit_data = 10**(fit[1])*ptime**(fit[0])
+                plt.plot(ptime, fit_data, 'r')
+                self.Dlist[dnum].hurst[c] = fit[0]
 
-            fidx = (fitlims[0] <= ptime) * (ptime <= fitlims[1])
-            fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
-            fit_data = 10**(fit[1])*ptime**(fit[0])
-            plt.plot(ptime, fit_data, 'r')
-            self.Dlist[dnum].hurst[c] = fit[0]
+                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
+                plt.title('#{:d}, {:s} {:s}; H={:g}'.format(pshot, pname, chpos, fit[0]), fontsize=10)
+                plt.xlabel('Time lag [us]')
+                plt.ylabel('R/S')
 
-            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-            plt.title('#{:d}, {:s} {:s}; H={:g}'.format(pshot, pname, chpos, fit[0]), fontsize=10)
-            plt.xlabel('Time lag [us]')
-            plt.ylabel('R/S')
+                plt.xscale('log')
+                plt.yscale('log')
 
-            plt.xscale('log')
-            plt.yscale('log')
-
-        plt.show()
+        if verbose == 1: plt.show()
 
     def chplane(self, dnum=0, cnl=[0], d=6, bins=30, verbose=1, **kwargs):
         # CH plane [Rosso PRL 2007]
@@ -780,18 +748,7 @@ class FluctAna(object):
             row = 4
         col = math.ceil(nch/row)
 
-        # axis
         nst = math.factorial(d) # number of possible states
-        ax = np.arange(nst) + 1 # state number
-        self.Dlist[dnum].ax = ax
-
-        bsize = int(1.0*len(self.Dlist[dnum].time)/bins)
-        print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
-
-        # possible orders
-        orders = np.empty((0,d))
-        for p in itertools.permutations(np.arange(d)):
-            orders = np.append(orders,np.atleast_2d(p),axis=0)
 
         # data dimension
         self.Dlist[dnum].val = np.zeros((cnum, nst))
@@ -813,32 +770,9 @@ class FluctAna(object):
 
             x = self.Dlist[dnum].data[c,:]
 
-            val = np.zeros((nst, bins))
-
-            for b in range(bins):
-                idx1 = b*bsize
-                idx2 = idx1 + bsize
-
-                sx = x[idx1:idx2]
-
-                # calculate permutation probability
-                jnum = len(sx) - d + 1
-                for j in range(jnum):
-                    ssx = sx[j:(j+d)]
-
-                    sso = np.argsort(ssx)
-                    bingo = np.sum(np.abs(orders - np.tile(sso, (nst, 1))), 1) == 0
-                    val[bingo, b] = val[bingo, b] + 1.0/jnum
-
-            pi = np.mean(val, 1) # bin averaged pi
-            pierr = np.std(val, 1)
-            pio = np.argsort(-pi)
-
-            self.Dlist[dnum].val[c,:] = pi[pio]     # bin averaged sorted pi
-            self.Dlist[dnum].std[c,:] = pierr[pio]
-
-            # Jensen Shannon complexity, normalized Shannon entropy, Permutation entropy
-            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c], self.Dlist[dnum].pment[c] = complexity_measure(pi, nst)
+            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:], \
+            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c], self.Dlist[dnum].pment[c] = \
+            st.chplane(x, d, bins, verbose, **kwargs)
 
             # plot BP probability
             if verbose == 1:
@@ -865,7 +799,7 @@ class FluctAna(object):
 
             plt.show()
 
-    def intermittency(self, dnum=0, cnl=[0], bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], **kwargs):
+    def intermittency(self, dnum=0, cnl=[0], bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], verbose=1, **kwargs):
         # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
         # this ranges from 0 (mono-fractal) to 1
         # add D fitting later
@@ -877,110 +811,13 @@ class FluctAna(object):
         pshot = self.Dlist[dnum].shot
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
 
-        # axis
-        qax = np.arange(-2,8,qstep) # order axis
-        N = len(self.Dlist[dnum].time)
-        Tmax = int( N/(bins - overlap*(bins - 1.0)) ) # minimum bin -> maximum data length
-        Tax = np.floor( 10**(np.arange(1, np.log10(Tmax), 0.1)) ) # sub-data length axis
-        nTax = Tax/N # normalized axis
-
-        # data dimension
-        eTq = np.zeros((cnum, len(Tax), len(qax)))
-        K = np.zeros((cnum, len(qax)))
-        C = np.zeros((cnum, len(qax)))
-        D = np.zeros((cnum, len(qax)))
+        self.Dlist[dnum].intmit = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            # first axes
-            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-            axes1 = plt.subplot(5,1,1)
-
-            pname = self.Dlist[dnum].clist[c]
-
+            t = self.Dlist[dnum].time
             x = self.Dlist[dnum].data[c,:]
-            x = signal.detrend(x, type='linear')
 
-            plt.plot(self.Dlist[dnum].time, x)
-
-            ndxe = (x - np.mean(x))**2 / np.mean((x - np.mean(x))**2) # Eq.(7)
-
-            for t, T in enumerate(Tax): # loop over different length T
-                bins = int( N/(T - overlap*(T-1)) ) # number of bins with length T
-
-                eT = np.zeros(bins)
-                bstep = int(T*(1 - overlap))
-                for j in range(bins):
-                    idx1 = j*bstep
-                    idx2 = int(idx1 + T)
-
-                    eT[j] = np.mean(ndxe[idx1:idx2]) # Eq.(9)
-
-                # calculate moments
-                for k, q in enumerate(qax):
-                    eTq[c, t, k] = np.mean(eT**(q)) # Eq.(10)
-
-            # second axes
-            plt.subplot(5,1,2)
-            # calculate K
-            for k, q in enumerate(qax):
-                plt.plot(nTax, eTq[c,:,k], 'o')
-
-                # fit range
-                nT1 = fitlims[0]/N
-                nT2 = fitlims[1]/N
-                idx = (nT1 < nTax) * (nTax < nT2)
-
-                lx = np.log(nTax[idx])
-                ly = np.log(eTq[c,idx,k])
-
-                fit = np.polyfit(lx, ly, 1)
-                fit_func = np.poly1d(fit)
-                K[c,k] = -fit[0]
-
-                fx = np.arange(nTax.min(), nTax.max(), 1.0/N)
-                fy = np.exp(fit_func(np.log(fx)))
-                plt.plot(fx, fy)
-
-                plt.axvline(x=nT1, color='r')
-                plt.axvline(x=nT2, color='r')
-
-            plt.title('Linear fit of loglog plot is -K(q)')
-            plt.xlabel('T/N')
-            plt.ylabel('eTq moments')
-            plt.xscale('log')
-            plt.yscale('log')
-
-            # third axes
-            plt.subplot(5,1,3)
-            plt.plot(qax, K[c,:], '-o')
-            plt.xlabel('q')
-            plt.ylabel('K(q)')
-
-            # calculate C and D
-            for k, q in enumerate(qax):
-                if (0.9 <= q) and (q <= 1.1):
-                    Kgrad = np.gradient(K[c,:], qax[1] - qax[0])
-                    C[c,k] = Kgrad[k]
-
-                    print('C({:g}) intermittency parameter is {:g}'.format(q, C[c,k]))
-                else:
-                    C[c,k] = K[c,k] / (q - 1)
-
-                D[c,k] = 1 - C[c,k]
-
-            # fourth axes
-            plt.subplot(5,1,4)
-            plt.plot(qax, C[c,:], '-o')
-            plt.xlabel('q')
-            plt.ylabel('C(q)')
-
-            # fifth axes
-            plt.subplot(5,1,5)
-            plt.plot(qax, D[c,:], '-o')
-            plt.xlabel('q')
-            plt.ylabel('D(q)')
-
-            plt.show()
+            self.Dlist[dnum].intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitlims, verbose, **kwargs)
 
 ############################# data filtering functions #########################
 
@@ -1462,21 +1299,3 @@ def nextpow2(i):
     n = 1
     while n < i: n *= 2
     return n
-
-
-def complexity_measure(pi, nst):
-    # complexity, entropy measure with a given BP probability
-    pinz = pi[pi != 0]
-    spi = np.sum(-pinz * np.log2(pinz)) # permutation entropy
-    pe = np.ones(nst)/nst
-    spe = np.sum(-pe * np.log2(pe))
-    pieh = (pi + pe)/2
-    spieh = np.sum(-pieh * np.log2(pieh))
-    hpi = spi/np.log2(nst) # normalized Shannon entropy
-
-    # Jensen Shannon complexity
-    jscom = -2*(spieh - spi/2 - spe/2)/((nst + 1.0)/nst*np.log2(nst+1) - 2*np.log2(2*nst) + np.log2(nst))*hpi
-    nsent = hpi
-    pment = spi
-
-    return jscom, nsent, pment

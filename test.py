@@ -121,13 +121,14 @@ C = FluctAna()
 # C.cwt(df=3000)
 
 
-## Hurst number
-shot = 10186
-trange = [15.8,15.9]
-norm = 0
-clist = ['ECEI_L1303']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-C.hurst(cnl=[0],bins=100,fitlims=[100,1000])
+# ## Hurst number
+# shot = 10186
+# trange = [15.8,15.9]
+# norm = 0
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# C.hurst(cnl=[0],bins=100,fitlims=[100,1000])
+# # C.hurst(cnl=[0],bins=100,fitlims=[100,1000],verbose=0)
 
 
 # ## BP probability (Rosso PRL 2007) ## add fBm, fGn lines
@@ -139,13 +140,13 @@ C.hurst(cnl=[0],bins=100,fitlims=[100,1000])
 # C.chplane(cnl=[0,1], d=5, bins=1)
 
 
-# ## Multi-fractal analysis (Carreras PoP 2000)
-# shot = 10186
-# trange = [15.1,15.17]
-# norm = 0
-# clist = ['ECEI_L1303']
-# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# C.intermittency()
+## Multi-fractal analysis (Carreras PoP 2000)
+shot = 10186
+trange = [15.1,15.17]
+norm = 0
+clist = ['ECEI_L1303']
+C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+C.intermittency()
 
 
 ## Wavelet bicoherence
