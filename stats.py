@@ -63,7 +63,7 @@ def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     return tax, val, std, hurst_exp
 
 
-def chplane(x, d=6, bins=30, verbose=1, **kwargs):
+def chplane(x, d=6, bins=30, **kwargs):
     # CH plane [Rosso PRL 2007]
     # chaotic : moderate C and H, above fBm
     # stochastic : low C and high H, below fBm
@@ -240,3 +240,25 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], v
         plt.show()
 
     return intmit
+
+
+def kurtosis(t, x, twin, tstep):
+    # taxis       
+    t1 = np.arange(t[0], t[-1]-twin, tstep)
+    t2 = np.arange(t[0]+twin, t[-1], tstep)
+    ax = np.zeros(len(t1))
+    K = np.zeros(len(t1))
+
+    # normalize
+    x = x / x[0]
+
+    for i in range(len(t1)):
+        idx = (t1[i] <= t) * (t <= t2[i])
+
+        ax[i] = np.mean(t[idx])
+
+        dx = x[idx]
+        ndx = (dx - np.mean(dx)) / np.std(dx - np.mean(dx))
+        K[i] = np.mean(ndx**4) / np.mean(ndx**2)**2 - 3
+
+    return ax, K
