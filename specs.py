@@ -33,6 +33,7 @@ def fftbins(x, dt, nfft, window, overlap, detrend, full):
     # OUT : bins x faxis fftdata
     tnum = len(x)
     bins, win = fft_window(tnum, nfft, window, overlap)
+    win_factor = np.mean(win**2)  # window factors
 
     # make an x-axis #
     ax = np.fft.fftfreq(nfft, d=dt) # full 0~fN -fN~-f1
@@ -75,13 +76,12 @@ def fftbins(x, dt, nfft, window, overlap, detrend, full):
 
         fftdata[b,:] = SX
 
-    return ax, fftdata
+    return ax, fftdata, win_factor
 
 
-def cross_power(XX, YY, win):
+def cross_power(XX, YY, win_factor):
     # calculate cross power
     # IN : bins x faxis fftdata
-    win_factor = np.mean(win**2)  # window factors
 
     val = np.zeros(XX.shape, dtype=np.complex_)
 
@@ -139,3 +139,18 @@ def cross_phase(XX, YY):
     Axy = np.arctan2(Pxy.imag, Pxy.real).real
 
     return Axy
+
+
+def xspec(XX, YY, win_factor):
+    val = np.zeros(XX.shape)
+
+    bins = len(XX)
+    for b in range(bins):
+        X = XX[b,:]
+        Y = YY[b,:]
+
+        Pxy = X*np.matrix.conjugate(Y) / win_factor
+
+        val[b,:] = np.abs(Pxy).real
+
+    return val

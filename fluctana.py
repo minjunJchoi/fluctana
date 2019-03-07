@@ -92,7 +92,6 @@ class FluctAna(object):
     def fftbins(self, nfft, window, overlap, detrend, full=0):
         # IN : self, data set number, nfft, window name, detrend or not
         # OUT : bins x N FFT of time series data; frequency axis
-
         # self.list_data()
 
         for d, D in enumerate(self.Dlist):
@@ -100,6 +99,11 @@ class FluctAna(object):
             tnum = len(D.time)
             bins, win = sp.fft_window(tnum, nfft, window, overlap)
             dt = D.time[1] - D.time[0]  # time step
+
+            D.window = window
+            D.overlap = overlap
+            D.detrend = detrend
+            D.bins = bins
 
             # make fftdata
             cnum = len(D.data)
@@ -113,18 +117,14 @@ class FluctAna(object):
 
             for c in range(cnum):
                 x = D.data[c,:]
-                D.ax, D.fftdata[c,:,:] = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
+                D.ax, D.fftdata[c,:,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
 
             # update attributes
             if np.mod(nfft, 2) == 0:
                 D.nfft = nfft + 1
             else:
                 D.nfft = nfft
-            D.window = window
-            D.overlap = overlap
-            D.detrend = detrend
-            D.bins = bins
-            D.win = win
+
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
@@ -156,9 +156,9 @@ class FluctAna(object):
             YY = self.Dlist[dtwo].fftdata[c,:,:]
 
             if self.Dlist[dtwo].ax[1] < 0: # full range
-                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win)
+                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor)
             else: # half
-                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win)  # product 2 for half return
+                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor)  # product 2 for half return
 
     def coherence(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -235,7 +235,7 @@ class FluctAna(object):
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
         nfft = self.Dlist[dtwo].nfft
-        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+        win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # reference channel names
         self.Dlist[dtwo].rname = []
@@ -284,7 +284,7 @@ class FluctAna(object):
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
         nfft = self.Dlist[dtwo].nfft
-        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+        win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # reference channel names
         self.Dlist[dtwo].rname = []
@@ -342,7 +342,7 @@ class FluctAna(object):
 
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
-        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+        win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # plot dimension
         if cnum < 4:
@@ -374,17 +374,12 @@ class FluctAna(object):
             pname = self.Dlist[dtwo].clist[c]
             # pdata
             pdata = np.zeros((bins, len(self.Dlist[dtwo].ax)))  # (full length for calculation)
+
             # calculate cross power for each channel and each bins
-            for b in range(bins):
-                X = self.Dlist[done].fftdata[c,b,:]
-                Y = self.Dlist[dtwo].fftdata[c,b,:]
+            XX = self.Dlist[done].fftdata[c,:,:]
+            YY = self.Dlist[dtwo].fftdata[c,:,:]
 
-                if pfreq[1] < 0:
-                    Pxy = X*np.matrix.conjugate(Y) / win_factor
-                else:
-                    Pxy = 2*X*np.matrix.conjugate(Y) / win_factor  # product 2 for half return
-
-                pdata[b,:] = np.abs(Pxy).real
+            pdata = sp.xspec(XX, YY, win_factor)
 
             pdata = np.log10(np.transpose(pdata))
 
