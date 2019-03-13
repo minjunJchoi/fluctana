@@ -72,7 +72,7 @@ def chplane(x, d=6, bins=30, **kwargs):
     ax = np.arange(nst) + 1 # state number
 
     bsize = int(1.0*len(x)/bins)
-    print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
+    # print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
 
     # possible orders
     orders = np.empty((0,d))

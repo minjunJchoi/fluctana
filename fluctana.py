@@ -745,6 +745,9 @@ class FluctAna(object):
 
         nst = math.factorial(d) # number of possible states
 
+        bsize = int(1.0*len(self.Dlist[dnum].data[0,:])/bins)
+        print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
+
         # data dimension
         self.Dlist[dnum].val = np.zeros((cnum, nst))
         self.Dlist[dnum].std = np.zeros((cnum, nst))

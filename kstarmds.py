@@ -16,6 +16,8 @@ from kstarecei import KstarEcei
 import numpy as np
 import matplotlib.pyplot as plt
 
+import ep_pos
+
 VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'ECH_VFWD1', 'ECCD':'EC1_RFFWD1',
             'ICRF':'ICRF_FWD', 'LHCD':'LH1_AFWD', 'GASI':'I_GFLOW_IN:FOO', 'GASK':'K_GFLOW_IN:FOO', 'SMBI':'SM_VAL_OUT:FOO',
             'Ip':'RC03', 'neAVGM':'NE_INTER01', 'ECE05':'ECE05', 'ECE35':'ECE35', 'Rp':'LMSR',
@@ -197,6 +199,12 @@ class KstarMds(Connection):
                     self.rpos[c] = PosCoreTS[cTS-1]/1000.0
                 elif dTS == 'EDGE':
                     self.rpos[c] = PosEdgeTS[cTS-1]/1000.0
+            
+            if 'EP' == self.clist[0][0:2]:
+                ep_rpos, ep_zpos = ep_pos.get_ep_pos()
+                self.rpos[c] = ep_rpos[self.clist[c][0:4]]
+                self.zpos[c] = ep_zpos[self.clist[c][0:4]]
+                self.apos[c] = float(self.clist[c][2:4])
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node
