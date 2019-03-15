@@ -767,9 +767,8 @@ class FluctAna(object):
 
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:], \
-            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c] = \
-            st.chplane(x, d, bins, **kwargs)
+            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:] = bp_prob(x, d, bins)
+            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c] = cjs_measure(self.Dlist[dnum].val[c,:], nst)
 
             # plot BP probability
             if verbose == 1:

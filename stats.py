@@ -51,11 +51,11 @@ def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
 
     ptime = tax # time lag [us]
     pdata = val
-    # plt.plot(ptime, pdata, '-x')
+    plt.plot(ptime, pdata, '-x')
     fidx = (fitlims[0] <= ptime) * (ptime <= fitlims[1])
     fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
     fit_data = 10**(fit[1])*ptime**(fit[0])
-    # plt.plot(ptime, fit_data, 'r')
+    plt.plot(ptime, fit_data, 'r')
 
     # Hurst exponent
     hurst_exp = fit[0]
@@ -63,11 +63,8 @@ def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     return tax, val, std, hurst_exp
 
 
-def chplane(x, d=6, bins=30, **kwargs):
-    # CH plane [Rosso PRL 2007]
-    # chaotic : moderate C and H, above fBm
-    # stochastic : low C and high H, below fBm
-    # axis
+def bp_prob(x, d=6, bins=30):
+    # BP_probability
     nst = math.factorial(d) # number of possible states
     ax = np.arange(nst) + 1 # state number
 
@@ -99,32 +96,30 @@ def chplane(x, d=6, bins=30, **kwargs):
     pi = np.mean(val, 1) # bin averaged pi
     pierr = np.std(val, 1)
 
-    # Jensen Shannon complexity, normalized Shannon entropy, Permutation entropy
-    jscom, nsent = cjs_measure(pi, nst)
-
     # sort
     pio = np.argsort(-pi)
     val = pi[pio]     # bin averaged sorted pi
     std = pierr[pio]
 
-    return ax, val, std, jscom, nsent
+    return ax, val, std
 
 
 def cjs_measure(pi, nst):
-    # complexity, entropy measure with a given BP probability
-    pi = pi[pi != 0] # to avoid blow up in log
-    spi = np.sum(-pi * np.log2(pi)) # permutation entropy
-    pe = np.ones(nst)/nst
+    # Jensen Shannon complexity, normalized Shannon entropy measure with a given BP probability [Rosso PRL 2007]
+    # chaotic : moderate C and H, above fBm
+    # stochastic : low C and high H, below fBm
+    pinz = pi[pi != 0] # to avoid blow up in entropy calculation
+    spi = np.sum(-pinz * np.log(pinz)) # Shannon entropy
+    nsent = spi/np.log(nst) # normalized Shannon entropy
 
-    spe = np.sum(-pe * np.log2(pe))
-    pieh = (pi + pe)/2
-    spieh = np.sum(-pieh * np.log2(pieh))
-    hpi = spi/np.log2(nst) # normalized Shannon entropy
+    pe = 1.0*np.ones(nst)/nst
+    spe = np.sum(-pe * np.log(pe))
+
+    pieh = (pi + pe)/2.0
+    spieh = np.sum(-pieh * np.log(pieh))
 
     # Jensen Shannon complexity
-    jscom = -2*(spieh - spi/2 - spe/2)/((nst + 1.0)/nst*np.log2(nst+1) - 2*np.log2(2*nst) + np.log2(nst))*hpi
-    nsent = hpi
-    pment = spi
+    jscom = -2.0*(spieh - spi/2.0 - spe/2.0)/((nst + 1.0)/nst*np.log(nst+1.0) - 2.0*np.log(2.0*nst) + np.log(nst))*nsent
 
     return jscom, nsent
 
@@ -132,8 +127,8 @@ def cjs_measure(pi, nst):
 def clmc_measure(pi, nst):
     pe = np.ones(nst)/nst
 
-    pi = pi[pi != 0] # to avoid blow up in log
-    nent = -1.0/np.log(nst)*np.sum(pi * np.log(pi))
+    pinz = pi[pi != 0] # to avoid blow up in log
+    nent = -1.0/np.log(nst)*np.sum(pinz * np.log(pinz))
 
     diseq = np.sum((pi - pe)**2)
 
@@ -257,7 +252,7 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], v
 
 
 def kurtosis(t, x, twin, tstep):
-    # taxis       
+    # taxis
     t1 = np.arange(t[0], t[-1]-twin, tstep)
     t2 = np.arange(t[0]+twin, t[-1], tstep)
     ax = np.zeros(len(t1))
