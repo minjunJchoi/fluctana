@@ -100,21 +100,22 @@ def chplane(x, d=6, bins=30, **kwargs):
     pierr = np.std(val, 1)
 
     # Jensen Shannon complexity, normalized Shannon entropy, Permutation entropy
-    jscom, nsent, pment = complexity_measure(pi, nst)
+    jscom, nsent = cjs_measure(pi, nst)
 
     # sort
     pio = np.argsort(-pi)
     val = pi[pio]     # bin averaged sorted pi
     std = pierr[pio]
 
-    return ax, val, std, jscom, nsent, pment
+    return ax, val, std, jscom, nsent
 
 
-def complexity_measure(pi, nst):
+def cjs_measure(pi, nst):
     # complexity, entropy measure with a given BP probability
-    pinz = pi[pi != 0]
-    spi = np.sum(-pinz * np.log2(pinz)) # permutation entropy
+    pi = pi[pi != 0] # to avoid blow up in log
+    spi = np.sum(-pi * np.log2(pi)) # permutation entropy
     pe = np.ones(nst)/nst
+
     spe = np.sum(-pe * np.log2(pe))
     pieh = (pi + pe)/2
     spieh = np.sum(-pieh * np.log2(pieh))
@@ -125,7 +126,20 @@ def complexity_measure(pi, nst):
     nsent = hpi
     pment = spi
 
-    return jscom, nsent, pment
+    return jscom, nsent
+
+
+def clmc_measure(pi, nst):
+    pe = np.ones(nst)/nst
+
+    pi = pi[pi != 0] # to avoid blow up in log
+    nent = -1.0/np.log(nst)*np.sum(pi * np.log(pi))
+
+    diseq = np.sum((pi - pe)**2)
+
+    clmc = diseq*nent
+
+    return clmc, nent
 
 
 def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], verbose=1, **kwargs):

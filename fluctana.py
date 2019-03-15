@@ -753,7 +753,6 @@ class FluctAna(object):
         self.Dlist[dnum].std = np.zeros((cnum, nst))
         self.Dlist[dnum].jscom = np.zeros(cnum)
         self.Dlist[dnum].nsent = np.zeros(cnum)
-        self.Dlist[dnum].pment = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
             # set axes
@@ -769,7 +768,7 @@ class FluctAna(object):
             x = self.Dlist[dnum].data[c,:]
 
             self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:], \
-            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c], self.Dlist[dnum].pment[c] = \
+            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c] = \
             st.chplane(x, d, bins, **kwargs)
 
             # plot BP probability
