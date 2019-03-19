@@ -139,7 +139,7 @@ trange = [15.01,15.02]
 norm = 0
 clist = ['ECEI_L1303', 'ECEI_L1403']
 C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-C.chplane(cnl=[0,1], d=5, bins=1)
+C.chplane(cnl=[0,1], d=6, bins=1)
 
 
 # ## Multi-fractal analysis (Carreras PoP 2000)

@@ -8,8 +8,8 @@
 #  2018.03.23 : version 0.10; Mirnov data resampling
 
 from MDSplus import Connection
-from MDSplus import DisconnectFromMds
-from MDSplus._mdsshr import MdsException
+# from MDSplus import DisconnectFromMds
+# from MDSplus._mdsshr import MdsException
 
 from kstarecei import KstarEcei
 
@@ -48,7 +48,7 @@ NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
 
 
 # ECE frequency 2016--2018
-FreqECE = [110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 109, 110] 
+FreqECE = [110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 109, 110]
 
 # TS position 2018
 PosCoreTS = [1807, 1830, 1851, 1874, 1897, 1920, 1943, 1968, 1993, 2018, 2043, 2070, 2096, 2124]
@@ -110,7 +110,7 @@ class KstarMds(Connection):
                 pnode = POST_NODE[node]
             else:
                 pnode = ''
-            
+
             # data node name
             dnode = snode + pnode
 
@@ -133,7 +133,7 @@ class KstarMds(Connection):
             idx2 = int(idx[0][-1]+2)
             time = time[idx1:idx2]
             v = v[idx1:idx2]
-              
+
             # normalize if necessary
             if norm == 1:
                 v = v/np.mean(v) - 1
@@ -152,7 +152,7 @@ class KstarMds(Connection):
 
         # get channel position
         self.channel_position()
-        
+
         # get measurement error
         self.meas_error()
 
@@ -176,12 +176,12 @@ class KstarMds(Connection):
                 rnode = '\{:s}RT{:}'.format(self.clist[c][:4],self.clist[c][6:])
             elif 'ECE' in self.clist[0]: # ECE
                 rnode = '\{:s}:RPOS2ND'.format(self.clist[c])
-            
+
             try:
                 self.rpos[c] = self.get(rnode).data()[0]
             except:
                 pass
-            
+
             # ECE 2018 2nd harmonics cold resonance
             if 'ECE' in self.clist[0] and self.shot > 19390:
                 cECE = int(self.clist[c][3:5])
@@ -199,7 +199,7 @@ class KstarMds(Connection):
                     self.rpos[c] = PosCoreTS[cTS-1]/1000.0
                 elif dTS == 'EDGE':
                     self.rpos[c] = PosEdgeTS[cTS-1]/1000.0
-            
+
             if 'EP' == self.clist[0][0:2]:
                 ep_rpos, ep_zpos = ep_pos.get_ep_pos()
                 self.rpos[c] = ep_rpos[self.clist[c][0:4]]

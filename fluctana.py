@@ -12,6 +12,10 @@ from scipy import signal
 import math
 import itertools
 
+import matplotlib.pyplot as plt
+
+import pickle
+
 from kstarecei import *
 from kstarmir import *
 from kstarmds import *
@@ -20,8 +24,6 @@ from kstarmds import *
 import specs as sp
 import stats as st
 from filtdata import FiltData
-
-import matplotlib.pyplot as plt
 
 #CM = plt.cm.get_cmap('RdYlBu_r')
 #CM = plt.cm.get_cmap('spectral')
@@ -767,8 +769,8 @@ class FluctAna(object):
 
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:] = bp_prob(x, d, bins)
-            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c] = cjs_measure(self.Dlist[dnum].val[c,:], nst)
+            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:] = st.bp_prob(x, d, bins)
+            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c] = st.cjs_measure(self.Dlist[dnum].val[c,:], nst)
 
             # plot BP probability
             if verbose == 1:
@@ -788,7 +790,21 @@ class FluctAna(object):
 
         # plot CH plane
         if verbose == 1:
-            plt.plot(self.Dlist[dnum].nsent, self.Dlist[dnum].jscom, '-o')
+            plt.plot(self.Dlist[dnum].nsent[cnl], self.Dlist[dnum].jscom[cnl], '-o')
+
+            # complexity limits
+            h_one, c_one, h_two, c_two = st.complexity_limits(d)
+            plt.plot(h_one, c_one, 'k')
+            plt.plot(h_two, c_two, 'k')
+
+            # draw fbm, fgn locus
+            try:
+                with open('dgdata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
+                    [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
+                    plt.plot(h_fbm, c_fbm, 'y')
+                    plt.plot(h_fgn, c_fgn, 'g')
+            except:
+                print('dgdata/ch_fbm_fgn_d{:d}.pkl not found'.format(d))
 
             plt.xlabel('Entropy (H)')
             plt.ylabel('Complexity (C)')
