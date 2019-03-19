@@ -137,6 +137,43 @@ def clmc_measure(pi, nst):
     return clmc, nent
 
 
+def complexity_limits(d):
+    nst = math.factorial(d)
+
+    pval = np.arange(1.0/nst,1,0.001)
+    Hone = -1.0/np.log(nst)*(pval * np.log(pval) + (1.0-pval)*np.log((1.0-pval)/(nst-1.0)))
+    Cone = np.zeros(len(Hone))
+    for i in range(len(Hone)):
+        pi = np.zeros(nst)
+        pi[0] = pval[i]
+        pi[1:] = (1.0 - pval[i])/(nst - 1.0)
+        Cone[i], _ = cjs_measure(pi, nst)
+    plt.plot(Hone, Cone, 'k')
+
+    Htwo = np.array([1])
+    Ctwo = np.array([0])
+    for n in range(nst-1):
+        pmin = np.arange(0.001,1.0/(nst-n),0.001)
+        # pmin = np.arange(0.001,0.1,0.001)
+        Hext = -1.0/np.log(nst)*(pmin * np.log(pmin) + (1.0-pmin)*np.log((1.0-pmin)/(nst-n-1.0)))
+        Cext = np.zeros(len(Hext))
+        for i in range(len(Hext)):
+            pi = np.zeros(nst)
+            pi[0:n] = 0
+            pi[n:(n+1)] = pmin[i]
+            pi[(n+1):] = (1.0 - pmin[i])/(nst - n - 1.0)
+            Cext[i], _ = cjs_measure(pi, nst)
+        # plt.plot(Hext, Cext, 'k')
+        Htwo = np.concatenate((Htwo, Hext), axis=0)
+        Ctwo = np.concatenate((Ctwo, Cext), axis=0)
+    idx = np.argsort(Htwo)
+    Htwo = Htwo[idx]
+    Ctwo = Ctwo[idx]
+
+    return Hone, Cone, Htwo, Ctwo
+
+
+
 def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], verbose=1, **kwargs):
     # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
     # this ranges from 0 (mono-fractal) to 1
