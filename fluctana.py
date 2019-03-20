@@ -507,6 +507,7 @@ class FluctAna(object):
         # number of cmp channels = number of ref channels
         self.Dlist[dtwo].vkind = 'bicoherence'
 
+        rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         nfft = self.Dlist[dtwo].nfft
         bins = self.Dlist[dtwo].bins  # number of bins
@@ -531,39 +532,48 @@ class FluctAna(object):
 
         # calculation loop for multi channels
         for c in range(cnum):
-            # reference channel name
-            rname = self.Dlist[done].clist[c]
+            # reference channel
+            if rnum == 1:
+                rname = self.Dlist[done].clist[0]
+                XX = self.Dlist[done].fftdata[0,:,:]
+            else:
+                rname = self.Dlist[done].clist[c]
+                XX = self.Dlist[done].fftdata[c,:,:]
             self.Dlist[dtwo].rname.append(rname)
-            # cmp channel name
+
+            # cmp channel
             pname = self.Dlist[dtwo].clist[c]
+            YY = self.Dlist[dtwo].fftdata[c,:,:]
 
-            # calculate bicoherence
-            B = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
-            P12 = np.zeros((len(ax1), len(ax2)))
-            P3 = np.zeros((len(ax1), len(ax2)))
+            self.Dlist[dtwo].val[c,:,:] = sp.bicoherence(XX, YY)
 
-            for b in range(bins):
-                X = self.Dlist[done].fftdata[c,b,:] # full -fN ~ fN
-                Y = self.Dlist[dtwo].fftdata[c,b,:] # full -fN ~ fN
-
-                Xhalf = np.fft.ifftshift(X) # full 0 ~ fN, -fN ~ -f1
-                Xhalf = Xhalf[0:int(nfft/2+1)] # half 0 ~ fN
-
-                X1 = np.transpose(np.tile(X, (len(ax2), 1)))
-                X2 = np.tile(Xhalf, (len(ax1), 1))
-                X3 = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
-                for j in range(len(ax2)):
-                    if j == 0:
-                        X3[0:, j] = Y[j:]
-                    else:
-                        X3[0:(-j), j] = Y[j:]
-
-                B = B + X1 * X2 * np.matrix.conjugate(X3) / bins #  complex bin average
-                P12 = P12 + (np.abs(X1 * X2).real)**2 / bins # real average
-                P3 = P3 + (np.abs(X3).real)**2 / bins # real average
+            # # calculate bicoherence
+            # B = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
+            # P12 = np.zeros((len(ax1), len(ax2)))
+            # P3 = np.zeros((len(ax1), len(ax2)))
+            #
+            # for b in range(bins):
+            #     X = self.Dlist[done].fftdata[c,b,:] # full -fN ~ fN
+            #     Y = self.Dlist[dtwo].fftdata[c,b,:] # full -fN ~ fN
+            #
+            #     Xhalf = np.fft.ifftshift(X) # full 0 ~ fN, -fN ~ -f1
+            #     Xhalf = Xhalf[0:int(nfft/2+1)] # half 0 ~ fN
+            #
+            #     X1 = np.transpose(np.tile(X, (len(ax2), 1)))
+            #     X2 = np.tile(Xhalf, (len(ax1), 1))
+            #     X3 = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
+            #     for j in range(len(ax2)):
+            #         if j == 0:
+            #             X3[0:, j] = Y[j:]
+            #         else:
+            #             X3[0:(-j), j] = Y[j:]
+            #
+            #     B = B + X1 * X2 * np.matrix.conjugate(X3) / bins #  complex bin average
+            #     P12 = P12 + (np.abs(X1 * X2).real)**2 / bins # real average
+            #     P3 = P3 + (np.abs(X3).real)**2 / bins # real average
 
             # self.Dlist[dtwo].val[c,:,:] = np.log10(np.abs(B)**2) # bispectrum
-            self.Dlist[dtwo].val[c,:,:] = (np.abs(B)**2) / P12 / P3 # bicoherence
+            # self.Dlist[dtwo].val[c,:,:] = (np.abs(B)**2) / P12 / P3 # bicoherence
 
             # set axes
             if c == 0:
@@ -1245,7 +1255,7 @@ class FluctAna(object):
         for dnum in range(len(self.Dlist)):
             # get bins and window function
             tnum = len(self.Dlist[dnum].data[0,:])
-            bins, win = fft_window(tnum, nfft, window, overlap)
+            bins, win = sp.fft_window(tnum, nfft, window, overlap)
 
             # make an x-axis #
             dt = self.Dlist[dnum].time[1] - self.Dlist[dnum].time[0]  # time step

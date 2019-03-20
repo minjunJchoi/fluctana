@@ -82,10 +82,10 @@ def fftbins(x, dt, nfft, window, overlap, detrend, full):
 def cross_power(XX, YY, win_factor):
     # calculate cross power
     # IN : bins x faxis fftdata
+    bins = len(XX)
 
     val = np.zeros(XX.shape, dtype=np.complex_)
 
-    bins = len(XX)
     for b in range(bins):
         X = XX[b,:]
         Y = YY[b,:]
@@ -100,9 +100,10 @@ def cross_power(XX, YY, win_factor):
 
 
 def coherence(XX, YY):
+    bins = len(XX)
+
     val = np.zeros(XX.shape, dtype=np.complex_)
 
-    bins = len(XX)
     for b in range(bins):
         X = XX[b,:]
         Y = YY[b,:]
@@ -121,9 +122,10 @@ def coherence(XX, YY):
 
 
 def cross_phase(XX, YY):
+    bins = len(XX)
+
     val = np.zeros(XX.shape, dtype=np.complex_)
 
-    bins = len(XX)
     for b in range(bins):
         X = XX[b,:]
         Y = YY[b,:]
@@ -142,9 +144,10 @@ def cross_phase(XX, YY):
 
 
 def xspec(XX, YY, win_factor):
+    bins = len(XX)
+
     val = np.zeros(XX.shape)
 
-    bins = len(XX)
     for b in range(bins):
         X = XX[b,:]
         Y = YY[b,:]
@@ -154,3 +157,147 @@ def xspec(XX, YY, win_factor):
         val[b,:] = np.abs(Pxy).real
 
     return val
+
+
+def bicoherence(XX, YY):
+    # ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
+    # ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
+    # ax2 = ax2[0:int(nfft/2+1)] # half 0 ~ fN
+
+    bins = len(XX)
+    full = len(XX[0,:]) # full length
+    half = int(full/2+1) # half length
+
+    # calculate bicoherence
+    B = np.zeros((full, half), dtype=np.complex_)
+    P12 = np.zeros((full, half))
+    P3 = np.zeros((full, half))
+    val = np.zeros((full, half))
+
+    for b in range(bins):
+        X = XX[b,:] # full -fN ~ fN
+        Y = YY[b,:] # full -fN ~ fN
+
+        Xhalf = np.fft.ifftshift(X) # full 0 ~ fN, -fN ~ -f1
+        Xhalf = Xhalf[0:half] # half 0 ~ fN
+
+        X1 = np.transpose(np.tile(X, (half, 1)))
+        X2 = np.tile(Xhalf, (full, 1))
+        X3 = np.zeros((full, half), dtype=np.complex_)
+        for j in range(half):
+            if j == 0:
+                X3[0:, j] = Y[j:]
+            else:
+                X3[0:(-j), j] = Y[j:]
+
+        B = B + X1 * X2 * np.matrix.conjugate(X3) / bins #  complex bin average
+        P12 = P12 + (np.abs(X1 * X2).real)**2 / bins # real average
+        P3 = P3 + (np.abs(X3).real)**2 / bins # real average
+
+    # val = np.log10(np.abs(B)**2) # bispectrum
+    val = (np.abs(B)**2) / P12 / P3 # bicoherence
+
+    return val
+
+
+    # case 9 % summed bicoherence
+    #     Bs = zeros(size(ax1));
+    #     for i = 1:length(ax2)
+    #         Bs(i:end) = Bs(i:end) + val(1:(end-i+1),i).';
+    #     end
+    #
+    #     ax = ax1;
+    #     N = [1:length(ax2), length(ax2)*ones(1,length(ax1)-length(ax2))];
+    #     val = Bs./N;
+
+
+#   case {15} % nonlinear spectral energy transfer
+#         ax1 = Fs/2*linspace(-1,1,nfft); % full -fN~fN axes
+#         ax2 = Fs/2*linspace(0,1,nfft/2+1); % half 0~fN axes
+#
+#         AA = zeros(length(ax1), length(ax2));
+#         BB = zeros(length(ax1), length(ax2));
+#         XX = zeros(bins, length(ax1), length(ax2));
+#         for b = 1:bins
+#             Xfull = fftshift(X(b,:)).'; % top -fN~fN bottom  ref
+#             Xhalf = X(b, 1:length(ax2)); % left 0~fN right         ref
+#             Yfull = fftshift(Y(b,:)).'; % top -fN~fN bottom cmp
+#
+#             X1 = repmat(Xfull, 1, length(ax2)); % -fN~fN ref
+#             X2 = repmat(Xhalf, length(ax1), 1); % 0~fN   ref
+#             X3 = zeros(length(ax1), length(ax2)); % f1+f2=f3     ref
+#             Y3 = zeros(length(ax1), length(ax2)); % f1+f2=f3     cmp
+#             for j = 1:length(ax2)
+#                 X3(1:(end-j+1),j) = Xfull(j:end);
+#                 Y3(1:(end-j+1),j) = Yfull(j:end);
+#             end
+#
+#             AA(:,:) = AA(:,:) + X1.*X2.*conj(X3)/bins;
+#             BB(:,:) = BB(:,:) + X1.*X2.*conj(Y3)/bins;
+#
+#             XX(b,:,:) = X1.*X2;
+#         end
+#
+# %         fk = 15000; % set frequency of f_k
+#         fkaxis = 0:2000:200000;
+#         gammak = zeros(size(fkaxis));
+#         for fk = 1:length(fkaxis)
+#
+#             [l,idxs] = nset_fkaxis(fkaxis(fk), ax1, ax2);
+#             I = size(idxs,1);
+#
+#             A = zeros(I,1);
+#             B = zeros(I,1);
+#             for i = 1:I
+#                 A(i,1) = AA(idxs(i,1), idxs(i,2));
+#                 B(i,1) = BB(idxs(i,1), idxs(i,2));
+#             end
+#             btbt = 0;
+#             FF = zeros(I,I);
+#             for b = 1:bins
+#                 F = zeros(I,1);
+#                 for i = 1:I
+#                     F(i,1) = XX(b, idxs(i,1), idxs(i,2));
+#                 end
+#                 FF(:,:) = FF(:,:) + F*transpose(conj(F))/bins;
+#
+#                 Xhalf = X(b, 1:length(ax2)); % 0~fN          ref
+#                 Yhalf = Y(b, 1:length(ax2)); % 0~fN          cmp
+#                 btbt = btbt + Xhalf(l)*conj(Yhalf(l))/bins;
+#             end
+#
+#             tau = 10e-6;
+#             gammak(fk) = 1/tau*(transpose(conj(A))*(FF\A) - transpose(conj(B))*(FF\B))/(btbt - transpose(conj(A))*(FF\A));
+#
+#         end
+#
+#         figure;
+#         plot(fkaxis/1000, real(gammak),'-o')
+# %         figure;
+# %         plot(A); hold on; plot(B)
+#         figure;
+#         imagesc(real(FF))
+#
+#
+#         fprintf('done \n')
+#         ax = 0;
+#         val = 0;
+
+
+# function [l,idxs] = nset_fkaxis(fk, ax1, ax2)
+# % nonlinear spectral energy transfer f_k axis
+#
+# l = find(ax2>=fk, 1, 'first');
+#     fprintf('fk = %g // l = %d, ax2(l) = %g \n', fk, l, ax2(l));
+#
+# n = ceil(l/2); % ~half index on ax2
+# m = l-n+length(ax2); % ~half indx on ax1
+# L = length(ax2) - n; % # of points
+#
+# idxs = []; % idxs = [m-(0:L)',n+(0:L)']; % ax1, ax2 index for f1+f2 = fk
+# for i=0:L
+#     if ax1(m-i) <= ax2(n+i)
+#         idxs = [idxs; [m-i,n+i]];
+#         fprintf('%d : Correct %g + %g = %g \n', i, ax1(m-i), ax2(n+i), ax1(m-i)+ax2(n+i))
+#     end
+# end
