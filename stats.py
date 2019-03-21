@@ -104,13 +104,21 @@ def bp_prob(x, d=6, bins=30):
     return ax, val, std
 
 
-def cjs_measure(pi, nst):
-    # Jensen Shannon complexity, normalized Shannon entropy measure with a given BP probability [Rosso PRL 2007]
-    # chaotic : moderate C and H, above fBm
-    # stochastic : low C and high H, below fBm
+def ns_entropy(pi):
+    nst = len(pi)
     pinz = pi[pi != 0] # to avoid blow up in entropy calculation
     spi = np.sum(-pinz * np.log(pinz)) # Shannon entropy
     nsent = spi/np.log(nst) # normalized Shannon entropy
+
+    return nsent
+
+
+def js_complexity(pi):
+    # Jensen Shannon complexity with a given probability [Rosso PRL 2007]
+    nst = len(pi)
+
+    nsent = ns_entropy(pi)
+    spi = nsent * np.log(nst) # Shannon entropy
 
     pe = 1.0*np.ones(nst)/nst
     spe = np.sum(-pe * np.log(pe))
@@ -121,10 +129,24 @@ def cjs_measure(pi, nst):
     # Jensen Shannon complexity
     jscom = -2.0*(spieh - spi/2.0 - spe/2.0)/((nst + 1.0)/nst*np.log(nst+1.0) - 2.0*np.log(2.0*nst) + np.log(nst))*nsent
 
+    return jscom
+
+
+def ch_measure(pi):
+    # Jensen Shannon complexity, normalized Shannon entropy measure with a given BP probability [Rosso PRL 2007]
+    # chaotic : moderate C and H, above fBm
+    # stochastic : low C and high H, below fBm
+
+    # normalized Shannon entropy
+    nsent = ns_entropy(pi)
+
+    # Jensen Shannon complexity
+    jscom = js_complexity(pi)
+
     return jscom, nsent
 
 
-def clmc_measure(pi, nst):
+def lmc_complexity(pi, nst):
     pe = np.ones(nst)/nst
 
     pinz = pi[pi != 0] # to avoid blow up in log
@@ -147,7 +169,7 @@ def complexity_limits(d):
         pi = np.zeros(nst)
         pi[0] = pval[i]
         pi[1:] = (1.0 - pval[i])/(nst - 1.0)
-        Cone[i], _ = cjs_measure(pi, nst)
+        Cone[i] = js_complexity(pi)
     plt.plot(Hone, Cone, 'k')
 
     Htwo = np.array([1])
@@ -162,7 +184,7 @@ def complexity_limits(d):
             pi[0:n] = 0
             pi[n:(n+1)] = pmin[i]
             pi[(n+1):] = (1.0 - pmin[i])/(nst - n - 1.0)
-            Cext[i], _ = cjs_measure(pi, nst)
+            Cext[i] = js_complexity(pi)
         # plt.plot(Hext, Cext, 'k')
         Htwo = np.concatenate((Htwo, Hext), axis=0)
         Ctwo = np.concatenate((Ctwo, Cext), axis=0)
@@ -172,6 +194,17 @@ def complexity_limits(d):
 
     return Hone, Cone, Htwo, Ctwo
 
+
+def fisher_measure(pi):
+    # fisher information measure
+    if ns_entropy(pi) == 0:
+        f0 = 1.0
+    else:
+        f0 = 1.0/2.0
+
+    fim = f0*np.sum( ( np.sqrt(pi[1:]) - np.sqrt(pi[:-1]) )**2 )
+
+    return fim
 
 
 def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], verbose=1, **kwargs):

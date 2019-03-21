@@ -91,20 +91,20 @@ C = FluctAna()
 # # C.mplot(dnum=1, cnl=[3], type='val')
 
 
-## Bicoherence
-shot = 10186
-trange = [15.8,15.85]
-norm = 1
-# ref data
-clist = ['ECEI_L1303']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# cmp data
-clist = ['ECEI_L1403']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# fft
-C.fftbins_bicoh_test(nfft=249, window='hann', overlap=0.5, detrend=0, full=1)
-# calculate cross power with default options (single channel)
-C.bicoherence(done=0,dtwo=0) # for test
+# ## Bicoherence
+# shot = 10186
+# trange = [15.8,15.85]
+# norm = 1
+# # ref data
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # cmp data
+# clist = ['ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # fft
+# C.fftbins_bicoh_test(nfft=249, window='hann', overlap=0.5, detrend=0, full=1)
+# # calculate cross power with default options (single channel)
+# C.bicoherence(done=0,dtwo=0) # for test
 
 
 # ## Wavelet
@@ -133,13 +133,13 @@ C.bicoherence(done=0,dtwo=0) # for test
 # # C.hurst(cnl=[0],bins=100,fitlims=[100,1000],verbose=0)
 
 
-# ## BP probability (Rosso PRL 2007) ## add fBm, fGn lines
-# shot = 10186
-# trange = [15.01,15.02]
-# norm = 0
-# clist = ['ECEI_L1303', 'ECEI_L1403']
-# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# C.chplane(cnl=[0,1], d=6, bins=1)
+## BP probability (Rosso PRL 2007) ## add fBm, fGn lines
+shot = 10186
+trange = [15.01,15.02]
+norm = 0
+clist = ['ECEI_L1303', 'ECEI_L1403']
+C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+C.chplane(cnl=[0,1], d=6, bins=1)
 
 
 # ## Multi-fractal analysis (Carreras PoP 2000)
