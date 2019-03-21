@@ -29,6 +29,7 @@ class KstarEcei(object):
         elif 9741 < shot and shot < 11723:
             self.data_path = '/eceidata/exp_2014/'
             self.data_path = '/Volumes/myNFRI/temp/'  # for test
+            print('--------------TEST kstarecei 2014 path TEST--------------')
         elif 12272 < shot and shot < 14942:
             self.data_path = '/eceidata/exp_2015/'
         elif 14941 < shot and shot < 17356:
