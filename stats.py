@@ -170,7 +170,7 @@ def complexity_limits(d):
         pi[0] = pval[i]
         pi[1:] = (1.0 - pval[i])/(nst - 1.0)
         Cone[i] = js_complexity(pi)
-    plt.plot(Hone, Cone, 'k')
+    # plt.plot(Hone, Cone, 'k')
 
     Htwo = np.array([1])
     Ctwo = np.array([0])

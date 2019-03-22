@@ -2,7 +2,7 @@
 def get_ep_pos():
     ep_rpos = {}
     ep_zpos = {}
-    with open('./ep_pos.dat', 'r') as flines:
+    with open('/home/mjchoi/fluctana/kstardata/ep_pos.dat', 'r') as flines:
         for f in flines:
             if f.strip().split()[0] == 'R(m)':
                 continue
