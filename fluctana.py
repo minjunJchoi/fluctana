@@ -91,6 +91,26 @@ class FluctAna(object):
 
 ############################# fft spectral methods #############################
 
+    def downsample(self, q):
+        # down sampling after anti-aliasing filter
+        for d, D in enumerate(self.Dlist):
+            # new time axis
+            tnum = len(D.time)
+            idx = np.arange(0, tnum, q)
+            D.time = D.time[idx]
+
+            # down sample
+            cnum = len(D.data)
+            raw_data = np.copy(D.data)
+            D.data = np.empty((cnum, len(D.time)))
+            for c in range(cnum):
+                D.data[c,:] = signal.decimate(raw_data[c,:], q)
+
+            D.fs = round(1/(D.time[1] - D.time[0])/1000)*1000.0
+            print('down sample with q={:d}, fs={:g}'.format(q, D.fs))
+
+############################# fft spectral methods #############################
+
     def fftbins(self, nfft, window, overlap, detrend, full=0):
         # IN : self, data set number, nfft, window name, detrend or not
         # OUT : bins x N FFT of time series data; frequency axis
