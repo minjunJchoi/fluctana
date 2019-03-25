@@ -89,7 +89,7 @@ class FluctAna(object):
 
         self.list_data()
 
-############################# fft spectral methods #############################
+############################# down sampling #############################
 
     def downsample(self, q):
         # down sampling after anti-aliasing filter
@@ -109,7 +109,20 @@ class FluctAna(object):
             D.fs = round(1/(D.time[1] - D.time[0])/1000)*1000.0
             print('down sample with q={:d}, fs={:g}'.format(q, D.fs))
 
-############################# fft spectral methods #############################
+############################# data filtering functions #########################
+
+    def filt(self, name, fL, fH, b=0.08):
+        # for FIR filters
+        for d, D in enumerate(self.Dlist):
+            cnum = len(D.data)
+            for c in range(cnum):
+                x = np.copy(D.data[c,:])
+                filter = FiltData(name, D.fs, fL, fH, b)
+                D.data[c,:] = filter.apply(x)
+
+            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
+
+############################# spectral methods #############################
 
     def fftbins(self, nfft, window, overlap, detrend, full=0):
         # IN : self, data set number, nfft, window name, detrend or not
@@ -147,8 +160,77 @@ class FluctAna(object):
             else:
                 D.nfft = nfft
 
-
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
+
+    def cwt(self, df): ## problem in recovering the signal
+        for d, D in enumerate(self.Dlist):
+            # make a t-axis
+            dt = D.time[1] - D.time[0]  # time step
+            tnum = len(D.time)
+            nfft = nextpow2(tnum) # power of 2
+            t = np.arange(nfft)*dt
+
+            # make a f-axis
+            fs = round(1/(dt)/1000)*1000.0 # [Hz]
+            s0 = 2/fs # the smallest scale
+            fmin = 0 # fmin
+            f = np.sign(df) * np.arange(fmin, 1.0/(1.03*s0), np.abs(df))
+
+            # scales
+            old_settings = np.seterr(divide='ignore')
+            sj = 1.0/(1.03*f)
+            np.seterr(**old_settings)
+            dj = np.log2(sj/s0) / np.arange(len(sj)) # dj
+            dj[0] = 0 # remove infinity point due to fmin = 0
+
+            # Morlet wavelet function (unnormalized)
+            omega0 = 6.0 # nondimensional wavelet frequency
+            ts = np.sqrt(2)*np.abs(sj) # e-folding time for Morlet wavelet with omega0 = 6
+            wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
+
+            cnum = len(D.data)  # number of cmp channels
+            # value dimension
+            D.cwtdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
+            for c in range(cnum):
+                x = D.data[c,:]
+
+                # FFT of signal
+                X = np.fft.fft(x, n=nfft)/nfft
+
+                # calculate
+                Wns = np.zeros((nfft, len(sj)), dtype=np.complex_)
+                for j, s in enumerate(sj):
+                    # nondimensional time axis at scale s
+                    eta = t/s
+                    # FFT of wavelet function with normalization
+                    WF = np.fft.fft(wf0(eta - np.mean(eta))*np.abs(dt/s)) / nfft
+                    # Wavelet transform at scae s for all n time
+                    Wns[:,j] = np.fft.fftshift(np.fft.ifft(X * WF) * nfft**2)
+
+                # return resized
+                D.cwtdata[c,:,:] = Wns[0:tnum,:]
+
+                # plot (not default)
+                pshot = D.shot
+                pname = D.clist[c]
+                ptime = D.time
+                pfreq = f/1000.0
+                pdata = np.transpose(np.abs(D.cwtdata[c,:,:])**2)
+
+                plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
+
+                chpos = '({:.1f}, {:.1f})'.format(D.rpos[c]*100, D.zpos[c]*100) # [cm]
+                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
+                plt.xlabel('Time [s]')
+                plt.ylabel('Frequency [kHz]')
+
+                plt.show()
+
+            D.cwtf = f
+            D.cwtdf = df
+            D.cwtsj = sj
+            D.cwtdj = dj
+            D.cwtts = ts
 
     def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -735,78 +817,6 @@ class FluctAna(object):
 # Tijk = 1/2 * vd * Re[Lijk * Aijk] # nonlinear energy transfer rate
 
 
-############################# wavelet spectral methods #########################
-
-    def cwt(self, df): ## problem in recovering the signal
-        for d, D in enumerate(self.Dlist):
-            # make a t-axis
-            dt = D.time[1] - D.time[0]  # time step
-            tnum = len(D.time)
-            nfft = nextpow2(tnum) # power of 2
-            t = np.arange(nfft)*dt
-
-            # make a f-axis
-            fs = round(1/(dt)/1000)*1000.0 # [Hz]
-            s0 = 2/fs # the smallest scale
-            fmin = 0 # fmin
-            f = np.sign(df) * np.arange(fmin, 1.0/(1.03*s0), np.abs(df))
-
-            # scales
-            old_settings = np.seterr(divide='ignore')
-            sj = 1.0/(1.03*f)
-            np.seterr(**old_settings)
-            dj = np.log2(sj/s0) / np.arange(len(sj)) # dj
-            dj[0] = 0 # remove infinity point due to fmin = 0
-
-            # Morlet wavelet function (unnormalized)
-            omega0 = 6.0 # nondimensional wavelet frequency
-            ts = np.sqrt(2)*np.abs(sj) # e-folding time for Morlet wavelet with omega0 = 6
-            wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
-
-            cnum = len(D.data)  # number of cmp channels
-            # value dimension
-            D.cwtdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
-            for c in range(cnum):
-                x = D.data[c,:]
-
-                # FFT of signal
-                X = np.fft.fft(x, n=nfft)/nfft
-
-                # calculate
-                Wns = np.zeros((nfft, len(sj)), dtype=np.complex_)
-                for j, s in enumerate(sj):
-                    # nondimensional time axis at scale s
-                    eta = t/s
-                    # FFT of wavelet function with normalization
-                    WF = np.fft.fft(wf0(eta - np.mean(eta))*np.abs(dt/s)) / nfft
-                    # Wavelet transform at scae s for all n time
-                    Wns[:,j] = np.fft.fftshift(np.fft.ifft(X * WF) * nfft**2)
-
-                # return resized
-                D.cwtdata[c,:,:] = Wns[0:tnum,:]
-
-                # plot (not default)
-                pshot = D.shot
-                pname = D.clist[c]
-                ptime = D.time
-                pfreq = f/1000.0
-                pdata = np.transpose(np.abs(D.cwtdata[c,:,:])**2)
-
-                plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
-
-                chpos = '({:.1f}, {:.1f})'.format(D.rpos[c]*100, D.zpos[c]*100) # [cm]
-                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
-                plt.xlabel('Time [s]')
-                plt.ylabel('Frequency [kHz]')
-
-                plt.show()
-
-            D.cwtf = f
-            D.cwtdf = df
-            D.cwtsj = sj
-            D.cwtdj = dj
-            D.cwtts = ts
-
 ############################# statistical methods ##############################
 
     def skewness(self, dnum=0, cnl=[0], twin=0.005, tstep=0.001, verbose=1, **kwargs):
@@ -1072,19 +1082,6 @@ class FluctAna(object):
             x = self.Dlist[dnum].data[c,:]
 
             self.Dlist[dnum].intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitlims, verbose, **kwargs)
-
-############################# data filtering functions #########################
-
-    def filt(self, name, fL, fH, b=0.08):
-        # for FIR filters
-        for d, D in enumerate(self.Dlist):
-            cnum = len(D.data)
-            for c in range(cnum):
-                x = np.copy(D.data[c,:])
-                filter = FiltData(name, D.fs, fL, fH, b)
-                D.data[c,:] = filter.apply(x)
-
-            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
 
 ############################# default plot functions ###########################
 

@@ -3,9 +3,81 @@ from fluctana import *
 # Load modules
 C = FluctAna()
 
+############################## Down sampling ##############################
+# shot = 10186
+# trange = [15.01,15.02]
+# norm = 0
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:])
+# C.downsample(q=5)
+# plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:], 'o')
+# plt.show()
 
 
-# ## xspec with test signals
+############################## FIR filters ##############################
+# shot = 18569
+# trange = [3,4.5]
+# #flimits = [0,200000]
+# #climits = [-50, -15]
+#
+# C.add_data(KstarMds(shot=shot, clist=['EP54:FOO']), trange=trange, norm=0)
+#
+# C.fftbins(nfft=256,window='hann',overlap=0.5,detrend=1)
+# C.cross_power(done=0,dtwo=0)
+#
+# plt.subplot(211)
+# plt.plot( C.Dlist[0].time, C.Dlist[0].data[0,:])
+# plt.subplot(212)
+# plt.plot( C.Dlist[0].ax/1000.0, C.Dlist[0].val[0,:].real )
+#
+# # low pass filter # OK
+# #C.filt('FIR_pass',0,50000,0.01) # smaller b is sharper
+# # high pass filter # OK
+# #C.filt('FIR_pass',50000,0,0.01)
+# # band pass filter  # OK
+# C.filt('FIR_pass',30000,0,0.01) # smaller b is sharper
+# C.filt('FIR_pass',0,100000,0.01) # smaller b is sharper
+# # band block filter  # OK
+# # C.filt('FIR_block',0,1000,0.01) # smaller b is sharper
+#
+#
+# C.fftbins(nfft=256,window='hann',overlap=0.5,detrend=1)
+# C.cross_power(done=0,dtwo=0)
+#
+# plt.subplot(211)
+# plt.plot( C.Dlist[0].time, C.Dlist[0].data[0,:])
+# plt.subplot(212)
+# plt.plot( C.Dlist[0].ax/1000.0, C.Dlist[0].val[0,:].real )
+# plt.yscale('log')
+# plt.xlabel('Frequency [kHz]')
+#
+# plt.show()
+
+
+############################## SVD filter ##############################
+
+
+############################## Threshold FFT ##############################
+
+
+############################## cross power ########################
+
+
+############################## coherence ########################
+
+
+############################## cross phase ########################
+
+
+############################## correlation ########################
+
+
+############################## correlation coefficient ########################
+
+
+############################## cross power spectrogram ########################
+### xspec with test signals
 # fs = 3000.0
 # t = np.arange(0,1,1/fs)
 #
@@ -51,7 +123,7 @@ C = FluctAna()
 # C.mplot(dnum=1, cnl=[0], type='val')
 
 
-# ## xspec with ECEI data
+### xspec with ECEI data
 # shot = 10186
 # trange = [15.7,15.85]
 # norm = 1
@@ -73,7 +145,7 @@ C = FluctAna()
 # C.xspec(thres=0.5)
 
 
-# ## Local SKw
+############################## Local SKw ########################
 # shot = 10186
 # trange = [15.7,15.85]
 # norm = 1
@@ -91,7 +163,7 @@ C = FluctAna()
 # # C.mplot(dnum=1, cnl=[3], type='val')
 
 
-# ## Bicoherence
+###################### Bicoherence (+ summed bicoherence) ######################
 # shot = 10186
 # trange = [15.1,15.2]
 # norm = 1
@@ -111,63 +183,7 @@ C = FluctAna()
 # C.bicoherence(done=0,dtwo=1,sum=1)
 
 
-# ## Wavelet
-# A = KstarEcei(10186, ['ECEI_L1201'])
-# fs = 500000.0
-# t = np.arange(0,0.0007,1/fs)
-# data = np.zeros((1, len(t)), dtype=np.complex_)
-# x1 = signal.chirp(t,10000,t[-1],130000,method='quadratic')# + np.random.randn(len(t))/100
-# data[0][:] = x1 - np.mean(x1)
-# A.data = data
-# A.time = t
-# A.rpos = np.zeros(1)
-# A.zpos = np.zeros(1)
-# C.Dlist.append(A)
-#
-# C.cwt(df=3000)
-
-
-# ## Hurst number
-# shot = 10186
-# trange = [15.8,15.9]
-# norm = 0
-# clist = ['ECEI_L1303']
-# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# C.hurst(cnl=[0],bins=100,fitlims=[100,1000])
-# # C.hurst(cnl=[0],bins=100,fitlims=[100,1000],verbose=0)
-
-
-# ## BP probability (Rosso PRL 2007) ## add fBm, fGn lines
-# shot = 10186
-# trange = [15.01,15.02]
-# norm = 0
-# clist = ['ECEI_L1303', 'ECEI_L1403']
-# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# C.chplane(cnl=[0,1], d=6, bins=1)
-
-
-# ## Multi-fractal analysis (Carreras PoP 2000)
-# shot = 10186
-# trange = [15.1,15.17]
-# norm = 0
-# clist = ['ECEI_L1303']
-# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# C.intermittency()
-
-
-# # ## Down sampling
-# shot = 10186
-# trange = [15.01,15.02]
-# norm = 0
-# clist = ['ECEI_L1303']
-# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:])
-# C.downsample(q=5)
-# plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:], 'o')
-# plt.show()
-
-
-## Nonlinear energy transfer [Ritz]
+###################### Ritz nonlinear energy transfer ######################
 shot = 10186
 trange = [15.1,15.11]
 norm = 1
@@ -183,26 +199,62 @@ C.fftbins(nfft=16, window='hann', overlap=0.5, detrend=0, full=1)
 C.ritz_nonlinear(done=0,dtwo=1)
 
 
+###################### continuous wavelet transform ######################
+# A = KstarEcei(10186, ['ECEI_L1201'])
+# fs = 500000.0
+# t = np.arange(0,0.0007,1/fs)
+# data = np.zeros((1, len(t)), dtype=np.complex_)
+# x1 = signal.chirp(t,10000,t[-1],130000,method='quadratic')# + np.random.randn(len(t))/100
+# data[0][:] = x1 - np.mean(x1)
+# A.data = data
+# A.time = t
+# A.rpos = np.zeros(1)
+# A.zpos = np.zeros(1)
+# C.Dlist.append(A)
+#
+# C.cwt(df=3000)
 
 
-## SVD
+###################### Skewness ######################
 
 
-## Threshold FFT
+###################### Kurtosis ######################
 
 
-## High order moments
+###################### Hurst exponent ######################
+# shot = 10186
+# trange = [15.8,15.9]
+# norm = 0
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# C.hurst(cnl=[0],bins=100,fitlims=[100,1000])
+# # C.hurst(cnl=[0],bins=100,fitlims=[100,1000],verbose=0)
+
+
+###################### CH plane [Rosso PRL 2007] ######################
+# shot = 10186
+# trange = [15.01,15.02]
+# norm = 0
+# clist = ['ECEI_L1303', 'ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# C.chplane(cnl=[0,1], d=6, bins=1)
+
+
+###################### Multi-fractal analysis [Carreras PoP 2000] ##############
+# shot = 10186
+# trange = [15.1,15.17]
+# norm = 0
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# C.intermittency()
+
+
 
 
 
 
 ## Wavelet bicoherence
 
-
-
-
+## Wavelet nonlinear energy transfer
 
 ## Transfer entropy
-
-
-# print(C.Dlist[0].tt, C.Dlist[0].toff, C.Dlist[0].bt, C.Dlist[0].fs, C.Dlist[0].mode, C.Dlist[0].lo, C.Dlist[0].sz, C.Dlist[0].sf)
