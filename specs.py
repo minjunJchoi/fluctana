@@ -199,18 +199,6 @@ def bicoherence(XX, YY):
 
     return val
 
-
-    # case 9 % summed bicoherence
-    #     Bs = zeros(size(ax1));
-    #     for i = 1:length(ax2)
-    #         Bs(i:end) = Bs(i:end) + val(1:(end-i+1),i).';
-    #     end
-    #
-    #     ax = ax1;
-    #     N = [1:length(ax2), length(ax2)*ones(1,length(ax1)-length(ax2))];
-    #     val = Bs./N;
-
-
 #   case {15} % nonlinear spectral energy transfer
 #         ax1 = Fs/2*linspace(-1,1,nfft); % full -fN~fN axes
 #         ax2 = Fs/2*linspace(0,1,nfft/2+1); % half 0~fN axes

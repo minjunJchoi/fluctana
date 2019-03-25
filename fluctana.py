@@ -522,15 +522,13 @@ class FluctAna(object):
 
         plt.show()
 
-    def bicoherence(self, done=0, dtwo=1, **kwargs):
+    def bicoherence(self, done=0, dtwo=1, sum=0, **kwargs):
         # fftbins full = 1
         # number of cmp channels = number of ref channels
         self.Dlist[dtwo].vkind = 'bicoherence'
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        nfft = self.Dlist[dtwo].nfft
-        bins = self.Dlist[dtwo].bins  # number of bins
 
         # plot dimension
         if cnum < 4:
@@ -545,7 +543,7 @@ class FluctAna(object):
         # axes
         ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
         ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
-        ax2 = ax2[0:int(nfft/2+1)] # half 0 ~ fN
+        ax2 = ax2[0:int(len(ax1)/2+1)] # half 0 ~ fN
 
         # value dimension
         self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
@@ -567,34 +565,6 @@ class FluctAna(object):
 
             self.Dlist[dtwo].val[c,:,:] = sp.bicoherence(XX, YY)
 
-            # # calculate bicoherence
-            # B = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
-            # P12 = np.zeros((len(ax1), len(ax2)))
-            # P3 = np.zeros((len(ax1), len(ax2)))
-            #
-            # for b in range(bins):
-            #     X = self.Dlist[done].fftdata[c,b,:] # full -fN ~ fN
-            #     Y = self.Dlist[dtwo].fftdata[c,b,:] # full -fN ~ fN
-            #
-            #     Xhalf = np.fft.ifftshift(X) # full 0 ~ fN, -fN ~ -f1
-            #     Xhalf = Xhalf[0:int(nfft/2+1)] # half 0 ~ fN
-            #
-            #     X1 = np.transpose(np.tile(X, (len(ax2), 1)))
-            #     X2 = np.tile(Xhalf, (len(ax1), 1))
-            #     X3 = np.zeros((len(ax1), len(ax2)), dtype=np.complex_)
-            #     for j in range(len(ax2)):
-            #         if j == 0:
-            #             X3[0:, j] = Y[j:]
-            #         else:
-            #             X3[0:(-j), j] = Y[j:]
-            #
-            #     B = B + X1 * X2 * np.matrix.conjugate(X3) / bins #  complex bin average
-            #     P12 = P12 + (np.abs(X1 * X2).real)**2 / bins # real average
-            #     P3 = P3 + (np.abs(X3).real)**2 / bins # real average
-
-            # self.Dlist[dtwo].val[c,:,:] = np.log10(np.abs(B)**2) # bispectrum
-            # self.Dlist[dtwo].val[c,:,:] = (np.abs(B)**2) / P12 / P3 # bicoherence
-
             # set axes
             if c == 0:
                 plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
@@ -603,21 +573,167 @@ class FluctAna(object):
             else:
                 plt.subplot(row,col,c+1, **axprops)
 
+            # plot data
             pshot = self.Dlist[dtwo].shot
-            pax1 = ax1/1000 # [kHz]
-            pax2 = ax2/1000 # [kHz]
-            pdata = self.Dlist[dtwo].val[c,:,:]
-
-            plt.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower')
-
-            plt.colorbar()
-
             chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
-            plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
-            plt.xlabel('F1 [kHz]')
-            plt.ylabel('F2 [kHz]')
+            if sum == 0:
+                pax1 = ax1/1000.0 # [kHz]
+                pax2 = ax2/1000.0 # [kHz]
+                pdata = self.Dlist[dtwo].val[c,:,:]
+
+                plt.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower')
+
+                plt.colorbar()
+                plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+                plt.xlabel('F1 [kHz]')
+                plt.ylabel('F2 [kHz]')
+            else:
+                sum_bic = np.zeros(ax1.shape)
+                for i in range(len(ax2)):
+                    if i == 0:
+                        sum_bic = sum_bic + self.Dlist[dtwo].val[c,:,i]
+                    else:
+                        sum_bic[i:] = sum_bic[i:] + self.Dlist[dtwo].val[c,:-i,i]
+
+                pax = ax1/1000.0  # [kHz]
+                N = np.array([i+1 for i in range(len(ax2))] + [len(ax2) for i in range(len(ax1)-len(ax2))])
+                pdata = sum_bic / N # element wise division
+
+                plt.plot(pax, pdata, 'k')
+
+                plt.xlim([ax2[0]/1000.0, ax2[-1]/1000.0])
+                plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+                plt.xlabel('Frequency [kHz]')
+                plt.ylabel('Summed bicoherence')
 
             plt.show()
+
+    def ritz_nonlinear(self, done=0, dtwo=1, **kwargs):
+        # needs verification with model data
+        self.Dlist[dtwo].vkind = 'ritz_nonlin'
+
+        rnum = len(self.Dlist[done].data)  # number of ref channels
+        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+
+        # plot dimension
+        if cnum < 4:
+            row = cnum
+        else:
+            row = 4
+        col = math.ceil(cnum/row)
+
+        # reference channel names
+        self.Dlist[dtwo].rname = []
+
+        # axes
+        ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
+        ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
+        ax2 = ax2[0:int(len(ax1)/2+1)] # half 0 ~ fN
+
+        # value dimension
+        self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
+
+        # calculation loop for multi channels
+        for c in range(cnum):
+            # reference channel
+            if rnum == 1:
+                rname = self.Dlist[done].clist[0]
+                XX = self.Dlist[done].fftdata[0,:,:]
+            else:
+                rname = self.Dlist[done].clist[c]
+                XX = self.Dlist[done].fftdata[c,:,:]
+            self.Dlist[dtwo].rname.append(rname)
+
+            # cmp channel
+            pname = self.Dlist[dtwo].clist[c]
+            YY = self.Dlist[dtwo].fftdata[c,:,:]
+
+            # calculate
+            bins = len(XX)
+            full = len(XX[0,:]) # full length
+            half = int(full/2+1) # half length
+
+            kidx = get_kidx(full)
+
+            Aijk = np.zeros((full, full), dtype=np.complex_) # Xo1 Xo2 cXo
+            Bijk = np.zeros((full, full), dtype=np.complex_) # Yo cXo1 cXo2
+            Aij = np.zeros((full, full)) # |Xo1 Xo2|^2
+
+            Ak = np.zeros(full) # Xo cXo
+            Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
+
+            for b in range(1):
+                X = XX[b,:] # full -fN ~ fN
+                Y = YY[b,:] # full -fN ~ fN
+
+                # ##### test
+                # X = ax1 # full -fN ~ fN
+                # print('test bin {:d}'.format(b))
+
+                # make Xi and Xj
+                Xi = np.transpose(np.tile(X, (full, 1))) # columns of (-fN ~ fN)
+                Xj = np.tile(X, (full, 1)) # rows of (-fN ~ fN)
+
+                # make Xk and Yk
+                Xk = np.zeros((full, full), dtype=np.complex_)
+                Yk = np.zeros((full, full), dtype=np.complex_)
+                for k in range(full):
+                    idx = kidx[k]
+                    print(len(idx))
+                    print(idx)
+                    for n, ij in enumerate(idx):
+                        Xk[ij] = X[k]
+                        Yk[ij] = Y[k]
+                        # if int(Xk[ij].real) == int(Xi[ij].real + Xj[ij].real): # for test
+                        #     pass
+                        # else:
+                        #     print('uncorrect')
+                        #     print('k {:g}, Xk {:g}, Xi + Xj {:g}, Xi {:g}, Xj {:g}'.format(k, Xk[ij], Xi[ij] + Xj[ij], Xi[ij], Xj[ij]))
+                # plt.imshow(Xk)
+                # plt.show()
+
+                # do ensemble average
+                Aijk = Aijk + Xi * Xj * np.matrix.conjugate(Xk) / bins
+
+                Bijk = Bijk + np.matrix.conjugate(Xi) * np.matrix.conjugate(Xj) * Yk / bins
+
+                Aij = Aij + (np.abs(Xi * Xj).real)**2 / bins
+
+                Ak = Ak + (np.abs(X).real)**2 / bins
+
+                Bk = Bk + Y * np.matrix.conjugate(X) / bins
+
+            # Linear transfer function ~ growth rate
+            Lk = np.zeros(full, dtype=np.complex_)
+
+            bsum = np.zeros(full, dtype=np.complex_)
+            asum = np.zeros(full)
+            for k in range(full):
+                idx = kidx[k]
+                for n, ij in enumerate(idx):
+                    bsum[k] = bsum[k] + Aijk[ij] * Bijk[ij] / Aij[ij]
+                    asum[k] = asum[k] + (np.abs(Aijk[ij]).real)**2 / Aij[ij]
+
+            Lk = (Bk - bsum) / (Ak - asum)
+
+            # Quadratic transfer function ~ nonlinear energy transfer rate
+            Lkk = np.zeros((full, full), dtype=np.complex_)
+            for k in range(full):
+                idx = kidx[k]
+                for n, ij in enumerate(idx):
+                    Lkk[ij] = Lk[k]
+
+            Qijk = (Bijk - Lkk * Aijk) / Aij
+
+# Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dt
+# dt = dx / vd
+# Exp[-i(dth)] = Bk / np.abs(Bk)
+
+# gk = vd * Re[Gk] # growth rate
+
+# Lijk = Qijk * Exp[-i(dth)] / dt
+# Tijk = 1/2 * vd * Re[Lijk * Aijk] # nonlinear energy transfer rate
+
 
 ############################# wavelet spectral methods #########################
 
@@ -1390,3 +1506,26 @@ def nextpow2(i):
     n = 1
     while n < i: n *= 2
     return n
+
+
+def get_kidx(full):
+    half = int(full/2 + 1)
+    kidx = []
+    for k in range(full):
+        idx = []
+
+        if k <= half - 1:
+            i = 0
+            j = half - 1 + k
+        else:
+            i = k - half + 1
+            j = full - 1
+
+        while j >= i:
+            idx.append((i,j))
+            i += 1
+            j -= 1
+
+        kidx.append(idx)
+
+    return kidx

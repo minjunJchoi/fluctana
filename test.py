@@ -93,7 +93,7 @@ C = FluctAna()
 
 # ## Bicoherence
 # shot = 10186
-# trange = [15.8,15.85]
+# trange = [15.1,15.2]
 # norm = 1
 # # ref data
 # clist = ['ECEI_L1303']
@@ -102,9 +102,13 @@ C = FluctAna()
 # clist = ['ECEI_L1403']
 # C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
 # # fft
-# C.fftbins_bicoh_test(nfft=249, window='hann', overlap=0.5, detrend=0, full=1)
-# # calculate cross power with default options (single channel)
-# C.bicoherence(done=0,dtwo=0) # for test
+# # C.fftbins_bicoh_test(nfft=249, window='hann', overlap=0.5, detrend=0, full=1)
+# C.fftbins(nfft=989, window='hann', overlap=0.5, detrend=0, full=1)
+# # calculate
+# # C.bicoherence(done=0,dtwo=0) # for test
+# # C.bicoherence(done=0,dtwo=0,sum=1) # for test
+# C.bicoherence(done=0,dtwo=1)
+# C.bicoherence(done=0,dtwo=1,sum=1)
 
 
 # ## Wavelet
@@ -163,20 +167,39 @@ C = FluctAna()
 # plt.show()
 
 
-## Wavelet bicoherence
+## Nonlinear energy transfer [Ritz]
+shot = 10186
+trange = [15.1,15.11]
+norm = 1
+# ref data
+clist = ['ECEI_L1303']
+C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# cmp data
+clist = ['ECEI_L1403']
+C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# fft
+C.fftbins(nfft=16, window='hann', overlap=0.5, detrend=0, full=1)
+# calculate
+C.ritz_nonlinear(done=0,dtwo=1)
 
 
-## Nonlinear energy transfer
 
 
-
-
+## SVD
 
 
 ## Threshold FFT
 
 
 ## High order moments
+
+
+
+
+## Wavelet bicoherence
+
+
+
 
 
 ## Transfer entropy
