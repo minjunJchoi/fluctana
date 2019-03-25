@@ -809,6 +809,102 @@ class FluctAna(object):
 
 ############################# statistical methods ##############################
 
+    def skewness(self, dnum=0, cnl=[0], twin=0.005, tstep=0.001, verbose=1, **kwargs):
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
+        pshot = self.Dlist[dnum].shot
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        # plot dimension
+        nch = len(cnl)
+        if nch < 4:
+            row = nch
+        else:
+            row = 4
+        col = math.ceil(nch/row)
+
+        # axis
+        t1 = np.arange(self.Dlist[dnum].time[0], self.Dlist[dnum].time[-1]-twin, tstep)
+
+        # data dimension
+        self.Dlist[dnum].val = np.zeros((cnum, len(t1)))
+
+        for i, c in enumerate(cnl):
+            # set axes
+            if verbose == 1 and i == 0:
+                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                axes1 = plt.subplot(row,col,i+1)
+                axprops = dict(sharex = axes1, sharey = axes1)
+            elif verbose == 1 and i > 0:
+                plt.subplot(row,col,i+1, **axprops)
+
+            t = self.Dlist[dnum].time
+            x = self.Dlist[dnum].data[c,:]
+
+            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:] = st.skewness(t, x, twin, tstep)
+
+            if verbose == 1:
+                ptime = self.Dlist[dnum].ax # time lag [us]
+                pdata = self.Dlist[dnum].val[c,:]
+
+                plt.plot(ptime, pdata, '-x')
+
+                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
+                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
+                plt.xlabel('Time [s]')
+                plt.ylabel('Skewness (0 for Gaussian)')
+
+        if verbose == 1: plt.show()
+
+    def kurtosis(self, dnum=0, cnl=[0], twin=0.005, tstep=0.001, verbose=1, **kwargs):
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
+        pshot = self.Dlist[dnum].shot
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        # plot dimension
+        nch = len(cnl)
+        if nch < 4:
+            row = nch
+        else:
+            row = 4
+        col = math.ceil(nch/row)
+
+        # axis
+        t1 = np.arange(self.Dlist[dnum].time[0], self.Dlist[dnum].time[-1]-twin, tstep)
+
+        # data dimension
+        self.Dlist[dnum].val = np.zeros((cnum, len(t1)))
+
+        for i, c in enumerate(cnl):
+            # set axes
+            if verbose == 1 and i == 0:
+                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                axes1 = plt.subplot(row,col,i+1)
+                axprops = dict(sharex = axes1, sharey = axes1)
+            elif verbose == 1 and i > 0:
+                plt.subplot(row,col,i+1, **axprops)
+
+            t = self.Dlist[dnum].time
+            x = self.Dlist[dnum].data[c,:]
+
+            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:] = st.kurtosis(t, x, twin, tstep)
+
+            if verbose == 1:
+                ptime = self.Dlist[dnum].ax # time lag [us]
+                pdata = self.Dlist[dnum].val[c,:]
+
+                plt.plot(ptime, pdata, '-x')
+
+                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
+                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
+                plt.xlabel('Time [s]')
+                plt.ylabel('Kurtosis (0 for Gaussian)')
+
+        if verbose == 1: plt.show()
+
     def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], verbose=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
@@ -976,55 +1072,6 @@ class FluctAna(object):
             x = self.Dlist[dnum].data[c,:]
 
             self.Dlist[dnum].intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitlims, verbose, **kwargs)
-
-    def kurtosis(self, dnum=0, cnl=[0], twin=0.005, tstep=0.001, verbose=1, **kwargs):
-        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
-        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
-
-        pshot = self.Dlist[dnum].shot
-        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
-
-        # plot dimension
-        nch = len(cnl)
-        if nch < 4:
-            row = nch
-        else:
-            row = 4
-        col = math.ceil(nch/row)
-
-        # axis
-        t1 = np.arange(self.Dlist[dnum].time[0], self.Dlist[dnum].time[-1]-twin, tstep)
-
-        # data dimension
-        self.Dlist[dnum].val = np.zeros((cnum, len(t1)))
-
-        for i, c in enumerate(cnl):
-            # set axes
-            if verbose == 1 and i == 0:
-                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                axes1 = plt.subplot(row,col,i+1)
-                axprops = dict(sharex = axes1, sharey = axes1)
-            elif verbose == 1 and i > 0:
-                plt.subplot(row,col,i+1, **axprops)
-
-            t = self.Dlist[dnum].time
-            x = self.Dlist[dnum].data[c,:]
-
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:] = st.kurtosis(t, x, twin, tstep)
-
-            if verbose == 1:
-                ptime = self.Dlist[dnum].ax # time lag [us]
-                pdata = self.Dlist[dnum].val[c,:]
-
-                plt.plot(ptime, pdata, '-x')
-
-                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
-                plt.xlabel('Time [s]')
-                plt.ylabel('Kurtosis')
-
-        if verbose == 1: plt.show()
-
 
 ############################# data filtering functions #########################
 

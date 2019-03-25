@@ -6,6 +6,50 @@ import itertools
 import matplotlib.pyplot as plt
 
 
+def skewness(t, x, twin, tstep):
+    # taxis
+    t1 = np.arange(t[0], t[-1]-twin, tstep)
+    t2 = np.arange(t[0]+twin, t[-1], tstep)
+    ax = np.zeros(len(t1))
+    skew = np.zeros(len(t1))
+
+    # normalize
+    x = x / x[0]
+
+    for i in range(len(t1)):
+        idx = (t1[i] <= t) * (t <= t2[i])
+
+        ax[i] = np.mean(t[idx])
+
+        dx = x[idx]
+        ndx = (dx - np.mean(dx)) / np.std(dx - np.mean(dx))
+        skew[i] = np.mean(ndx**3) / np.mean(ndx**2)**(3.0/2.0)
+
+    return ax, skew
+
+
+def kurtosis(t, x, twin, tstep):
+    # taxis
+    t1 = np.arange(t[0], t[-1]-twin, tstep)
+    t2 = np.arange(t[0]+twin, t[-1], tstep)
+    ax = np.zeros(len(t1))
+    kurt = np.zeros(len(t1))
+
+    # normalize
+    x = x / x[0]
+
+    for i in range(len(t1)):
+        idx = (t1[i] <= t) * (t <= t2[i])
+
+        ax[i] = np.mean(t[idx])
+
+        dx = x[idx]
+        ndx = (dx - np.mean(dx)) / np.std(dx - np.mean(dx))
+        kurt[i] = np.mean(ndx**4) / np.mean(ndx**2)**2 - 3
+
+    return ax, kurt
+
+
 def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     # R/S method for fGm
     # (generalized hurst exponent for fBm)
@@ -319,25 +363,3 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], v
         plt.show()
 
     return intmit
-
-
-def kurtosis(t, x, twin, tstep):
-    # taxis
-    t1 = np.arange(t[0], t[-1]-twin, tstep)
-    t2 = np.arange(t[0]+twin, t[-1], tstep)
-    ax = np.zeros(len(t1))
-    K = np.zeros(len(t1))
-
-    # normalize
-    x = x / x[0]
-
-    for i in range(len(t1)):
-        idx = (t1[i] <= t) * (t <= t2[i])
-
-        ax[i] = np.mean(t[idx])
-
-        dx = x[idx]
-        ndx = (dx - np.mean(dx)) / np.std(dx - np.mean(dx))
-        K[i] = np.mean(ndx**4) / np.mean(ndx**2)**2 - 3
-
-    return ax, K
