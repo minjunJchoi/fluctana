@@ -2,7 +2,7 @@
 
 # Author : Minjun J. Choi (mjchoi@nfri.re.kr)
 #
-# Description : Filter data 
+# Description : Filter data
 #
 # Acknowledgement : TomRoelandts.com
 #
@@ -21,26 +21,28 @@ class FiltData(object):
         self.b = b
 
         # For FIR filters
-        N = int(np.ceil((4 / b)))
-        if not N % 2: N += 1
-        self.N = N
+        if name[0:3] == 'FIR':
+            N = int(np.ceil((4 / b)))
+            if not N % 2: N += 1
+            self.N = N
 
-        self.fir_coef = np.ones(N)
-        if name == 'FIR_pass' and fL == 0:
-            self.fir_coef = self.fir_lowpass(float(fH/fs), N) 
-        elif name == 'FIR_pass' and fH == 0:
-            self.fir_coef = self.fir_lowpass(float(fL/fs), N)
-        elif name == 'FIR_block':
-            self.fir_coef = self.fir_bandblock(fL/fs, fH/fs, N)
+            self.fir_coef = np.ones(N)
+            if name == 'FIR_pass' and fL == 0:
+                self.fir_coef = self.fir_lowpass(float(fH/fs), N)
+            elif name == 'FIR_pass' and fH == 0:
+                self.fir_coef = self.fir_lowpass(float(fL/fs), N)
+            elif name == 'FIR_block':
+                self.fir_coef = self.fir_bandblock(fL/fs, fH/fs, N)
 
     def apply(self, x):
-        # FIR filter
-        xlp = np.convolve(x, self.fir_coef)
-        if self.name == 'FIR_pass' and self.fH == 0: # high pass filter
-            x -= xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
-        else:
-            x = xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
-        
+        if self.name == 'FIR':
+            # FIR filter
+            xlp = np.convolve(x, self.fir_coef)
+            if self.name == 'FIR_pass' and self.fH == 0: # high pass filter
+                x -= xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
+            else:
+                x = xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
+
         return x
 
     def fir_lowpass(self, fc, N):
@@ -76,3 +78,23 @@ class FiltData(object):
         return h
 
 
+    def svd():
+        X = np.zeros(tnum, cnum)
+        xm = np.zeros(cnum)
+
+        X[:,c] = data[c,:]/np.sqrt(tnum)
+
+        xm[c] = np.mean(X[:,c])
+        X[:,c] = X[:,c] - xm[c]
+
+        U, sv, V = np.linalg.svd(X, full_matrices=True)
+
+        S = np.zeros(X.shape)
+        for i, s in enumerate(sv):
+            S[i][i] = s
+
+        reX = np.dot(U, np.dot(S, V))
+
+        data[c,:] = (reX[:,c] + xm[c])*np.sqrt(tnum)
+
+        return data

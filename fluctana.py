@@ -114,10 +114,12 @@ class FluctAna(object):
     def filt(self, name, fL, fH, b=0.08):
         # for FIR filters
         for d, D in enumerate(self.Dlist):
+
+            filter = FiltData(name, D.fs, fL, fH, b)
+
             cnum = len(D.data)
             for c in range(cnum):
                 x = np.copy(D.data[c,:])
-                filter = FiltData(name, D.fs, fL, fH, b)
                 D.data[c,:] = filter.apply(x)
 
             print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))

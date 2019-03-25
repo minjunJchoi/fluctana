@@ -184,19 +184,19 @@ C = FluctAna()
 
 
 ###################### Ritz nonlinear energy transfer ######################
-shot = 10186
-trange = [15.1,15.11]
-norm = 1
-# ref data
-clist = ['ECEI_L1303']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# cmp data
-clist = ['ECEI_L1403']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# fft
-C.fftbins(nfft=16, window='hann', overlap=0.5, detrend=0, full=1)
-# calculate
-C.ritz_nonlinear(done=0,dtwo=1)
+# shot = 10186
+# trange = [15.1,15.11]
+# norm = 1
+# # ref data
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # cmp data
+# clist = ['ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # fft
+# C.fftbins(nfft=16, window='hann', overlap=0.5, detrend=0, full=1)
+# # calculate
+# C.ritz_nonlinear(done=0,dtwo=1)
 
 
 ###################### continuous wavelet transform ######################
