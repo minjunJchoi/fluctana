@@ -113,7 +113,7 @@ class SvdFilter(object):
             ax2 = plt.subplot(212)
             ax2.plot(np.cumsum(sv)/np.sum(sv))
             ax2.axhline(y=self.cutoff, color='r')
-            ax1.set_ylabel('Distribution')
+            ax1.set_ylabel('SV power')
             ax2.set_ylabel('Cumulated sum')
             ax2.set_xlabel('Mode number')
             plt.show()
