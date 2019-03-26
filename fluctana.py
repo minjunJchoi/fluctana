@@ -866,10 +866,11 @@ class FluctAna(object):
             for k in range(full):
                 idx = kidx[k]
                 for n, ij in enumerate(idx):
-                    sum_Tijk[k] += Tijk[ij]
+                    # sum_Tijk[k] += Tijk[ij] ############# divide by number of pairs?
+                    sum_Tijk[k] += Tijk[ij] / len(idx)
             a3.plot(pax1, sum_Tijk)
             a3.set_xlabel('Frequency [kHz]')
-            a3.set_title('Nonlinear transfer rate [1/s]')
+            a3.set_ylabel('Nonlinear transfer rate [1/s]')
 
             plt.show()
 
