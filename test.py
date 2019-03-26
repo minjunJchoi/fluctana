@@ -18,45 +18,54 @@ C = FluctAna()
 ############################## FIR filters ##############################
 # shot = 18569
 # trange = [3,4.5]
-# #flimits = [0,200000]
-# #climits = [-50, -15]
-#
+# # add data
 # C.add_data(KstarMds(shot=shot, clist=['EP54:FOO']), trange=trange, norm=0)
-#
+# # estimate spectrum before filter
 # C.fftbins(nfft=256,window='hann',overlap=0.5,detrend=1)
 # C.cross_power(done=0,dtwo=0)
+# # plot time series and its power spectrum result
+# ax1 = plt.subplot(211)
+# ax1.plot( C.Dlist[0].time, C.Dlist[0].data[0,:])
+# ax2 = plt.subplot(212)
+# ax2.plot( C.Dlist[0].ax/1000.0, C.Dlist[0].val[0,:].real )
 #
-# plt.subplot(211)
-# plt.plot( C.Dlist[0].time, C.Dlist[0].data[0,:])
-# plt.subplot(212)
-# plt.plot( C.Dlist[0].ax/1000.0, C.Dlist[0].val[0,:].real )
-#
-# # low pass filter # OK
+# ### low pass filter ###
 # #C.filt('FIR_pass',0,50000,0.01) # smaller b is sharper
-# # high pass filter # OK
-# #C.filt('FIR_pass',50000,0,0.01)
-# # band pass filter  # OK
+# ### high pass filter ###
+# # C.filt('FIR_pass',50000,0,0.01)
+# ### band pass filter  ###
 # C.filt('FIR_pass',30000,0,0.01) # smaller b is sharper
-# C.filt('FIR_pass',0,100000,0.01) # smaller b is sharper
-# # band block filter  # OK
+# C.filt('FIR_pass',0,50000,0.01) # smaller b is sharper
+# ### band block filter  ###
 # # C.filt('FIR_block',0,1000,0.01) # smaller b is sharper
 #
-#
+# # estimate spectrum after filter
 # C.fftbins(nfft=256,window='hann',overlap=0.5,detrend=1)
 # C.cross_power(done=0,dtwo=0)
+# # plot filtered time series and its power spectrum results
+# ax1.plot( C.Dlist[0].time, C.Dlist[0].data[0,:])
+# ax2.plot( C.Dlist[0].ax/1000.0, C.Dlist[0].val[0,:].real )
 #
-# plt.subplot(211)
-# plt.plot( C.Dlist[0].time, C.Dlist[0].data[0,:])
-# plt.subplot(212)
-# plt.plot( C.Dlist[0].ax/1000.0, C.Dlist[0].val[0,:].real )
-# plt.yscale('log')
-# plt.xlabel('Frequency [kHz]')
-#
+# ax1.set_xlabel('Time [s]')
+# ax2.set_yscale('log')
+# ax2.set_xlabel('Frequency [kHz]')
 # plt.show()
 
-
 ############################## SVD filter ##############################
-
+shot = 10186
+trange = [15.9,16]
+norm = 1
+# ECEI channels from 0101 to 2408 (all)
+clist = ['ECEI_H0101-2408']
+# add data
+C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# plot a single data before filter
+plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:])
+# svd filter with cutoff
+C.svd_filt(cutoff=0.9)
+# plot a single data after filter
+plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:], 'o')
+plt.show()
 
 ############################## Threshold FFT ##############################
 

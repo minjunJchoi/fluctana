@@ -12,7 +12,9 @@
 import numpy as np
 import h5py
 
-class FiltData(object):
+import stats as st
+
+class FirFilter(object):
     def __init__(self, name, fs, fL, fH, b=0.08):
         self.name = name
         self.fs = fs
@@ -20,28 +22,24 @@ class FiltData(object):
         self.fH = fH
         self.b = b
 
-        # For FIR filters
-        if name[0:3] == 'FIR':
-            N = int(np.ceil((4 / b)))
-            if not N % 2: N += 1
-            self.N = N
+        N = int(np.ceil((4 / b)))
+        if not N % 2: N += 1
+        self.N = N
 
-            self.fir_coef = np.ones(N)
-            if name == 'FIR_pass' and fL == 0:
-                self.fir_coef = self.fir_lowpass(float(fH/fs), N)
-            elif name == 'FIR_pass' and fH == 0:
-                self.fir_coef = self.fir_lowpass(float(fL/fs), N)
-            elif name == 'FIR_block':
-                self.fir_coef = self.fir_bandblock(fL/fs, fH/fs, N)
+        self.fir_coef = np.ones(N)
+        if name == 'FIR_pass' and fL == 0:
+            self.fir_coef = self.fir_lowpass(float(fH/fs), N)
+        elif name == 'FIR_pass' and fH == 0:
+            self.fir_coef = self.fir_lowpass(float(fL/fs), N)
+        elif name == 'FIR_block':
+            self.fir_coef = self.fir_bandblock(fL/fs, fH/fs, N)
 
     def apply(self, x):
-        if self.name == 'FIR':
-            # FIR filter
-            xlp = np.convolve(x, self.fir_coef)
-            if self.name == 'FIR_pass' and self.fH == 0: # high pass filter
-                x -= xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
-            else:
-                x = xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
+        xlp = np.convolve(x, self.fir_coef)
+        if self.name == 'FIR_pass' and self.fH == 0: # high pass filter
+            x -= xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
+        else:
+            x = xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
 
         return x
 
@@ -78,23 +76,42 @@ class FiltData(object):
         return h
 
 
-    def svd():
+class SvdFilter(object):
+    def __init__(self, cutoff=0.9):
+        self.cutoff = cutoff
+
+    def apply(self, data):
+        cnum, tnum = data.shape
+
         X = np.zeros(tnum, cnum)
         xm = np.zeros(cnum)
 
-        X[:,c] = data[c,:]/np.sqrt(tnum)
+        for c in range(cnum):
+            X[:,c] = data[c,:]/np.sqrt(tnum)
+            xm[c] = np.mean(X[:,c])
+            X[:,c] = X[:,c] - xm[c]
 
-        xm[c] = np.mean(X[:,c])
-        X[:,c] = X[:,c] - xm[c]
+        U, s, Vt = np.linalg.svd(X, full_matrices=False)
 
-        U, sv, V = np.linalg.svd(X, full_matrices=True)
+        # energy of mode and the entropy
+        sv = s**2
+        E = np.sum(sv)
+        pi = sv / E
+        nsent = st.ns_entropy(pi)
+        print('The normalized Shannon entropy is {:g}'.format(nsent))
 
-        S = np.zeros(X.shape)
-        for i, s in enumerate(sv):
-            S[i][i] = s
+        plt.plot(np.cumsum(sv)/np.sum(sv))
+        plt.show()
 
-        reX = np.dot(U, np.dot(S, V))
+        # do filtering
 
-        data[c,:] = (reX[:,c] + xm[c])*np.sqrt(tnum)
+        S = np.diag(s)
+
+        reX = np.dot(U, np.dot(S, Vt))
+
+        print('reconstructed {:0}'.format(np.allclose(X, reX)))
+
+        for c in range(cnum):
+            data[c,:] = (reX[:,c] + xm[c])*np.sqrt(tnum)
 
         return data

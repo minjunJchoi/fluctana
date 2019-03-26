@@ -23,7 +23,7 @@ from kstarmds import *
 
 import specs as sp
 import stats as st
-from filtdata import FiltData
+import filtdata as ft
 
 #CM = plt.cm.get_cmap('RdYlBu_r')
 #CM = plt.cm.get_cmap('spectral')
@@ -112,17 +112,23 @@ class FluctAna(object):
 ############################# data filtering functions #########################
 
     def filt(self, name, fL, fH, b=0.08):
-        # for FIR filters
         for d, D in enumerate(self.Dlist):
+            if name[0:3] == 'FIR': # for FIR filters
+                filter = ft.FirFilter(name, D.fs, fL, fH, b)
 
-            filter = FiltData(name, D.fs, fL, fH, b)
+                cnum = len(D.data)
+                for c in range(cnum):
+                    x = np.copy(D.data[c,:])
+                    D.data[c,:] = filter.apply(x)
 
-            cnum = len(D.data)
-            for c in range(cnum):
-                x = np.copy(D.data[c,:])
-                D.data[c,:] = filter.apply(x)
+                print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
 
-            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
+    def svd_filt(self, cutoff=0.9):
+        for d, D in enumerate(self.Dlist):
+            svd = ft.SvdFilter(cutoff = cutoff)
+            D.data = svd.apply(D.data)
+
+            print('dnum {:d} svd filter with cutoff {:g}'.format(d, cutoff))
 
 ############################# spectral methods #############################
 
