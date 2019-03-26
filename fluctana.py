@@ -123,10 +123,10 @@ class FluctAna(object):
 
                 print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
 
-    def svd_filt(self, cutoff=0.9):
+    def svd_filt(self, cutoff=0.9, verbose=0):
         for d, D in enumerate(self.Dlist):
             svd = ft.SvdFilter(cutoff = cutoff)
-            D.data = svd.apply(D.data)
+            D.data = svd.apply(D.data, verbose=verbose)
 
             print('dnum {:d} svd filter with cutoff {:g}'.format(d, cutoff))
 

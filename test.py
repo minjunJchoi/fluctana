@@ -52,20 +52,20 @@ C = FluctAna()
 # plt.show()
 
 ############################## SVD filter ##############################
-shot = 10186
-trange = [15.9,16]
-norm = 1
-# ECEI channels from 0101 to 2408 (all)
-clist = ['ECEI_H0101-2408']
-# add data
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# plot a single data before filter
-plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:])
-# svd filter with cutoff
-C.svd_filt(cutoff=0.9)
-# plot a single data after filter
-plt.plot(C.Dlist[0].time, C.Dlist[0].data[0,:], 'o')
-plt.show()
+# shot = 10186
+# trange = [15.9,16]
+# norm = 0
+# # ECEI channels from 0101 to 2408 (all)
+# clist = ['ECEI_H0101-2408']
+# # add data
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# old_data = np.copy(C.Dlist[0].data[7,:])
+# # svd filter with cutoff
+# C.svd_filt(cutoff=0.9, verbose=1)
+# # plot a single data before and after filter
+# plt.plot(C.Dlist[0].time, old_data)
+# plt.plot(C.Dlist[0].time, C.Dlist[0].data[7,:], 'o')
+# plt.show()
 
 ############################## Threshold FFT ##############################
 

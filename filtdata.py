@@ -12,6 +12,8 @@
 import numpy as np
 import h5py
 
+import matplotlib.pyplot as plt
+
 import stats as st
 
 class FirFilter(object):
@@ -80,17 +82,22 @@ class SvdFilter(object):
     def __init__(self, cutoff=0.9):
         self.cutoff = cutoff
 
-    def apply(self, data):
+    def apply(self, data, verbose=0):
+        good_channels = self.check_data(data)
         cnum, tnum = data.shape
 
-        X = np.zeros(tnum, cnum)
-        xm = np.zeros(cnum)
+        X = np.zeros((tnum, int(np.sum(good_channels))))
+        xm = np.zeros(int(np.sum(good_channels)))
 
+        cnt = 0
         for c in range(cnum):
-            X[:,c] = data[c,:]/np.sqrt(tnum)
-            xm[c] = np.mean(X[:,c])
-            X[:,c] = X[:,c] - xm[c]
+            if good_channels[c] == 1:
+                X[:,cnt] = data[c,:]/np.sqrt(tnum)
+                xm[cnt] = np.mean(X[:,cnt])
+                X[:,cnt] = X[:,cnt] - xm[cnt]
+                cnt += 1
 
+        # Do SVD
         U, s, Vt = np.linalg.svd(X, full_matrices=False)
 
         # energy of mode and the entropy
@@ -100,18 +107,39 @@ class SvdFilter(object):
         nsent = st.ns_entropy(pi)
         print('The normalized Shannon entropy is {:g}'.format(nsent))
 
-        plt.plot(np.cumsum(sv)/np.sum(sv))
-        plt.show()
+        if verbose == 1:
+            ax1 = plt.subplot(211)
+            ax1.plot(pi)
+            ax2 = plt.subplot(212)
+            ax2.plot(np.cumsum(sv)/np.sum(sv))
+            ax2.axhline(y=self.cutoff, color='r')
+            ax1.set_ylabel('Distribution')
+            ax2.set_ylabel('Cumulated sum')
+            ax2.set_xlabel('Mode number')
+            plt.show()
 
-        # do filtering
+        # filtering
+        s[np.cumsum(sv)/np.sum(sv) >= self.cutoff] = 0
 
+        # reconstruct
         S = np.diag(s)
-
         reX = np.dot(U, np.dot(S, Vt))
+        # print('reconstructed {:0}'.format(np.allclose(X, reX)))
 
-        print('reconstructed {:0}'.format(np.allclose(X, reX)))
-
+        cnt = 0
         for c in range(cnum):
-            data[c,:] = (reX[:,c] + xm[c])*np.sqrt(tnum)
+            if good_channels[c] == 1:
+                data[c,:] = (reX[:,cnt] + xm[cnt])*np.sqrt(tnum)
+                cnt += 1
 
         return data
+
+    def check_data(self, data):
+        cnum, tnum = data.shape
+        good_channels = np.ones(cnum)
+
+        for c in range(cnum):
+            if np.std(data[c,:]) == 0 or ~np.isfinite(np.sum(data[c,:])): # saturated or bad number
+                good_channels[c] = 0
+
+        return good_channels

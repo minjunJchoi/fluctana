@@ -12,6 +12,8 @@
 import numpy as np
 import h5py
 
+import matplotlib.pyplot as plt
+
 ENUM = 5000000  # totla number of samples in an ECEI channel
 VN = 24  # number of vertical arrays
 
@@ -106,7 +108,7 @@ class KstarEcei(object):
             cnum = len(self.clist)
 
             data = np.zeros((cnum, tnum))
-            for i in range(0, cnum):
+            for i in range(cnum):
                 node = "/ECEI/" + self.clist[i] + "/Voltage"
 
                 ov = f[node][oidx1:oidx2]/10000.0
@@ -119,7 +121,7 @@ class KstarEcei(object):
                     av = f[node][aidx1:aidx2]/10000.0
                     v = v/np.mean(av) - 1
 
-                data[i][:] = v
+                data[i,:] = v
 
             self.data = data
 
