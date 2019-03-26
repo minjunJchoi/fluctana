@@ -752,7 +752,7 @@ class FluctAna(object):
             Ak = np.zeros(full) # Xo cXo
             Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
-            for b in range(1):
+            for b in range(bins):  ####################### fix
                 X = XX[b,:] # full -fN ~ fN
                 Y = YY[b,:] # full -fN ~ fN
 
@@ -769,8 +769,6 @@ class FluctAna(object):
                 Yk = np.zeros((full, full), dtype=np.complex_)
                 for k in range(full):
                     idx = kidx[k]
-                    print(len(idx))
-                    print(idx)
                     for n, ij in enumerate(idx):
                         Xk[ij] = X[k]
                         Yk[ij] = Y[k]
@@ -815,14 +813,67 @@ class FluctAna(object):
 
             Qijk = (Bijk - Lkk * Aijk) / Aij
 
-# Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dt
-# dt = dx / vd
-# Exp[-i(dth)] = Bk / np.abs(Bk)
+            # Cross phase related terms
+            Ek = Bk / np.abs(Bk) # Exp[-i(dth)]
+            Tk = np.arctan2(Bk.imag, Bk.real).real
 
-# gk = vd * Re[Gk] # growth rate
+            Ekk = np.zeros((full, full), dtype=np.complex_)
+            for k in range(full):
+                idx = kidx[k]
+                for n, ij in enumerate(idx):
+                    Ekk[ij] = Ek[k]
 
-# Lijk = Qijk * Exp[-i(dth)] / dt
-# Tijk = 1/2 * vd * Re[Lijk * Aijk] # nonlinear energy transfer rate
+            ############################## time difference between two measurements (Need to shift signals)
+            dt = 0.00001 # [s]
+
+            ############################### drift velocity
+            vd = 1000 # [m/s]
+            # dt = dx / vd
+
+            # Linear kernel
+            Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dt
+            # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dt
+
+            # Linear growth rate
+            gk = vd * Gk.real
+
+            # Quadratic kernel
+            Mijk = Qijk * Ekk / dt
+            # Mijk = Qijk * Exp[-i(dth)] / dt
+
+            # Nonlinear energy transfer rate
+            Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
+
+            # Plot results
+            fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,2,1]})
+            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+
+            pax1 = ax1/1000.0 # [kHz]
+            pax2 = ax1/1000.0 # [kHz]
+
+            # linear growth rate
+            a1.plot(pax1, gk)
+            a1.set_xlabel('Frequency [kHz]')
+            a1.set_ylabel('Growth rate [1/s]')
+
+            # Nonlinear transfer rate
+            a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower')
+            a2.set_xlabel('Frequency [kHz]')
+            a2.set_ylabel('Frequency [kHz]')
+            a2.set_title('Nonlinear transfer rate [1/s]')
+
+            sum_Tijk = np.zeros(full)
+            for k in range(full):
+                idx = kidx[k]
+                for n, ij in enumerate(idx):
+                    sum_Tijk[k] += Tijk[ij]
+            a3.plot(pax1, sum_Tijk)
+            a3.set_xlabel('Frequency [kHz]')
+            a3.set_title('Nonlinear transfer rate [1/s]')
+
+            plt.show()
+
+            print('done')
 
 
 ############################# statistical methods ##############################

@@ -130,9 +130,6 @@ def cross_phase(XX, YY):
         X = XX[b,:]
         Y = YY[b,:]
 
-        Pxx = X * np.matrix.conjugate(X)
-        Pyy = Y * np.matrix.conjugate(Y)
-
         val[b,:] = X*np.matrix.conjugate(Y)
 
     # average over bins
