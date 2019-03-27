@@ -6,7 +6,7 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-def skewness(t, x, twin, tstep):
+def skewness(t, x, twin, tstep, detrend=1):
     # taxis
     t1 = np.arange(t[0], t[-1]-twin, tstep)
     t2 = np.arange(t[0]+twin, t[-1], tstep)
@@ -22,13 +22,17 @@ def skewness(t, x, twin, tstep):
         ax[i] = np.mean(t[idx])
 
         dx = x[idx]
+        
+        if detrend == 1:
+            dx = signal.detrend(dx, type='linear')
+
         ndx = (dx - np.mean(dx)) / np.std(dx - np.mean(dx))
         skew[i] = np.mean(ndx**3) / np.mean(ndx**2)**(3.0/2.0)
 
     return ax, skew
 
 
-def kurtosis(t, x, twin, tstep):
+def kurtosis(t, x, twin, tstep, detrend=1):
     # taxis
     t1 = np.arange(t[0], t[-1]-twin, tstep)
     t2 = np.arange(t[0]+twin, t[-1], tstep)
@@ -44,6 +48,10 @@ def kurtosis(t, x, twin, tstep):
         ax[i] = np.mean(t[idx])
 
         dx = x[idx]
+        
+        if detrend == 1:
+            dx = signal.detrend(dx, type='linear')
+
         ndx = (dx - np.mean(dx)) / np.std(dx - np.mean(dx))
         kurt[i] = np.mean(ndx**4) / np.mean(ndx**2)**2 - 3
 

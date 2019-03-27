@@ -189,23 +189,23 @@ C = FluctAna()
 # # C.bicoherence(done=0,dtwo=0) # for test
 # # C.bicoherence(done=0,dtwo=0,sum=1) # for test
 # C.bicoherence(done=0,dtwo=1)
-# C.bicoherence(done=0,dtwo=1,sum=1)
+# # C.bicoherence(done=0,dtwo=1,sum=1)
 
 
 ###################### Ritz nonlinear energy transfer ######################
-shot = 10186
-trange = [15.9,16]
-norm = 1
-# ref data
-clist = ['ECEI_L1303']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# cmp data
-clist = ['ECEI_L1403']
-C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
-# fft
-C.fftbins(nfft=512, window='hann', overlap=0.5, detrend=0, full=1)
-# calculate
-C.ritz_nonlinear(done=0,dtwo=1)
+# shot = 10186
+# trange = [15.9,16]
+# norm = 1
+# # ref data
+# clist = ['ECEI_L1303']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # cmp data
+# clist = ['ECEI_L1403']
+# C.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=norm) # shot and time range
+# # fft
+# C.fftbins(nfft=512, window='hann', overlap=0.5, detrend=0, full=1)
+# # calculate
+# C.ritz_nonlinear(done=0,dtwo=1)
 
 
 ###################### continuous wavelet transform ######################

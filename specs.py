@@ -196,93 +196,145 @@ def bicoherence(XX, YY):
 
     return val
 
-#   case {15} % nonlinear spectral energy transfer
-#         ax1 = Fs/2*linspace(-1,1,nfft); % full -fN~fN axes
-#         ax2 = Fs/2*linspace(0,1,nfft/2+1); % half 0~fN axes
-#
-#         AA = zeros(length(ax1), length(ax2));
-#         BB = zeros(length(ax1), length(ax2));
-#         XX = zeros(bins, length(ax1), length(ax2));
-#         for b = 1:bins
-#             Xfull = fftshift(X(b,:)).'; % top -fN~fN bottom  ref
-#             Xhalf = X(b, 1:length(ax2)); % left 0~fN right         ref
-#             Yfull = fftshift(Y(b,:)).'; % top -fN~fN bottom cmp
-#
-#             X1 = repmat(Xfull, 1, length(ax2)); % -fN~fN ref
-#             X2 = repmat(Xhalf, length(ax1), 1); % 0~fN   ref
-#             X3 = zeros(length(ax1), length(ax2)); % f1+f2=f3     ref
-#             Y3 = zeros(length(ax1), length(ax2)); % f1+f2=f3     cmp
-#             for j = 1:length(ax2)
-#                 X3(1:(end-j+1),j) = Xfull(j:end);
-#                 Y3(1:(end-j+1),j) = Yfull(j:end);
-#             end
-#
-#             AA(:,:) = AA(:,:) + X1.*X2.*conj(X3)/bins;
-#             BB(:,:) = BB(:,:) + X1.*X2.*conj(Y3)/bins;
-#
-#             XX(b,:,:) = X1.*X2;
-#         end
-#
-# %         fk = 15000; % set frequency of f_k
-#         fkaxis = 0:2000:200000;
-#         gammak = zeros(size(fkaxis));
-#         for fk = 1:length(fkaxis)
-#
-#             [l,idxs] = nset_fkaxis(fkaxis(fk), ax1, ax2);
-#             I = size(idxs,1);
-#
-#             A = zeros(I,1);
-#             B = zeros(I,1);
-#             for i = 1:I
-#                 A(i,1) = AA(idxs(i,1), idxs(i,2));
-#                 B(i,1) = BB(idxs(i,1), idxs(i,2));
-#             end
-#             btbt = 0;
-#             FF = zeros(I,I);
-#             for b = 1:bins
-#                 F = zeros(I,1);
-#                 for i = 1:I
-#                     F(i,1) = XX(b, idxs(i,1), idxs(i,2));
-#                 end
-#                 FF(:,:) = FF(:,:) + F*transpose(conj(F))/bins;
-#
-#                 Xhalf = X(b, 1:length(ax2)); % 0~fN          ref
-#                 Yhalf = Y(b, 1:length(ax2)); % 0~fN          cmp
-#                 btbt = btbt + Xhalf(l)*conj(Yhalf(l))/bins;
-#             end
-#
-#             tau = 10e-6;
-#             gammak(fk) = 1/tau*(transpose(conj(A))*(FF\A) - transpose(conj(B))*(FF\B))/(btbt - transpose(conj(A))*(FF\A));
-#
-#         end
-#
-#         figure;
-#         plot(fkaxis/1000, real(gammak),'-o')
-# %         figure;
-# %         plot(A); hold on; plot(B)
-#         figure;
-#         imagesc(real(FF))
-#
-#
-#         fprintf('done \n')
-#         ax = 0;
-#         val = 0;
+
+def ritz_nonlinear(XX, YY):
+    # calculate
+    bins = len(XX)
+    full = len(XX[0,:]) # full length
+    half = int(full/2+1) # half length
+
+    kidx = get_kidx(full)
+
+    Aijk = np.zeros((full, full), dtype=np.complex_) # Xo1 Xo2 cXo
+    Bijk = np.zeros((full, full), dtype=np.complex_) # Yo cXo1 cXo2
+    Aij = np.zeros((full, full)) # |Xo1 Xo2|^2
+
+    Ak = np.zeros(full) # Xo cXo
+    Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
+
+    for b in range(bins):  ####################### fix
+        X = XX[b,:] # full -fN ~ fN
+        Y = YY[b,:] # full -fN ~ fN
+
+        # ##### test
+        # X = ax1 # full -fN ~ fN
+        # print('test bin {:d}'.format(b))
+
+        # make Xi and Xj
+        Xi = np.transpose(np.tile(X, (full, 1))) # columns of (-fN ~ fN)
+        Xj = np.tile(X, (full, 1)) # rows of (-fN ~ fN)
+
+        # make Xk and Yk
+        Xk = np.zeros((full, full), dtype=np.complex_)
+        Yk = np.zeros((full, full), dtype=np.complex_)
+        for k in range(full):
+            idx = kidx[k]
+            for n, ij in enumerate(idx):
+                Xk[ij] = X[k]
+                Yk[ij] = Y[k]
+                # if int(Xk[ij].real) == int(Xi[ij].real + Xj[ij].real): # for test
+                #     pass
+                # else:
+                #     print('uncorrect')
+                #     print('k {:g}, Xk {:g}, Xi + Xj {:g}, Xi {:g}, Xj {:g}'.format(k, Xk[ij], Xi[ij] + Xj[ij], Xi[ij], Xj[ij]))
+        # plt.imshow(Xk)
+        # plt.show()
+
+        # do ensemble average
+        Aijk = Aijk + Xi * Xj * np.matrix.conjugate(Xk) / bins
+
+        Bijk = Bijk + np.matrix.conjugate(Xi) * np.matrix.conjugate(Xj) * Yk / bins
+
+        Aij = Aij + (np.abs(Xi * Xj).real)**2 / bins
+
+        Ak = Ak + (np.abs(X).real)**2 / bins
+
+        Bk = Bk + Y * np.matrix.conjugate(X) / bins
+
+    # Linear transfer function ~ growth rate
+    Lk = np.zeros(full, dtype=np.complex_)
+
+    bsum = np.zeros(full, dtype=np.complex_)
+    asum = np.zeros(full)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            bsum[k] = bsum[k] + Aijk[ij] * Bijk[ij] / Aij[ij]
+            asum[k] = asum[k] + (np.abs(Aijk[ij]).real)**2 / Aij[ij]
+
+    Lk = (Bk - bsum) / (Ak - asum)
+
+    # Quadratic transfer function ~ nonlinear energy transfer rate
+    Lkk = np.zeros((full, full), dtype=np.complex_)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            Lkk[ij] = Lk[k]
+
+    Qijk = (Bijk - Lkk * Aijk) / Aij
+
+    # Cross phase related terms
+    Ek = Bk / np.abs(Bk) # Exp[-i(dth)]
+    Tk = np.arctan2(Bk.imag, Bk.real).real
+
+    Ekk = np.zeros((full, full), dtype=np.complex_)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            Ekk[ij] = Ek[k]
+
+    ############################## time difference between two measurements (Need to shift signals)
+    # dt = 6.582e-6*2/2 # [s]
+    dt = 9.607e-6*3/2 # [s]
+
+    ############################### drift velocity
+    # vd = 6138.0 # [m/s]
+    vd = 4202.0 # [m/s]
+    # dt = dx / vd
+
+    # Linear kernel
+    Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dt
+    # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dt
+
+    # Linear growth rate
+    gk = vd * Gk.real
+
+    # Quadratic kernel
+    Mijk = Qijk * Ekk / dt
+    # Mijk = Qijk * Exp[-i(dth)] / dt
+
+    # Nonlinear energy transfer rate
+    Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
+
+    # summed Tijk
+    sum_Tijk = np.zeros(full)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            # sum_Tijk[k] += Tijk[ij] ############# divide by number of pairs?
+            sum_Tijk[k] += Tijk[ij] / len(idx)
+
+    return gk, Tijk, sum_Tijk
 
 
-# function [l,idxs] = nset_fkaxis(fk, ax1, ax2)
-# % nonlinear spectral energy transfer f_k axis
-#
-# l = find(ax2>=fk, 1, 'first');
-#     fprintf('fk = %g // l = %d, ax2(l) = %g \n', fk, l, ax2(l));
-#
-# n = ceil(l/2); % ~half index on ax2
-# m = l-n+length(ax2); % ~half indx on ax1
-# L = length(ax2) - n; % # of points
-#
-# idxs = []; % idxs = [m-(0:L)',n+(0:L)']; % ax1, ax2 index for f1+f2 = fk
-# for i=0:L
-#     if ax1(m-i) <= ax2(n+i)
-#         idxs = [idxs; [m-i,n+i]];
-#         fprintf('%d : Correct %g + %g = %g \n', i, ax1(m-i), ax2(n+i), ax1(m-i)+ax2(n+i))
-#     end
-# end
+def get_kidx(full):
+    half = int(full/2 + 1)
+    kidx = []
+    for k in range(full):
+        idx = []
+
+        if k <= half - 1:
+            i = 0
+            j = half - 1 + k
+        else:
+            i = k - half + 1
+            j = full - 1
+
+        while j >= i:
+            idx.append((i,j))
+            i += 1
+            j -= 1
+
+        kidx.append(idx)
+
+    return kidx
