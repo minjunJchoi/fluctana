@@ -844,24 +844,21 @@ class FluctAna(object):
 
 ############################# statistical methods ##############################
 
-    def skewness(self, dnum=0, cnl=[0], twin=0.005, tstep=0.001, detrend=1, verbose=1, **kwargs):
+    def skewness(self, dnum=0, cnl=[0], detrend=1, verbose=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
         self.Dlist[dnum].vkind = 'skewness'
 
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
 
-        # axis
-        t1 = np.arange(self.Dlist[dnum].time[0], self.Dlist[dnum].time[-1]-twin, tstep)
-
         # data dimension
-        self.Dlist[dnum].val = np.zeros((cnum, len(t1)))
+        self.Dlist[dnum].val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
             t = self.Dlist[dnum].time
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:] = st.skewness(t, x, twin, tstep, detrend)
+            self.Dlist[dnum].val[c] = st.skewness(t, x, detrend)
 
             if verbose == 1:
                 # plot info
@@ -870,65 +867,48 @@ class FluctAna(object):
                 chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
                 
                 # Plot results
-                fig, (a1,a2) = plt.subplots(2,1, figsize=(6,6), gridspec_kw = {'height_ratios':[1,1]})
-                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                fig, (a1) = plt.subplots(1,1, figsize=(6,6))
 
                 a1.plot(t, x)
-                a1.set_title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
+
+                pdata = self.Dlist[dnum].val[c]
+                a1.set_title('#{:d}, {:s} {:s}, Skewness = {:g} (0 for Gaussian)'.format(pshot, pname, chpos, pdata), fontsize=10)
                 a1.set_xlabel('Time [s]')
 
-                ptime = self.Dlist[dnum].ax # time lag [us]
-                pdata = self.Dlist[dnum].val[c,:]
+                plt.show()
 
-                a2.plot(ptime, pdata, '-x')               
-                a2.set_xlabel('Time [s]')
-                a2.set_ylabel('Skewness (0 for Gaussian)')
-                a2.get_shared_x_axes().join(a1,a2)
-
-        if verbose == 1: plt.show()
-
-    def kurtosis(self, dnum=0, cnl=[0], twin=0.005, tstep=0.001, detrend=1, verbose=1, **kwargs):
+    def kurtosis(self, dnum=0, cnl=[0], detrend=1, verbose=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
         self.Dlist[dnum].vkind = 'kurtosis'
-       
+
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
 
-        # axis
-        t1 = np.arange(self.Dlist[dnum].time[0], self.Dlist[dnum].time[-1]-twin, tstep)
-
         # data dimension
-        self.Dlist[dnum].val = np.zeros((cnum, len(t1)))
+        self.Dlist[dnum].val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
             t = self.Dlist[dnum].time
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:] = st.kurtosis(t, x, twin, tstep, detrend)
+            self.Dlist[dnum].val[c] = st.kurtosis(t, x, detrend)
 
             if verbose == 1:
                 # plot info
                 pshot = self.Dlist[dnum].shot
                 pname = self.Dlist[dnum].clist[c]
                 chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-
+                
                 # Plot results
-                fig, (a1,a2) = plt.subplots(2,1, figsize=(6,6), gridspec_kw = {'height_ratios':[1,1]})
-                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                fig, (a1) = plt.subplots(1,1, figsize=(6,6))
 
                 a1.plot(t, x)
-                a1.set_title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
+
+                pdata = self.Dlist[dnum].val[c]
+                a1.set_title('#{:d}, {:s} {:s}, Kurtosis = {:g} (0 for Gaussian)'.format(pshot, pname, chpos, pdata), fontsize=10)
                 a1.set_xlabel('Time [s]')
 
-                ptime = self.Dlist[dnum].ax # time lag [us]
-                pdata = self.Dlist[dnum].val[c,:]
-
-                a2.plot(ptime, pdata, '-x')               
-                a2.set_xlabel('Time [s]')
-                a2.set_ylabel('Kurtosis (0 for Gaussian)')
-                a2.get_shared_x_axes().join(a1,a2)
-
-        if verbose == 1: plt.show()
+                plt.show()
 
     def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], verbose=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
@@ -1374,14 +1354,16 @@ class FluctAna(object):
 
         if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
             # axis
-            pbase = self.Dlist[dnum].ax/1000  # [kHz]
+            sbase = self.Dlist[dnum].ax/1000  # [kHz]
 
             # fidx
-            idx = np.where((pbase >= frange[0])*(pbase <= frange[1]))
+            idx = np.where((sbase >= frange[0])*(sbase <= frange[1]))
             idx1 = int(idx[0][0])
             idx2 = int(idx[0][-1]+1)
+            sdata = self.Dlist[dnum].val[snum,:]
         else:
-            pbase = self.Dlist[dnum].ax
+            sbase = self.Dlist[dnum].time
+            sdata = self.Dlist[dnum].data[snum,:]
 
         # data
         if vkind == 'cross_power':  # rms
@@ -1399,10 +1381,10 @@ class FluctAna(object):
 
                 # chisq = np.sum((data - fitdata)**2)
                 if c == snum:
-                    sbase = base/1000  # [kHz]
-                    sdata = fitdata
+                    fbase = base/1000  # [kHz]
+                    fdata = fitdata
         elif vkind == 'skewness' or 'kurtosis':  # mean value
-            pdata = np.mean(self.Dlist[dnum].val, 1)
+            pdata = self.Dlist[dnum].val
 
         # position
         rpos = self.Dlist[dnum].rpos[:]
@@ -1416,12 +1398,12 @@ class FluctAna(object):
         axs = [ax1, ax2, ax3]
 
         # sample plot
-        axs[0].plot(pbase, self.Dlist[dnum].val[snum,:])  # ax1.hold(True)
+        axs[0].plot(sbase, sdata)  # ax1.hold(True)
         if vkind == 'cross_phase':
-            axs[0].plot(sbase, sdata)
+            axs[0].plot(fbase, fdata)
         if vkind in ['cross_power','coherence','cross_phase']:
-            axs[0].axvline(x=pbase[idx1], color='g')
-            axs[0].axvline(x=pbase[idx2], color='g')
+            axs[0].axvline(x=sbase[idx1], color='g')
+            axs[0].axvline(x=sbase[idx2], color='g')
 
         if vkind == 'cross_power':
             axs[0].set_yscale('log')
@@ -1430,7 +1412,7 @@ class FluctAna(object):
         if 'xlimits' in kwargs: # xlimits
             axs[0].set_xlim([xlimits[0], xlimits[1]])
         else:
-            axs[0].set_xlim([pbase[0], pbase[-1]])
+            axs[0].set_xlim([sbase[0], sbase[-1]])
 
         # pdata plot
         sc = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
