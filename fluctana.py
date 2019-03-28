@@ -91,20 +91,49 @@ class FluctAna(object):
 
 ############################# down sampling #############################
 
-    def downsample(self, q):
+    def downsample(self, q, verbose=0):
         # down sampling after anti-aliasing filter
         for d, D in enumerate(self.Dlist):
+            cnum = len(D.data)
+
+            # plot dimension
+            if cnum < 4:
+                row = cnum
+            else:
+                row = 4
+            col = math.ceil(cnum/row)
+
             # new time axis
+            raw_time = np.copy(D.time)
             tnum = len(D.time)
             idx = np.arange(0, tnum, q)
             D.time = D.time[idx]
 
             # down sample
-            cnum = len(D.data)
             raw_data = np.copy(D.data)
             D.data = np.empty((cnum, len(D.time)))
             for c in range(cnum):
                 D.data[c,:] = signal.decimate(raw_data[c,:], q)
+
+                if verbose == 1:
+                    # plot info
+                    pshot = D.shot
+                    pname = D.clist[c]
+                    
+                    # set axes
+                    if c == 0:
+                        plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                        axes1 = plt.subplot(row,col,c+1)
+                        axprops = dict(sharex = axes1, sharey = axes1)
+                    elif c > 0:
+                        plt.subplot(row,col,c+1, **axprops)
+
+                    plt.plot(raw_time, raw_data[c,:])
+                    plt.plot(D.time, D.data[c,:])
+
+                    plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
+
+            plt.show()
 
             D.fs = round(1/(D.time[1] - D.time[0])/1000)*1000.0
             print('down sample with q={:d}, fs={:g}'.format(q, D.fs))

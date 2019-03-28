@@ -105,7 +105,7 @@ class SvdFilter(object):
         E = np.sum(sv)
         pi = sv / E
         nsent = st.ns_entropy(pi)
-        print('The normalized Shannon entropy is {:g}'.format(nsent))
+        print('The normalized Shannon entropy of sv is {:g}'.format(nsent))
 
         if verbose == 1:
             ax1 = plt.subplot(211)
