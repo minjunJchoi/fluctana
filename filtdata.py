@@ -39,7 +39,7 @@ class FirFilter(object):
     def apply(self, x):
         xlp = np.convolve(x, self.fir_coef)
         if self.name == 'FIR_pass' and self.fH == 0: # high pass filter
-            x -= xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
+            x = x - xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
         else:
             x = xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
 

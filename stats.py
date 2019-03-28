@@ -3,6 +3,8 @@ from scipy import signal
 import math
 import itertools
 
+import pickle 
+
 import matplotlib.pyplot as plt
 
 
@@ -13,7 +15,7 @@ def skewness(t, x, detrend=1):
     if detrend == 1:
         x = signal.detrend(x, type='linear')
 
-    nx = (x - np.mean(x)) / np.std(x - np.mean(x))
+    nx = (x - np.mean(x)) #/ np.std(x - np.mean(x))
     skew = np.mean(nx**3) / np.mean(nx**2)**(3.0/2.0)
 
     return skew
@@ -26,7 +28,7 @@ def kurtosis(t, x, detrend=1):
     if detrend == 1:
         x = signal.detrend(x, type='linear')
 
-    nx = (x - np.mean(x)) / np.std(x - np.mean(x))
+    nx = (x - np.mean(x)) #/ np.std(x - np.mean(x))
     kurt = np.mean(nx**4) / np.mean(nx**2)**2 - 3
 
     return kurt
@@ -71,12 +73,12 @@ def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     # time lag axis
     dt = t[1] - t[0]
     tax = ax*dt*1e6 # [us]
-    # E RS
-    val = np.mean(ers, 0)
-    std = np.std(ers, axis=0)
+    # ERS
+    mean_ers = np.mean(ers, 0)
+    std_ers = np.std(ers, axis=0)
 
     ptime = tax # time lag [us]
-    pdata = val
+    pdata = mean_ers
     plt.plot(ptime, pdata, '-x')
     fidx = (fitlims[0] <= ptime) * (ptime <= fitlims[1])
     fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
@@ -86,7 +88,7 @@ def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     # Hurst exponent
     hurst_exp = fit[0]
 
-    return tax, val, std, hurst_exp
+    return tax, mean_ers, std_ers, hurst_exp, fit_data
 
 
 def bp_prob(x, d=6, bins=30):
@@ -219,6 +221,22 @@ def complexity_limits(d):
     Ctwo = Ctwo[idx]
 
     return Hone, Cone, Htwo, Ctwo
+
+
+def fmb_fgn_locus(d):
+    try:
+        with open('kstardata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
+            [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
+    except:
+        pass
+
+    try:
+        with open('../kstardata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
+            [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
+    except:
+        pass
+
+    return c_fbm, h_fbm, c_fgn, h_fgn
 
 
 def fisher_measure(pi):

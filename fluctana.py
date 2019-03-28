@@ -111,17 +111,47 @@ class FluctAna(object):
 
 ############################# data filtering functions #########################
 
-    def filt(self, name, fL, fH, b=0.08):
+    def filt(self, name, fL, fH, b=0.08, verbose=0):
         for d, D in enumerate(self.Dlist):
+            
+            cnum = len(D.data)
+
+            # plot dimension
+            if cnum < 4:
+                row = cnum
+            else:
+                row = 4
+            col = math.ceil(cnum/row)
+
             if name[0:3] == 'FIR': # for FIR filters
                 filter = ft.FirFilter(name, D.fs, fL, fH, b)
 
-                cnum = len(D.data)
-                for c in range(cnum):
-                    x = np.copy(D.data[c,:])
-                    D.data[c,:] = filter.apply(x)
+            for c in range(cnum):
+                x = np.copy(D.data[c,:])
+                D.data[c,:] = filter.apply(x)
 
-                print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
+                if verbose == 1:
+                    # plot info
+                    pshot = D.shot
+                    pname = D.clist[c]
+                    
+                    # set axes
+                    if c == 0:
+                        plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                        axes1 = plt.subplot(row,col,c+1)
+                        axprops = dict(sharex = axes1, sharey = axes1)
+                    elif c > 0:
+                        plt.subplot(row,col,c+1, **axprops)
+
+                    plt.plot(D.time, x)
+                    plt.plot(D.time, D.data[c,:])
+
+                    plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
+
+            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
+            
+            if verbose == 1: plt.show()
+
 
     def svd_filt(self, cutoff=0.9, verbose=0):
         for d, D in enumerate(self.Dlist):
@@ -844,9 +874,68 @@ class FluctAna(object):
 
 ############################# statistical methods ##############################
 
-    def skewness(self, dnum=0, cnl=[0], detrend=1, verbose=1, **kwargs):
+    def skplane(self, dnum=0, cnl=[0], detrend=1, verbose=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+        self.Dlist[dnum].vkind = 'skplane'
+
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        # plot dimension
+        nch = len(cnl)
+        if nch < 4:
+            row = nch
+        else:
+            row = 4
+        col = math.ceil(nch/row)
+
+        # data dimension
+        self.Dlist[dnum].skew = np.zeros(cnum)
+        self.Dlist[dnum].kurt = np.zeros(cnum)
+
+        for i, c in enumerate(cnl):
+            t = self.Dlist[dnum].time
+            x = self.Dlist[dnum].data[c,:]
+
+            self.Dlist[dnum].skew[c] = st.skewness(t, x, detrend)
+            self.Dlist[dnum].kurt[c] = st.kurtosis(t, x, detrend)
+
+            if verbose == 1:                
+                # plot info
+                pshot = self.Dlist[dnum].shot
+                pname = self.Dlist[dnum].clist[c]
+                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
+                
+                # set axes
+                if i == 0:
+                    plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                    axes1 = plt.subplot(row,col,i+1)
+                    axprops = dict(sharex = axes1, sharey = axes1)
+                elif i > 0:
+                    plt.subplot(row,col,i+1, **axprops)
+
+                plt.plot(t, x)
+
+                plt.title('#{:d}, {:s} {:s}, Skewness = {:g}, Kurtosis = {:g}'.format(pshot, pname, chpos, self.Dlist[dnum].skew[c], self.Dlist[dnum].kurt[c]), fontsize=10)
+                plt.xlabel('Time [s]')
+
+        if verbose == 1:
+            plt.show()
+
+            plt.plot(self.Dlist[dnum].skew[cnl], self.Dlist[dnum].kurt[cnl], 'o')
+            for i, c in enumerate(cnl):
+                plt.annotate(self.Dlist[dnum].clist[c], (self.Dlist[dnum].skew[c], self.Dlist[dnum].kurt[c]))
+
+            sax = np.arange((self.Dlist[dnum].skew[cnl]).min(), (self.Dlist[dnum].skew[cnl]).max(), 0.001)
+            kax = 3*sax**2/2 # parabolic relationship for exponential pulse and exponentially distributed pulse amplitudes [Garcia NME 2017]
+            plt.plot(sax, kax, 'k')
+
+            plt.xlabel('Skewness')
+            plt.ylabel('Kurtosis')
+
+            plt.show()
+
+    def skewness(self, dnum=0, cnl=[0], detrend=1, **kwargs):
         self.Dlist[dnum].vkind = 'skewness'
 
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
@@ -860,26 +949,7 @@ class FluctAna(object):
 
             self.Dlist[dnum].val[c] = st.skewness(t, x, detrend)
 
-            if verbose == 1:
-                # plot info
-                pshot = self.Dlist[dnum].shot
-                pname = self.Dlist[dnum].clist[c]
-                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-                
-                # Plot results
-                fig, (a1) = plt.subplots(1,1, figsize=(6,6))
-
-                a1.plot(t, x)
-
-                pdata = self.Dlist[dnum].val[c]
-                a1.set_title('#{:d}, {:s} {:s}, Skewness = {:g} (0 for Gaussian)'.format(pshot, pname, chpos, pdata), fontsize=10)
-                a1.set_xlabel('Time [s]')
-
-                plt.show()
-
-    def kurtosis(self, dnum=0, cnl=[0], detrend=1, verbose=1, **kwargs):
-        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
-        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+    def kurtosis(self, dnum=0, cnl=[0], detrend=1, **kwargs):
         self.Dlist[dnum].vkind = 'kurtosis'
 
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
@@ -893,86 +963,31 @@ class FluctAna(object):
 
             self.Dlist[dnum].val[c] = st.kurtosis(t, x, detrend)
 
-            if verbose == 1:
-                # plot info
-                pshot = self.Dlist[dnum].shot
-                pname = self.Dlist[dnum].clist[c]
-                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-                
-                # Plot results
-                fig, (a1) = plt.subplots(1,1, figsize=(6,6))
-
-                a1.plot(t, x)
-
-                pdata = self.Dlist[dnum].val[c]
-                a1.set_title('#{:d}, {:s} {:s}, Kurtosis = {:g} (0 for Gaussian)'.format(pshot, pname, chpos, pdata), fontsize=10)
-                a1.set_xlabel('Time [s]')
-
-                plt.show()
-
-    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], verbose=1, **kwargs):
-        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
-        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitlims=[10,1000], **kwargs):
+        self.Dlist[dnum].vkind = 'hurst'
 
         pshot = self.Dlist[dnum].shot
         cnum = len(self.Dlist[dnum].data)  # number of cmp channels
-
-        # plot dimension
-        nch = len(cnl)
-        if nch < 4:
-            row = nch
-        else:
-            row = 4
-        col = math.ceil(nch/row)
 
         # axis
         bsize = int(1.0*len(self.Dlist[dnum].time)/bins)
         ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
 
         # data dimension
-        self.Dlist[dnum].val = np.zeros((cnum, len(ax)))
+        self.Dlist[dnum].ers = np.zeros((cnum, len(ax)))
         self.Dlist[dnum].std = np.zeros((cnum, len(ax)))
-        self.Dlist[dnum].hurst = np.zeros(cnum)
+        self.Dlist[dnum].fit = np.zeros((cnum, len(ax)))
+        self.Dlist[dnum].val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            # set axes
-            if verbose == 1 and i == 0:
-                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                axes1 = plt.subplot(row,col,i+1)
-                axprops = dict(sharex = axes1, sharey = axes1)
-            elif verbose == 1 and i > 0:
-                plt.subplot(row,col,i+1, **axprops)
-
             pname = self.Dlist[dnum].clist[c]
             t = self.Dlist[dnum].time
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:], self.Dlist[dnum].hurst[c] = \
-            st.hurst(t, x, bins, detrend, fitlims, **kwargs)
+            self.Dlist[dnum].ax, self.Dlist[dnum].ers[c,:], self.Dlist[dnum].std[c,:], \
+            self.Dlist[dnum].val[c], self.Dlist[dnum].fit[c,:] = st.hurst(t, x, bins, detrend, fitlims, **kwargs)
 
-            if verbose == 1:
-                ptime = self.Dlist[dnum].ax # time lag [us]
-                pdata = self.Dlist[dnum].val[c,:]
-
-                plt.plot(ptime, pdata, '-x')
-
-                fidx = (fitlims[0] <= ptime) * (ptime <= fitlims[1])
-                fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
-                fit_data = 10**(fit[1])*ptime**(fit[0])
-                plt.plot(ptime, fit_data, 'r')
-                self.Dlist[dnum].hurst[c] = fit[0]
-
-                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-                plt.title('#{:d}, {:s} {:s}; H={:g}'.format(pshot, pname, chpos, fit[0]), fontsize=10)
-                plt.xlabel('Time lag [us]')
-                plt.ylabel('R/S')
-
-                plt.xscale('log')
-                plt.yscale('log')
-
-        if verbose == 1: plt.show()
-
-    def chplane(self, dnum=0, cnl=[0], d=6, bins=30, verbose=1, **kwargs):
+    def chplane(self, dnum=0, cnl=[0], d=6, bins=1, verbose=1, **kwargs):
         # CH plane [Rosso PRL 2007]
         # chaotic : moderate C and H, above fBm
         # stochastic : low C and high H, below fBm
@@ -998,7 +1013,7 @@ class FluctAna(object):
         print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
 
         # data dimension
-        self.Dlist[dnum].val = np.zeros((cnum, nst))
+        self.Dlist[dnum].pi = np.zeros((cnum, nst))
         self.Dlist[dnum].std = np.zeros((cnum, nst))
         self.Dlist[dnum].jscom = np.zeros(cnum)
         self.Dlist[dnum].nsent = np.zeros(cnum)
@@ -1016,13 +1031,13 @@ class FluctAna(object):
 
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].val[c,:], self.Dlist[dnum].std[c,:] = st.bp_prob(x, d, bins)
-            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c] = st.ch_measure(self.Dlist[dnum].val[c,:])
+            self.Dlist[dnum].ax, self.Dlist[dnum].pi[c,:], self.Dlist[dnum].std[c,:] = st.bp_prob(x, d, bins)
+            self.Dlist[dnum].jscom[c], self.Dlist[dnum].nsent[c] = st.ch_measure(self.Dlist[dnum].pi[c,:])
 
             # plot BP probability
             if verbose == 1:
                 pax = self.Dlist[dnum].ax
-                pdata = self.Dlist[dnum].val[c,:]
+                pdata = self.Dlist[dnum].pi[c,:]
 
                 plt.plot(pax, pdata, '-x')
 
@@ -1037,7 +1052,9 @@ class FluctAna(object):
 
         # plot CH plane
         if verbose == 1:
-            plt.plot(self.Dlist[dnum].nsent[cnl], self.Dlist[dnum].jscom[cnl], '-o')
+            plt.plot(self.Dlist[dnum].nsent[cnl], self.Dlist[dnum].jscom[cnl], 'o')
+            for i, c in enumerate(cnl):
+                plt.annotate(self.Dlist[dnum].clist[c], (self.Dlist[dnum].nsent[c], self.Dlist[dnum].jscom[c]))
 
             # complexity limits
             h_one, c_one, h_two, c_two = st.complexity_limits(d)
@@ -1045,18 +1062,56 @@ class FluctAna(object):
             plt.plot(h_two, c_two, 'k')
 
             # draw fbm, fgn locus
-            try:
-                with open('dgdata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
-                    [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
-                    plt.plot(h_fbm, c_fbm, 'y')
-                    plt.plot(h_fgn, c_fgn, 'g')
-            except:
-                print('dgdata/ch_fbm_fgn_d{:d}.pkl not found'.format(d))
+            c_fbm, h_fbm, c_fgn, h_fgn = st.fmb_fgn_locus(d)
+            plt.plot(h_fbm, c_fbm, 'y')
+            plt.plot(h_fgn, c_fgn, 'g')
 
             plt.xlabel('Entropy (H)')
             plt.ylabel('Complexity (C)')
 
             plt.show()
+
+    def js_complexity(self, dnum=0, cnl=[0], d=6, bins=1, **kwargs):
+        self.Dlist[dnum].vkind = 'jscom'
+
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        nst = math.factorial(d) # number of possible states
+
+        bsize = int(1.0*len(self.Dlist[dnum].data[0,:])/bins)
+        print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
+
+        # data dimension
+        self.Dlist[dnum].pi = np.zeros((cnum, nst))
+        self.Dlist[dnum].std = np.zeros((cnum, nst))
+        self.Dlist[dnum].val = np.zeros(cnum)
+
+        for i, c in enumerate(cnl):
+            x = self.Dlist[dnum].data[c,:]
+
+            self.Dlist[dnum].ax, self.Dlist[dnum].pi[c,:], self.Dlist[dnum].std[c,:] = st.bp_prob(x, d, bins)
+            self.Dlist[dnum].val[c] = st.js_complexity(self.Dlist[dnum].pi[c,:])
+
+    def ns_entropy(self, dnum=0, cnl=[0], d=6, bins=1, **kwargs):
+        self.Dlist[dnum].vkind = 'nsent'
+
+        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+
+        nst = math.factorial(d) # number of possible states
+
+        bsize = int(1.0*len(self.Dlist[dnum].data[0,:])/bins)
+        print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
+
+        # data dimension
+        self.Dlist[dnum].pi = np.zeros((cnum, nst))
+        self.Dlist[dnum].std = np.zeros((cnum, nst))
+        self.Dlist[dnum].val = np.zeros(cnum)
+
+        for i, c in enumerate(cnl):
+            x = self.Dlist[dnum].data[c,:]
+
+            self.Dlist[dnum].ax, self.Dlist[dnum].pi[c,:], self.Dlist[dnum].std[c,:] = st.bp_prob(x, d, bins)
+            self.Dlist[dnum].val[c] = st.ns_entropy(self.Dlist[dnum].pi[c,:])
 
     def intermittency(self, dnum=0, cnl=[0], bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], verbose=1, **kwargs):
         # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
@@ -1114,24 +1169,42 @@ class FluctAna(object):
                 pdata = self.Dlist[dnum].data[c,:]
             elif type == 'val':
                 vkind = self.Dlist[dnum].vkind
-                if vkind in ['correlation','corr_coef']:
-                    pbase = self.Dlist[dnum].ax*1e6
-                elif vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
-                    pbase = self.Dlist[dnum].ax/1000
-                else:
-                    pbase = self.Dlist[dnum].ax
-
-                pdata = self.Dlist[dnum].val[c,:].real
 
                 if hasattr(self.Dlist[dnum], 'rname'):
                     rname = self.Dlist[dnum].rname[c]
                 else:
                     rname = ''
-                if self.Dlist[dnum].vkind == 'coherence':
+
+                # set data
+                if vkind in ['skewness','kurtosis']:
+                    pdata = self.Dlist[dnum].data[c,:]
+                elif vkind == 'hurst':
+                    pdata = self.Dlist[dnum].ers[c,:]
+                elif vkind in ['jscom','nsent']:
+                    pdata = self.Dlist[dnum].pi[c,:]
+                else:
+                    pdata = self.Dlist[dnum].val[c,:].real
+                
+                # set base
+                if vkind in ['correlation','corr_coef']:
+                    pbase = self.Dlist[dnum].ax*1e6
+                elif vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+                    pbase = self.Dlist[dnum].ax/1000
+                elif vkind in ['skewness','kurtosis']:
+                    pbase = self.Dlist[dnum].time
+                else:
+                    pbase = self.Dlist[dnum].ax
+
+            plt.plot(pbase, pdata, '-x')  # plot
+
+            # aux plot
+            if type == 'val':
+                if vkind == 'coherence':
                     plt.axhline(y=1/np.sqrt(self.Dlist[dnum].bins), color='r')
+                elif vkind == 'hurst':
+                    plt.plot(pbase, self.Dlist[dnum].fit[c,:], 'r')
 
-            plt.plot(pbase, pdata)  # plot
-
+            # xy limits
             if 'ylimits' in kwargs:  # ylimits
                 plt.ylim([ylimits[0], ylimits[1]])
             if 'xlimits' in kwargs:  # xlimits
@@ -1139,25 +1212,40 @@ class FluctAna(object):
             else:
                 plt.xlim([pbase[0], pbase[-1]])
 
+            # title
             chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
             if type == 'time':
                 plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
             elif type == 'val':
-                plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+                if vkind in ['skewness','kurtosis','hurst','jscom','nsent']:
+                    plt.title('#{:d}, {:s} {:s}, {:s} = {:g}'.format(pshot, pname, chpos, vkind, self.Dlist[dnum].val[c]), fontsize=10)
+                else:
+                    plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
+            # xy scale
+            if type == 'val':
+                if vkind in ['hurst']:
+                    plt.xscale('log')
+                if vkind in ['cross_power','hurst','jscom','nsent']:
+                    plt.yscale('log')
+
+            # xy label
             if type == 'time':
                 plt.xlabel('Time [s]')
                 plt.ylabel('Signal')
-            elif type == 'val' and vkind == 'cross_power':
-                plt.xlabel('Frequency [kHz]')
-                plt.ylabel('Cross power')
-                plt.yscale('log')
-            elif type == 'val' and vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
-                plt.xlabel('Frequency [kHz]')
-                plt.ylabel(vkind)
-            else:
-                plt.xlabel('Time [s]')
-                plt.ylabel(vkind)
+            elif type == 'val':
+                if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+                    plt.xlabel('Frequency [kHz]')
+                    plt.ylabel(vkind)
+                elif vkind == 'hurst':
+                    plt.xlabel('Time lag [us]')
+                    plt.ylabel('R/S')
+                elif vkind in ['jscom','nsent']:
+                    plt.xlabel('order number')
+                    plt.ylabel('BP probability')
+                else:
+                    plt.xlabel('Time [s]')
+                    plt.ylabel('Signal')
 
         plt.show()
 
@@ -1207,6 +1295,122 @@ class FluctAna(object):
                 plt.ylabel('Cross phase [rad]')
 
         plt.show()
+
+    def cplot(self, dnum, snum=0, frange=[0, 100], vlimits=[0, 1], **kwargs):
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+        # calculate mean coherence image
+        # or cross power rms image
+        # or group velocity image
+
+        vkind = self.Dlist[dnum].vkind
+
+        if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+            # axis
+            sbase = self.Dlist[dnum].ax/1000  # [kHz]
+
+            # fidx
+            idx = np.where((sbase >= frange[0])*(sbase <= frange[1]))
+            idx1 = int(idx[0][0])
+            idx2 = int(idx[0][-1]+1)
+            sdata = self.Dlist[dnum].val[snum,:]
+        elif vkind == 'hurst':
+            sbase = self.Dlist[dnum].ax
+            sdata = self.Dlist[dnum].ers[snum,:]
+        elif vkind in ['jscom','nsent']:
+            sbase = self.Dlist[dnum].ax
+            sdata = self.Dlist[dnum].pi[snum,:]
+        else:
+            sbase = self.Dlist[dnum].time
+            sdata = self.Dlist[dnum].data[snum,:]
+
+        # data
+        if vkind == 'cross_power':  # rms
+            pdata = np.sqrt(np.sum(self.Dlist[dnum].val[:,idx1:idx2], 1))
+        elif vkind == 'coherence':  # mean coherence
+            pdata = np.mean(self.Dlist[dnum].val[:,idx1:idx2], 1)
+        elif vkind == 'cross_phase':  # group velocity
+            base = self.Dlist[dnum].ax[idx1:idx2]  # [Hz]
+            pdata = np.zeros(len(self.Dlist[dnum].val))
+            for c in range(len(self.Dlist[dnum].val)):
+                data = self.Dlist[dnum].val[c,idx1:idx2]
+                pfit = np.polyfit(base, data, 1)
+                fitdata = np.polyval(pfit, base)
+                pdata[c] = 2*np.pi*self.Dlist[dnum].dist[c]/pfit[0]/1000.0  # [km/s]
+
+                # chisq = np.sum((data - fitdata)**2)
+                if c == snum:
+                    fbase = base/1000  # [kHz]
+                    fdata = fitdata
+        else:
+            pdata = self.Dlist[dnum].val
+
+        # position
+        rpos = self.Dlist[dnum].rpos[:]
+        zpos = self.Dlist[dnum].zpos[:]
+
+        # prepare figure
+        fig = plt.figure(facecolor='w', figsize=(5,10))
+        ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
+        ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
+        ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
+        axs = [ax1, ax2, ax3]
+
+        # sample plot
+        axs[0].plot(sbase, sdata)  # ax1.hold(True)
+        if vkind == 'cross_phase':
+            axs[0].plot(fbase, fdata)
+        if vkind in ['cross_power','coherence','cross_phase']:
+            axs[0].axvline(x=sbase[idx1], color='g')
+            axs[0].axvline(x=sbase[idx2], color='g')
+
+        if vkind in ['hurst']:
+            axs[0].set_xscale('log')
+        if vkind in ['cross_power','hurst','jscom','nsent']:
+            axs[0].set_yscale('log')
+
+        if 'ylimits' in kwargs: # ylimits
+            axs[0].set_ylim([ylimits[0], ylimits[1]])
+        if 'xlimits' in kwargs: # xlimits
+            axs[0].set_xlim([xlimits[0], xlimits[1]])
+        else:
+            axs[0].set_xlim([sbase[0], sbase[-1]])
+
+        if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+            axs[0].set_xlabel('Frequency [kHz]')
+            axs[0].set_ylabel(vkind)
+        elif vkind == 'hurst':
+            axs[0].set_xlabel('Time lag [us]')
+            axs[0].set_ylabel('R/S')
+        elif vkind in ['jscom','nsent']:
+            axs[0].set_xlabel('order number')
+            axs[0].set_ylabel('BP probability')
+        else:
+            axs[0].set_xlabel('Time [s]')
+            axs[0].set_ylabel('Signal')
+
+        # pdata plot
+        sc = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+        axs[1].set_aspect('equal')
+
+        # color bar
+        plt.colorbar(sc, cax=axs[2])
+
+        axs[1].set_xlabel('R [m]')
+        axs[1].set_ylabel('z [m]')
+        if vkind == 'cross_power':
+            axs[1].set_title('Cross power rms')
+        elif vkind == 'coherence':
+            axs[1].set_title('Coherence mean')
+        elif vkind == 'cross_phase':
+            axs[1].set_title('Group velocity [km/s]')
+        else:  
+            axs[1].set_title(vkind)
+
+        self.Dlist[dnum].pdata = pdata
+
+        plt.show()
+
 
     def spec(self, dnum=0, cnl=[0], nfft=512, **kwargs):
         if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
@@ -1342,99 +1546,6 @@ class FluctAna(object):
                 plt.close()
 
         self.Dlist[dnum].pdata = pdata
-
-    def cplot(self, dnum, snum=0, frange=[0, 100], vlimits=[0, 1], **kwargs):
-        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
-        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
-        # calculate mean coherence image
-        # or cross power rms image
-        # or group velocity image
-
-        vkind = self.Dlist[dnum].vkind
-
-        if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
-            # axis
-            sbase = self.Dlist[dnum].ax/1000  # [kHz]
-
-            # fidx
-            idx = np.where((sbase >= frange[0])*(sbase <= frange[1]))
-            idx1 = int(idx[0][0])
-            idx2 = int(idx[0][-1]+1)
-            sdata = self.Dlist[dnum].val[snum,:]
-        else:
-            sbase = self.Dlist[dnum].time
-            sdata = self.Dlist[dnum].data[snum,:]
-
-        # data
-        if vkind == 'cross_power':  # rms
-            pdata = np.sqrt(np.sum(self.Dlist[dnum].val[:,idx1:idx2], 1))
-        elif vkind == 'coherence':  # mean coherence
-            pdata = np.mean(self.Dlist[dnum].val[:,idx1:idx2], 1)
-        elif vkind == 'cross_phase':  # group velocity
-            base = self.Dlist[dnum].ax[idx1:idx2]  # [Hz]
-            pdata = np.zeros(len(self.Dlist[dnum].val))
-            for c in range(len(self.Dlist[dnum].val)):
-                data = self.Dlist[dnum].val[c,idx1:idx2]
-                pfit = np.polyfit(base, data, 1)
-                fitdata = np.polyval(pfit, base)
-                pdata[c] = 2*np.pi*self.Dlist[dnum].dist[c]/pfit[0]/1000.0  # [km/s]
-
-                # chisq = np.sum((data - fitdata)**2)
-                if c == snum:
-                    fbase = base/1000  # [kHz]
-                    fdata = fitdata
-        elif vkind == 'skewness' or 'kurtosis':  # mean value
-            pdata = self.Dlist[dnum].val
-
-        # position
-        rpos = self.Dlist[dnum].rpos[:]
-        zpos = self.Dlist[dnum].zpos[:]
-
-        # prepare figure
-        fig = plt.figure(facecolor='w', figsize=(5,10))
-        ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
-        ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
-        ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
-        axs = [ax1, ax2, ax3]
-
-        # sample plot
-        axs[0].plot(sbase, sdata)  # ax1.hold(True)
-        if vkind == 'cross_phase':
-            axs[0].plot(fbase, fdata)
-        if vkind in ['cross_power','coherence','cross_phase']:
-            axs[0].axvline(x=sbase[idx1], color='g')
-            axs[0].axvline(x=sbase[idx2], color='g')
-
-        if vkind == 'cross_power':
-            axs[0].set_yscale('log')
-        if 'ylimits' in kwargs: # ylimits
-            axs[0].set_ylim([ylimits[0], ylimits[1]])
-        if 'xlimits' in kwargs: # xlimits
-            axs[0].set_xlim([xlimits[0], xlimits[1]])
-        else:
-            axs[0].set_xlim([sbase[0], sbase[-1]])
-
-        # pdata plot
-        sc = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
-        axs[1].set_aspect('equal')
-
-        # color bar
-        plt.colorbar(sc, cax=axs[2])
-
-        axs[1].set_xlabel('R [m]')
-        axs[1].set_ylabel('z [m]')
-        if vkind == 'cross_power':
-            axs[1].set_title('Cross power rms')
-        elif vkind == 'coherence':
-            axs[1].set_title('Coherence mean')
-        elif vkind == 'cross_phase':
-            axs[1].set_title('Group velocity [km/s]')
-        elif vkind == ['skewness','kurtosis']:  # mean vlaue
-            axs[1].set_title(vkind)
-
-        self.Dlist[dnum].pdata = pdata
-
-        plt.show()
 
 ############################# test functions ###################################
 
