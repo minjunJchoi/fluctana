@@ -15,7 +15,7 @@ def skewness(t, x, detrend=1):
     if detrend == 1:
         x = signal.detrend(x, type='linear')
 
-    nx = (x - np.mean(x)) #/ np.std(x - np.mean(x))
+    nx = (x - np.mean(x)) / np.std(x - np.mean(x))
     skew = np.mean(nx**3) / np.mean(nx**2)**(3.0/2.0)
 
     return skew
@@ -28,7 +28,7 @@ def kurtosis(t, x, detrend=1):
     if detrend == 1:
         x = signal.detrend(x, type='linear')
 
-    nx = (x - np.mean(x)) #/ np.std(x - np.mean(x))
+    nx = (x - np.mean(x)) / np.std(x - np.mean(x))
     kurt = np.mean(nx**4) / np.mean(nx**2)**2 - 3
 
     return kurt
