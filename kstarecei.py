@@ -30,8 +30,6 @@ class KstarEcei(object):
             self.data_path = '/eceidata/exp_2013/'
         elif 9741 < shot and shot < 11723:
             self.data_path = '/eceidata/exp_2014/'
-            # self.data_path = '/Volumes/myNFRI/temp/'  # for test
-            print('--------------TEST kstarecei 2014 path TEST--------------')
         elif 12272 < shot and shot < 14942:
             self.data_path = '/eceidata/exp_2015/'
         elif 14941 < shot and shot < 17356:
@@ -80,6 +78,9 @@ class KstarEcei(object):
 
             print('ECEI file = {}'.format(self.fname))
 
+        # get channel posistion
+        self.channel_position()
+
     def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0):
         self.trange = trange
 
@@ -124,9 +125,6 @@ class KstarEcei(object):
                 data[i,:] = v
 
             self.data = data
-
-        # get channel posistion
-        self.channel_position()
 
         return time, data
 
@@ -194,6 +192,16 @@ class KstarEcei(object):
 
             # get vertical position and angle at rpos
             self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
+    
+    def show_ch_position(self):
+        fig, (a1) = plt.subplots(1,1, figsize=(6,6))
+        a1.plot(self.rpos, self.zpos, 'o')
+        for c, cname in enumerate(self.clist):
+            a1.annotate(cname[5:], (self.rpos[c], self.zpos[c]))
+        a1.set_title('ABCD positions (need corrections from syndia)')
+        a1.set_xlabel('R [m]')
+        a1.set_ylabel('z [m]')
+        plt.show()
 
     def beam_path(self, rpos, vn):
         # IN : shot, device name, R posistion [m], vertical channel number

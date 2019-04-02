@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 from kstardata import ep_pos
 from kstardata import ece_pos
+from kstardata import mc_pos
 
 VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'ECH_VFWD1', 'ECCD':'EC1_RFFWD1',
             'ICRF':'ICRF_FWD', 'LHCD':'LH1_AFWD', 'GASI':'I_GFLOW_IN:FOO', 'GASK':'K_GFLOW_IN:FOO', 'SMBI':'SM_VAL_OUT:FOO',
@@ -163,6 +164,8 @@ class KstarMds(Connection):
             ece_rpos = ece_pos.get_ece_pos(self.shot)
         elif 'EP' == self.clist[0][0:2]:
             ep_rpos, ep_zpos = ep_pos.get_ep_pos()
+        elif 'MC1' == self.clist[0][0:3]:
+            mc1t_apos, mc1p_apos = mc_pos.get_mc_pos()
 
         # try to read from MDSplus node
         cnum = len(self.clist)
@@ -181,9 +184,9 @@ class KstarMds(Connection):
             try:
                 # try to read from MDSplus node
                 self.rpos[c] = self.get(rnode).data()[0]
-                print('position read from MDSplus rnode {:s}'.format(rnode))
+                print('channel position read from MDSplus rnode {:s}'.format(rnode))
             except:
-                print('rnode {:s} not found from MDSplus; read from kstardata'.format(rnode))
+                print('channel position {:s} not found from MDSplus; try to read from kstardata'.format(rnode))
 
                 # ECE 2nd harmonics cold resonance
                 if 'ECE' == self.clist[0][0:3]:
@@ -207,6 +210,13 @@ class KstarMds(Connection):
                     self.rpos[c] = ep_rpos[self.clist[c][0:4]]
                     self.zpos[c] = ep_zpos[self.clist[c][0:4]]
                     self.apos[c] = float(self.clist[c][2:4])
+
+                # Get MC1T and MC1P position
+                if 'MC1T' == self.clist[0][0:4]:
+                    self.apos[c] = mc1t_apos[self.clist[c]]
+                elif 'MC1P' == self.clist[0][0:4]:
+                    self.apos[c] = mc1p_apos[self.clist[c]]
+
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node

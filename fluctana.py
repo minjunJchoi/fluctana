@@ -25,10 +25,11 @@ import specs as sp
 import stats as st
 import filtdata as ft
 
-#CM = plt.cm.get_cmap('RdYlBu_r')
-#CM = plt.cm.get_cmap('spectral')
-#CM = plt.cm.get_cmap('YlGn')
-CM = plt.cm.get_cmap('jet')
+# CM = plt.cm.get_cmap('RdYlBu_r')
+# CM = plt.cm.get_cmap('spectral')
+# CM = plt.cm.get_cmap('YlGn')
+# CM = plt.cm.get_cmap('jet')
+CM = plt.cm.get_cmap('hot')
 
 
 class FluctAna(object):
@@ -399,7 +400,7 @@ class FluctAna(object):
 
     def correlation(self, done=0, dtwo=1):
         # reguire full FFT
-        # positive time lag = cmp is fater than ref (delay in ref)
+        # positive time lag = ref -> cmp
         self.Dlist[dtwo].vkind = 'correlation'
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
@@ -448,7 +449,7 @@ class FluctAna(object):
 
     def corr_coef(self, done=0, dtwo=1):
         # reguire full FFT
-        # positive time lag = cmp is fater than ref (delay in ref)
+        # positive time lag = ref -> cmp
         self.Dlist[dtwo].vkind = 'corr_coef'
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
@@ -590,7 +591,7 @@ class FluctAna(object):
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
-        win_factor = np.mean(self.Dlist[dtwo].win**2)  # window factors
+        win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # reference channel names
         self.Dlist[dtwo].rname = []
@@ -731,7 +732,7 @@ class FluctAna(object):
                 pax2 = ax2/1000.0 # [kHz]
                 pdata = self.Dlist[dtwo].val[c,:,:]
 
-                plt.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower')
+                plt.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
 
                 plt.ylim([ax1[0]/1000.0, ax1[-1]/1000.0])
                 plt.xlim([ax2[0]/1000.0, ax2[-1]/1000.0])
@@ -816,7 +817,7 @@ class FluctAna(object):
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             # Nonlinear transfer rate
-            a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower')
+            a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer rate [1/s]')
@@ -890,7 +891,7 @@ class FluctAna(object):
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             # Nonlinear transfer rate
-            a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower')
+            a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer rate [1/s]')
@@ -1224,7 +1225,10 @@ class FluctAna(object):
                 else:
                     pbase = self.Dlist[dnum].ax
 
-            plt.plot(pbase, pdata, '-x')  # plot
+            if type == 'time':
+                plt.plot(pbase, pdata)  # plot
+            elif type == 'val':
+                plt.plot(pbase, pdata, '-x')  # plot
 
             # aux plot
             if type == 'val':
