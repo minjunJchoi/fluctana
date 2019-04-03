@@ -52,6 +52,9 @@ class KstarMir(object):
             self.rf4 = dset.attrs['MRF4']
 
             print('MIR file = {}'.format(self.fname))
+        
+        # get channel posistion
+        self.channel_position()
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.01], res=0):
         self.trange = trange
@@ -63,9 +66,9 @@ class KstarMir(object):
         if norm == 0:
             print('data is not normalized')
         elif norm == 1:
-            print('data is normalized by trange average')
+            print('data is normalized by trange std')
         elif norm == 2:
-            print('data is normalized by atrange average')
+            print('data is normalized by atrange std')
 
         # get time base
         time, idx1, idx2 = self.time_base(trange)
@@ -109,14 +112,10 @@ class KstarMir(object):
                     qv = qv/np.std(qav)
 
                 # complex iv, qv
-                # data[i][:] = iv + 1.0j*qv
-                data[i][:] = iv
-                print('return iav only; filter iv and qv and return iv + 1.0j*qv')
+                data[i][:] = iv + 1.0j*qv
+                print('TRY pre-filtering of iv and qv (threshold fft) and return iv + 1.0j*qv')
 
             self.data = data
-
-        # get channel posistion
-        # self.channel_position()
 
         return time, data
 
@@ -170,7 +169,6 @@ class KstarMir(object):
 
             self.rpos[c] = 0
             self.zpos[c], self.apos[c] = 0, 0
-
 
 
 def expand_clist(clist):
