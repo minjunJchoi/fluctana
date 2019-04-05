@@ -1276,6 +1276,9 @@ class FluctAna(object):
                 elif vkind in ['jscom','nsent']:
                     plt.xlabel('order number')
                     plt.ylabel('BP probability')
+                elif vkind in ['correlation','corr_coef']:
+                    plt.xlabel('Time lag [us]')
+                    plt.ylabel(vkind)
                 else:
                     plt.xlabel('Time [s]')
                     plt.ylabel('Signal')

@@ -286,12 +286,12 @@ def ritz_nonlinear(XX, YY):
     ############################## time difference between two measurements (Need to shift signals)
     # dt = 6.582e-6*2/2 # [s]
     # dt = 9.607e-6*3/2 # [s]
-    dt = 2.67e-06 # [s] 
+    dt = 20.0e-06 # [s] 
 
     ############################### drift velocity
     # vd = 6138.0 # [m/s]
     # vd = 4202.0 # [m/s]
-    vd = 6830.0 # [m/s]
+    vd = 4.32e+04 # [m/s]
     # dt = dx / vd
 
     # Linear kernel
