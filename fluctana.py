@@ -120,7 +120,7 @@ class FluctAna(object):
                     # plot info
                     pshot = D.shot
                     pname = D.clist[c]
-                    
+
                     # set axes
                     if c == 0:
                         plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
@@ -143,7 +143,7 @@ class FluctAna(object):
 
     def filt(self, name, fL, fH, b=0.08, verbose=0):
         for d, D in enumerate(self.Dlist):
-            
+
             cnum = len(D.data)
 
             # plot dimension
@@ -164,7 +164,7 @@ class FluctAna(object):
                     # plot info
                     pshot = D.shot
                     pname = D.clist[c]
-                    
+
                     # set axes
                     if c == 0:
                         plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
@@ -179,7 +179,7 @@ class FluctAna(object):
                     plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
 
             print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
-            
+
             if verbose == 1: plt.show()
 
 
@@ -906,7 +906,7 @@ class FluctAna(object):
 
             plt.show()
 
-    def wit_nonlinear(self, done=0, dtwo=1, **kwargs):
+    def wit_nonlinear(self, done=0, dtwo=1, cnl=[0], **kwargs):
         # needs verification with model data
         self.Dlist[dtwo].vkind = 'ritz_nonlin'
 
@@ -953,7 +953,7 @@ class FluctAna(object):
             YY = YYa
 
             # calculate
-            gk, Tijk, sum_Tijk, Lk, Qijk = sp.ritz_nonlinear(XX, YY)
+            Lk, Qijk = sp.wit_nonlinear(XX, YY)
 
 
 
@@ -985,12 +985,12 @@ class FluctAna(object):
             self.Dlist[dnum].skew[c] = st.skewness(t, x, detrend)
             self.Dlist[dnum].kurt[c] = st.kurtosis(t, x, detrend)
 
-            if verbose == 1:                
+            if verbose == 1:
                 # plot info
                 pshot = self.Dlist[dnum].shot
                 pname = self.Dlist[dnum].clist[c]
                 chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dnum].rpos[c]*100, self.Dlist[dnum].zpos[c]*100) # [cm]
-                
+
                 # set axes
                 if i == 0:
                     plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
@@ -1269,7 +1269,7 @@ class FluctAna(object):
                     pdata = self.Dlist[dnum].pi[c,:]
                 else:
                     pdata = self.Dlist[dnum].val[c,:].real
-                
+
                 # set base
                 if vkind in ['correlation','corr_coef']:
                     pbase = self.Dlist[dnum].ax*1e6
@@ -1495,7 +1495,7 @@ class FluctAna(object):
             axs[1].set_title('Coherence mean')
         elif vkind == 'cross_phase':
             axs[1].set_title('Group velocity [km/s]')
-        else:  
+        else:
             axs[1].set_title(vkind)
 
         self.Dlist[dnum].pdata = pdata

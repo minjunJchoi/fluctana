@@ -30,6 +30,8 @@ class KstarEcei(object):
             self.data_path = '/eceidata/exp_2013/'
         elif 9741 < shot and shot < 11723:
             self.data_path = '/eceidata/exp_2014/'
+            print('TEST folder')
+            self.data_path = '/Volumes/myNFRI/temp/'
         elif 12272 < shot and shot < 14942:
             self.data_path = '/eceidata/exp_2015/'
         elif 14941 < shot and shot < 17356:
@@ -192,7 +194,7 @@ class KstarEcei(object):
 
             # get vertical position and angle at rpos
             self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
-    
+
     def show_ch_position(self):
         fig, (a1) = plt.subplots(1,1, figsize=(6,6))
         a1.plot(self.rpos, self.zpos, 'o')

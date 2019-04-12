@@ -286,7 +286,7 @@ def ritz_nonlinear(XX, YY):
     ############################## time difference between two measurements (Need to shift signals)
     # dt = 6.582e-6*2/2 # [s]
     # dt = 9.607e-6*3/2 # [s]
-    dt = 17.0e-06 # [s] 
+    dt = 17.0e-06 # [s]
 
     ############################### drift velocity
     # vd = 6138.0 # [m/s]
@@ -327,19 +327,31 @@ def wit_nonlinear(XX, YY):
 
     kidx = get_kidx(full)
 
-    Aijk = np.zeros((full, full), dtype=np.complex_) # Xo1 Xo2 cXo
-    Bijk = np.zeros((full, full), dtype=np.complex_) # Yo cXo1 cXo2
-    Aij = np.zeros((full, full)) # |Xo1 Xo2|^2
-
-    Ak = np.zeros(full) # Xo cXo
-    Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
+    Lk = np.zeros(full, dtype=np.complex_) # Linear
+    Qijk = np.zeros((full, full), dtype=np.complex_) # Quadratic
 
     for k in range(full):
         idx = kidx[k]
 
-        U = np.zeros(bins, len(idx)+1, dtype=np.complex_)
+        # construct equations for each k
+        U = np.zeros((bins, len(idx)+1), dtype=np.complex_)  # N (number of ensembles) x P (number of pairs + 1)
+        V = np.zeros((bins, 1), dtype=np.complex_) # N x 1
+        for b in range(bins):
 
-        print(len(idx), idx)
+            U[b,0] = XX[b,k]
+            for n, ij in enumerate(idx):
+                U[b,n] = XX[b, ij[0]]*XX[b, ij[1]]
+
+            V[b,0] = YY[b,k]
+
+        # solution for each k
+        # H = U^-1 matricx product V  # P x 1
+
+        Lk[k] = H[0]
+        for n, ij in enumerate(idx):
+            Qijk[ij] = H[n+1]
+
+    return Lk, Qijk
 
     # for b in range(bins):  ####################### fix
     #     X = XX[b,:] # full -fN ~ fN
