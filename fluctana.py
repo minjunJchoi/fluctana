@@ -797,7 +797,7 @@ class FluctAna(object):
             YY = self.Dlist[dtwo].fftdata[c,:,:]
 
             # calculate
-            gk, Tijk, sum_Tijk = sp.ritz_nonlinear(XX, YY)
+            gk, Tijk, sum_Tijk, Lk, Qijk = sp.ritz_nonlinear(XX, YY)
 
             # plot info
             pshot = self.Dlist[dtwo].shot
@@ -871,7 +871,11 @@ class FluctAna(object):
             YY = YYc * np.cos(YYt) - 1.0j * YYc * np.sin(YYt)
 
             # calculate
-            gk, Tijk, sum_Tijk = sp.ritz_nonlinear(XX, YY)
+            gk, Tijk, sum_Tijk, Lk, Qijk = sp.ritz_nonlinear(XX, YY)
+
+            # print('test ritz mod nonlinear')
+            # gk = Lk.real
+            # Tijk = Qijk.real
 
             # plot info
             pshot = self.Dlist[dtwo].shot
@@ -901,6 +905,57 @@ class FluctAna(object):
             a3.set_ylabel('Nonlinear transfer rate [1/s]')
 
             plt.show()
+
+    def wit_nonlinear(self, done=0, dtwo=1, **kwargs):
+        # needs verification with model data
+        self.Dlist[dtwo].vkind = 'ritz_nonlin'
+
+        rnum = len(self.Dlist[done].data)  # number of ref channels
+        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+
+        # reference channel names
+        self.Dlist[dtwo].rname = []
+
+        # axes
+        ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
+        ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
+        ax2 = ax2[0:int(len(ax1)/2+1)] # half 0 ~ fN
+
+        # value dimension
+        self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
+
+        # calculation loop for multi channels
+        for i, c in enumerate(cnl):
+            # reference channel
+            rname = self.Dlist[done].clist[c]
+            self.Dlist[dtwo].rname.append(rname)
+            XXa = self.Dlist[done].fftdata[c,:,:]
+            XXb = self.Dlist[done].fftdata[c+1,:,:]
+            print('use {:s} and {:s} for XX'.format(self.Dlist[done].clist[c], self.Dlist[done].clist[c+1]))
+
+            # cmp channel
+            pname = self.Dlist[dtwo].clist[c]
+            YYa = self.Dlist[dtwo].fftdata[c,:,:]
+            YYb = self.Dlist[dtwo].fftdata[c+1,:,:]
+            print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[c], self.Dlist[dtwo].clist[c+1]))
+
+            # reconstructed signals
+            XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real)
+            XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+            XX = XXc * np.cos(XXt) - 1.0j * XXc * np.sin(XXt)
+
+            YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real)
+            YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
+            YY = YYc * np.cos(YYt) - 1.0j * YYc * np.sin(YYt)
+
+            print('use XXa and YYa for test')
+            XX = XXa
+            YY = YYa
+
+            # calculate
+            gk, Tijk, sum_Tijk, Lk, Qijk = sp.ritz_nonlinear(XX, YY)
+
+
 
 ############################# statistical methods ##############################
 

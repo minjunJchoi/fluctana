@@ -286,12 +286,12 @@ def ritz_nonlinear(XX, YY):
     ############################## time difference between two measurements (Need to shift signals)
     # dt = 6.582e-6*2/2 # [s]
     # dt = 9.607e-6*3/2 # [s]
-    dt = 20.0e-06 # [s] 
+    dt = 17.0e-06 # [s] 
 
     ############################### drift velocity
     # vd = 6138.0 # [m/s]
     # vd = 4202.0 # [m/s]
-    vd = 4.32e+04 # [m/s]
+    vd = 50.0*1000 # [m/s]
     # dt = dx / vd
 
     # Linear kernel
@@ -316,7 +316,69 @@ def ritz_nonlinear(XX, YY):
             # sum_Tijk[k] += Tijk[ij] ############# divide by number of pairs?
             sum_Tijk[k] += Tijk[ij] / len(idx)
 
-    return gk, Tijk, sum_Tijk
+    return gk, Tijk, sum_Tijk, Lk, Qijk
+
+
+def wit_nonlinear(XX, YY):
+    # calculate
+    bins = len(XX)
+    full = len(XX[0,:]) # full length
+    half = int(full/2+1) # half length
+
+    kidx = get_kidx(full)
+
+    Aijk = np.zeros((full, full), dtype=np.complex_) # Xo1 Xo2 cXo
+    Bijk = np.zeros((full, full), dtype=np.complex_) # Yo cXo1 cXo2
+    Aij = np.zeros((full, full)) # |Xo1 Xo2|^2
+
+    Ak = np.zeros(full) # Xo cXo
+    Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
+
+    for k in range(full):
+        idx = kidx[k]
+
+        U = np.zeros(bins, len(idx)+1, dtype=np.complex_)
+
+        print(len(idx), idx)
+
+    # for b in range(bins):  ####################### fix
+    #     X = XX[b,:] # full -fN ~ fN
+    #     Y = YY[b,:] # full -fN ~ fN
+
+    #     # ##### test
+    #     # X = ax1 # full -fN ~ fN
+    #     # print('test bin {:d}'.format(b))
+
+    #     # make Xi and Xj
+    #     Xi = np.transpose(np.tile(X, (full, 1))) # columns of (-fN ~ fN)
+    #     Xj = np.tile(X, (full, 1)) # rows of (-fN ~ fN)
+
+    #     # make Xk and Yk
+    #     Xk = np.zeros((full, full), dtype=np.complex_)
+    #     Yk = np.zeros((full, full), dtype=np.complex_)
+    #     for k in range(full):
+    #         idx = kidx[k]
+    #         for n, ij in enumerate(idx):
+    #             Xk[ij] = X[k]
+    #             Yk[ij] = Y[k]
+    #             # if int(Xk[ij].real) == int(Xi[ij].real + Xj[ij].real): # for test
+    #             #     pass
+    #             # else:
+    #             #     print('uncorrect')
+    #             #     print('k {:g}, Xk {:g}, Xi + Xj {:g}, Xi {:g}, Xj {:g}'.format(k, Xk[ij], Xi[ij] + Xj[ij], Xi[ij], Xj[ij]))
+    #     # plt.imshow(Xk)
+    #     # plt.show()
+
+    #     # do ensemble average
+    #     Aijk = Aijk + Xi * Xj * np.matrix.conjugate(Xk) / bins
+
+    #     Bijk = Bijk + np.matrix.conjugate(Xi) * np.matrix.conjugate(Xj) * Yk / bins
+
+    #     Aij = Aij + (np.abs(Xi * Xj).real)**2 / bins
+
+    #     Ak = Ak + (np.abs(X).real)**2 / bins
+
+    #     Bk = Bk + Y * np.matrix.conjugate(X) / bins
 
 
 def get_kidx(full):
