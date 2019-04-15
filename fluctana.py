@@ -864,11 +864,11 @@ class FluctAna(object):
             # reconstructed signals
             XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real)
             XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-            XX = XXc * np.cos(XXt) - 1.0j * XXc * np.sin(XXt)
+            XX = XXc * np.cos(XXt) + 1.0j * XXc * np.sin(XXt)
 
             YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real)
             YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-            YY = YYc * np.cos(YYt) - 1.0j * YYc * np.sin(YYt)
+            YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
 
             # calculate
             gk, Tijk, sum_Tijk, Lk, Qijk = sp.ritz_nonlinear(XX, YY)
