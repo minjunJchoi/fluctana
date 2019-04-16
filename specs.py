@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import signal
 
+import matplotlib.pyplot as plt
 
 def fft_window(tnum, nfft, window, overlap):
     # IN : full length of time series, nfft, window name, overlap ratio
@@ -201,7 +202,6 @@ def ritz_nonlinear(XX, YY):
     # calculate
     bins = len(XX)
     full = len(XX[0,:]) # full length
-    half = int(full/2+1) # half length
 
     kidx = get_kidx(full)
 
@@ -212,7 +212,7 @@ def ritz_nonlinear(XX, YY):
     Ak = np.zeros(full) # Xo cXo
     Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
-    for b in range(bins):  ####################### fix
+    for b in range(bins):  
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
 
@@ -273,6 +273,14 @@ def ritz_nonlinear(XX, YY):
 
     Qijk = (Bijk - Lkk * Aijk) / Aij
 
+    return Lk, Qijk, Bk, Aijk
+
+
+def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd=50000.0):
+    full = len(Lk)
+
+    kidx = get_kidx(full)
+
     # Cross phase related terms
     Ek = Bk / np.abs(Bk) # Exp[-i(dth)]
     Tk = np.arctan2(Bk.imag, Bk.real).real
@@ -282,18 +290,6 @@ def ritz_nonlinear(XX, YY):
         idx = kidx[k]
         for n, ij in enumerate(idx):
             Ekk[ij] = Ek[k]
-
-    ############################## time difference between two measurements (Need to shift signals)
-    # dt = 6.582e-6*2/2 # [s]
-    # dt = 9.607e-6*3/2 # [s]
-    dt = 17.0e-06 # [s]
-    dz = 0.02 # [m] distance between two-point measurements
-
-    ############################### drift velocity
-    # vd = 6138.0 # [m/s]
-    # vd = 4202.0 # [m/s]
-    vd = 50.0*1000 # [m/s]
-    # dt = dx / vd
 
     # Linear kernel
     Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dz
@@ -317,81 +313,66 @@ def ritz_nonlinear(XX, YY):
             # sum_Tijk[k] += Tijk[ij] ############# divide by number of pairs?
             sum_Tijk[k] += Tijk[ij] / len(idx)
 
-    return gk, Tijk, sum_Tijk, Lk, Qijk
+    return gk, Tijk, sum_Tijk
 
 
 def wit_nonlinear(XX, YY):
     # calculate
     bins = len(XX)
     full = len(XX[0,:]) # full length
-    half = int(full/2+1) # half length
 
     kidx = get_kidx(full)
 
     Lk = np.zeros(full, dtype=np.complex_) # Linear
     Qijk = np.zeros((full, full), dtype=np.complex_) # Quadratic
 
+    print('For stable calculations, bins ({0}) >> full/2 ({1})'.format(bins, full/2))
     for k in range(full):
         idx = kidx[k]
 
         # construct equations for each k
         U = np.zeros((bins, len(idx)+1), dtype=np.complex_)  # N (number of ensembles) x P (number of pairs + 1)
-        V = np.zeros((bins, 1), dtype=np.complex_) # N x 1
+        V = np.zeros(bins, dtype=np.complex_) # N x 1
+
         for b in range(bins):
 
             U[b,0] = XX[b,k]
             for n, ij in enumerate(idx):
-                U[b,n] = XX[b, ij[0]]*XX[b, ij[1]]
+                U[b,n+1] = XX[b, ij[0]]*XX[b, ij[1]]
 
-            V[b,0] = YY[b,k]
+            V[b] = YY[b,k]
 
         # solution for each k
-        # H = U^-1 matricx product V  # P x 1
+        H = np.matmul(np.linalg.pinv(U), V)
 
         Lk[k] = H[0]
         for n, ij in enumerate(idx):
             Qijk[ij] = H[n+1]
 
-    return Lk, Qijk
+    # calculate others for the rates
+    Aijk = np.zeros((full, full), dtype=np.complex_) # Xo1 Xo2 cXo
+    Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
-    # for b in range(bins):  ####################### fix
-    #     X = XX[b,:] # full -fN ~ fN
-    #     Y = YY[b,:] # full -fN ~ fN
+    for b in range(bins):  
+        X = XX[b,:] # full -fN ~ fN
+        Y = YY[b,:] # full -fN ~ fN
 
-    #     # ##### test
-    #     # X = ax1 # full -fN ~ fN
-    #     # print('test bin {:d}'.format(b))
+        # make Xi and Xj
+        Xi = np.transpose(np.tile(X, (full, 1))) # columns of (-fN ~ fN)
+        Xj = np.tile(X, (full, 1)) # rows of (-fN ~ fN)
 
-    #     # make Xi and Xj
-    #     Xi = np.transpose(np.tile(X, (full, 1))) # columns of (-fN ~ fN)
-    #     Xj = np.tile(X, (full, 1)) # rows of (-fN ~ fN)
+        # make Xk and Yk
+        Xk = np.zeros((full, full), dtype=np.complex_)
+        for k in range(full):
+            idx = kidx[k]
+            for n, ij in enumerate(idx):
+                Xk[ij] = X[k]
 
-    #     # make Xk and Yk
-    #     Xk = np.zeros((full, full), dtype=np.complex_)
-    #     Yk = np.zeros((full, full), dtype=np.complex_)
-    #     for k in range(full):
-    #         idx = kidx[k]
-    #         for n, ij in enumerate(idx):
-    #             Xk[ij] = X[k]
-    #             Yk[ij] = Y[k]
-    #             # if int(Xk[ij].real) == int(Xi[ij].real + Xj[ij].real): # for test
-    #             #     pass
-    #             # else:
-    #             #     print('uncorrect')
-    #             #     print('k {:g}, Xk {:g}, Xi + Xj {:g}, Xi {:g}, Xj {:g}'.format(k, Xk[ij], Xi[ij] + Xj[ij], Xi[ij], Xj[ij]))
-    #     # plt.imshow(Xk)
-    #     # plt.show()
+        # do ensemble average
+        Aijk = Aijk + Xi * Xj * np.matrix.conjugate(Xk) / bins
+        Bk = Bk + Y * np.matrix.conjugate(X) / bins
 
-    #     # do ensemble average
-    #     Aijk = Aijk + Xi * Xj * np.matrix.conjugate(Xk) / bins
-
-    #     Bijk = Bijk + np.matrix.conjugate(Xi) * np.matrix.conjugate(Xj) * Yk / bins
-
-    #     Aij = Aij + (np.abs(Xi * Xj).real)**2 / bins
-
-    #     Ak = Ak + (np.abs(X).real)**2 / bins
-
-    #     Bk = Bk + Y * np.matrix.conjugate(X) / bins
+    return Lk, Qijk, Bk, Aijk
 
 
 def get_kidx(full):

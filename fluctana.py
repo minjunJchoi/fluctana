@@ -773,6 +773,9 @@ class FluctAna(object):
         # reference channel names
         self.Dlist[dtwo].rname = []
 
+        # distance
+        self.Dlist[dtwo].dist = np.zeros(cnum)
+
         # axes
         ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
         ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
@@ -796,8 +799,14 @@ class FluctAna(object):
             pname = self.Dlist[dtwo].clist[c]
             YY = self.Dlist[dtwo].fftdata[c,:,:]
 
+            # distance 
+            self.Dlist[dtwo].dist[c] = 27.6 ######################################### [m]
+            # self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
+            #     (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
+
             # calculate
-            gk, Tijk, sum_Tijk, Lk, Qijk = sp.ritz_nonlinear(XX, YY)
+            Lk, Qijk = sp.ritz_nonlinear(XX, YY)
+            gk, Tijk, sum_Tijk = sp.nonlinear_rates(XX, YY, Lk, Qijk, self.Dlist[dtwo].dist[c])
 
             # plot info
             pshot = self.Dlist[dtwo].shot
@@ -828,15 +837,18 @@ class FluctAna(object):
 
             plt.show()
 
-    def ritz_mod_nonlinear(self, done=0, dtwo=1, cnl=[0], **kwargs):
-         # needs verification with model data
-        self.Dlist[dtwo].vkind = 'ritz_nonlin'
+    def ritz_mod_nonlinear(self, done=0, dtwo=1, cnl=[0], wit=0, **kwargs):
+        # needs verification with model data
+        self.Dlist[dtwo].vkind = 'wit_nonlin'
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
 
         # reference channel names
         self.Dlist[dtwo].rname = []
+
+        # distance
+        self.Dlist[dtwo].dist = np.zeros(cnum)
 
         # axes
         ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
@@ -870,16 +882,50 @@ class FluctAna(object):
             YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
             YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
 
-            # calculate
-            gk, Tijk, sum_Tijk, Lk, Qijk = sp.ritz_nonlinear(XX, YY)
+            # distance 
+            self.Dlist[dtwo].dist[c] = 27.6 ######################################### [m]
+            # self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
+            #     (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
 
-            # print('test ritz mod nonlinear')
-            # gk = Lk.real
-            # Tijk = Qijk.real
+            # drift velocity
+            vd = 50000.0
+            ############################## time difference between two measurements (Need to shift signals)
+            # dt = dz / vd
+            
+            # calculate
+            if wit == 0:
+                print('Ritz method with the noise-reduced spectra')
+                Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY)
+                gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, self.Dlist[dtwo].dist[c], vd=vd)
+            else:
+                print('Wit method with the noise-reduced spectra')
+                Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY)
+                gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, self.Dlist[dtwo].dist[c], vd=vd)
 
             # plot info
             pshot = self.Dlist[dtwo].shot
             chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+
+            # Plot results
+            fig, (a1,a2) = plt.subplots(2,1, figsize=(6,8), gridspec_kw = {'height_ratios':[1,2]})
+            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+
+            pax1 = ax1/1000.0 # [kHz]
+            pax2 = ax1/1000.0 # [kHz]
+
+            # linear growth rate
+            a1.plot(pax1, Lk.real)
+            a1.set_xlabel('Frequency [kHz]')
+            a1.set_ylabel('Linear transfer function')
+            a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+
+            # Nonlinear transfer rate
+            a2.imshow(Qijk.real, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            a2.set_xlabel('Frequency [kHz]')
+            a2.set_ylabel('Frequency [kHz]')
+            a2.set_title('Nonlinear transfer function')
+
+            plt.show()
 
             # Plot results
             fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,2,1]})
@@ -905,56 +951,6 @@ class FluctAna(object):
             a3.set_ylabel('Nonlinear transfer rate [1/s]')
 
             plt.show()
-
-    def wit_nonlinear(self, done=0, dtwo=1, cnl=[0], **kwargs):
-        # needs verification with model data
-        self.Dlist[dtwo].vkind = 'ritz_nonlin'
-
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-
-        # reference channel names
-        self.Dlist[dtwo].rname = []
-
-        # axes
-        ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
-        ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
-        ax2 = ax2[0:int(len(ax1)/2+1)] # half 0 ~ fN
-
-        # value dimension
-        self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
-
-        # calculation loop for multi channels
-        for i, c in enumerate(cnl):
-            # reference channel
-            rname = self.Dlist[done].clist[c]
-            self.Dlist[dtwo].rname.append(rname)
-            XXa = self.Dlist[done].fftdata[c,:,:]
-            XXb = self.Dlist[done].fftdata[c+1,:,:]
-            print('use {:s} and {:s} for XX'.format(self.Dlist[done].clist[c], self.Dlist[done].clist[c+1]))
-
-            # cmp channel
-            pname = self.Dlist[dtwo].clist[c]
-            YYa = self.Dlist[dtwo].fftdata[c,:,:]
-            YYb = self.Dlist[dtwo].fftdata[c+1,:,:]
-            print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[c], self.Dlist[dtwo].clist[c+1]))
-
-            # reconstructed signals
-            XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real)
-            XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-            XX = XXc * np.cos(XXt) - 1.0j * XXc * np.sin(XXt)
-
-            YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real)
-            YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-            YY = YYc * np.cos(YYt) - 1.0j * YYc * np.sin(YYt)
-
-            print('use XXa and YYa for test')
-            XX = XXa
-            YY = YYa
-
-            # calculate
-            Lk, Qijk = sp.wit_nonlinear(XX, YY)
-
 
 
 ############################# statistical methods ##############################
