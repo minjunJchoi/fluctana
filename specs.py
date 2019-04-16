@@ -287,6 +287,7 @@ def ritz_nonlinear(XX, YY):
     # dt = 6.582e-6*2/2 # [s]
     # dt = 9.607e-6*3/2 # [s]
     dt = 17.0e-06 # [s]
+    dz = 0.02 # [m] distance between two-point measurements
 
     ############################### drift velocity
     # vd = 6138.0 # [m/s]
@@ -295,15 +296,15 @@ def ritz_nonlinear(XX, YY):
     # dt = dx / vd
 
     # Linear kernel
-    Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dt
-    # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dt
+    Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dz
+    # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dz
 
     # Linear growth rate
     gk = vd * Gk.real
 
     # Quadratic kernel
-    Mijk = Qijk * Ekk / dt
-    # Mijk = Qijk * Exp[-i(dth)] / dt
+    Mijk = Qijk * Ekk / dz
+    # Mijk = Qijk * Exp[-i(dth)] / dz
 
     # Nonlinear energy transfer rate
     Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
