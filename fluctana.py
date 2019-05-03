@@ -868,7 +868,7 @@ class FluctAna(object):
 
             plt.show()
 
-    def ritz_mod_nonlinear(self, done=0, dtwo=1, cnl=[0], wit=0, **kwargs):
+    def ritz_mod_nonlinear(self, done=0, dtwo=1, cnl=[0], wit=0, test=0, **kwargs):
         # needs verification with model data
         self.Dlist[dtwo].vkind = 'wit_nonlin'
 
@@ -915,14 +915,16 @@ class FluctAna(object):
 
             ######################################### distance and drift velocity to be provided [m]
             # distance 
-            self.Dlist[dtwo].dist[c] = 27.6 
+            self.Dlist[dtwo].dist[c] = 0.04
             # self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
             #     (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
             # drift velocity
-            vd = 50000.0
+            vd = 3333.0
             
-            # # modeled data 
-            # YY, _, _ = sp.nonlinear_test(ax1, XX)
+            # modeled data 
+            if test == 1:
+                YY, _, _ = sp.nonlinear_test(ax1, XX)
+                print('TEST with MODEL DATA')
 
             # calculate
             if wit == 0:
@@ -956,7 +958,6 @@ class FluctAna(object):
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer function')
-            im.set_clim(0, 0.1)
             divider = make_axes_locatable(a2)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             fig.colorbar(im, cax=cax, orientation='vertical')
@@ -1326,6 +1327,9 @@ class FluctAna(object):
                     plt.axhline(y=1/np.sqrt(self.Dlist[dnum].bins), color='r')
                 elif vkind == 'hurst':
                     plt.plot(pbase, self.Dlist[dnum].fit[c,:], 'r')
+                elif vkind == 'correlation':
+                    hdata = signal.hilbert(pdata)
+                    plt.plot(pbase, np.abs(hdata), '--')
 
             # xy limits
             if 'ylimits' in kwargs:  # ylimits

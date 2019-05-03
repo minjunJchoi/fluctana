@@ -327,7 +327,7 @@ def wit_nonlinear(XX, YY):
     return Lk, Qijk, Bk, Aijk
 
 
-def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd=50000.0):
+def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd):
     full = len(Lk)
 
     kidx = get_kidx(full)
@@ -361,8 +361,8 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd=50000.0):
     for k in range(full):
         idx = kidx[k]
         for n, ij in enumerate(idx):
-            # sum_Tijk[k] += Tijk[ij] ############# divide by number of pairs?
-            sum_Tijk[k] += Tijk[ij] / len(idx)
+            sum_Tijk[k] += Tijk[ij] 
+            # sum_Tijk[k] += Tijk[ij] / len(idx) # divide by number of pairs?
 
     return gk, Tijk, sum_Tijk
 
