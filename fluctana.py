@@ -13,6 +13,7 @@ import math
 import itertools
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import pickle
 
@@ -799,18 +800,45 @@ class FluctAna(object):
             pname = self.Dlist[dtwo].clist[c]
             YY = self.Dlist[dtwo].fftdata[c,:,:]
 
+            ######################################### distance and drift velocity to be provided [m]
             # distance 
-            self.Dlist[dtwo].dist[c] = 27.6 ######################################### [m]
+            self.Dlist[dtwo].dist[c] = 27.6 
             # self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
             #     (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
+            # drift velocity
+            vd = 50000.0
 
             # calculate
-            Lk, Qijk = sp.ritz_nonlinear(XX, YY)
-            gk, Tijk, sum_Tijk = sp.nonlinear_rates(XX, YY, Lk, Qijk, self.Dlist[dtwo].dist[c])
+            Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY)
+            gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, self.Dlist[dtwo].dist[c], vd=vd)
 
             # plot info
             pshot = self.Dlist[dtwo].shot
             chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+
+            # Plot results
+            fig, (a1,a2) = plt.subplots(2,1, figsize=(6,8), gridspec_kw = {'height_ratios':[1,2]})
+            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+
+            pax1 = ax1/1000.0 # [kHz]
+            pax2 = ax1/1000.0 # [kHz]
+
+            # linear growth rate
+            a1.plot(pax1, Lk.real)
+            a1.set_xlabel('Frequency [kHz]')
+            a1.set_ylabel('Linear transfer function')
+            a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+
+            # Nonlinear transfer rate
+            im = a2.imshow(np.abs(Qijk), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            a2.set_xlabel('Frequency [kHz]')
+            a2.set_ylabel('Frequency [kHz]')
+            a2.set_title('Nonlinear transfer function')
+            divider = make_axes_locatable(a2)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
+
+            plt.show()
 
             # Plot results
             fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,2,1]})
@@ -826,10 +854,13 @@ class FluctAna(object):
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             # Nonlinear transfer rate
-            a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            im = a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer rate [1/s]')
+            divider = make_axes_locatable(a2)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
 
             a3.plot(pax1, sum_Tijk)
             a3.set_xlabel('Frequency [kHz]')
@@ -882,16 +913,17 @@ class FluctAna(object):
             YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
             YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
 
+            ######################################### distance and drift velocity to be provided [m]
             # distance 
-            self.Dlist[dtwo].dist[c] = 27.6 ######################################### [m]
+            self.Dlist[dtwo].dist[c] = 27.6 
             # self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
             #     (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
-
             # drift velocity
             vd = 50000.0
-            ############################## time difference between two measurements (Need to shift signals)
-            # dt = dz / vd
             
+            # # modeled data 
+            # YY, _, _ = sp.nonlinear_test(ax1, XX)
+
             # calculate
             if wit == 0:
                 print('Ritz method with the noise-reduced spectra')
@@ -920,10 +952,14 @@ class FluctAna(object):
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             # Nonlinear transfer rate
-            a2.imshow(Qijk.real, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            im = a2.imshow(np.abs(Qijk), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer function')
+            im.set_clim(0, 0.1)
+            divider = make_axes_locatable(a2)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
 
             plt.show()
 
@@ -941,10 +977,13 @@ class FluctAna(object):
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             # Nonlinear transfer rate
-            a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            im = a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer rate [1/s]')
+            divider = make_axes_locatable(a2)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
 
             a3.plot(pax1, sum_Tijk)
             a3.set_xlabel('Frequency [kHz]')

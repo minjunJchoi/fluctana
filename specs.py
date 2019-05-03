@@ -206,6 +206,7 @@ def ritz_nonlinear(XX, YY):
     kidx = get_kidx(full)
 
     Aijk = np.zeros((full, full), dtype=np.complex_) # Xo1 Xo2 cXo
+    cAijk = np.zeros((full, full), dtype=np.complex_) # cXo1 cXo2 Xo
     Bijk = np.zeros((full, full), dtype=np.complex_) # Yo cXo1 cXo2
     Aij = np.zeros((full, full)) # |Xo1 Xo2|^2
 
@@ -215,10 +216,6 @@ def ritz_nonlinear(XX, YY):
     for b in range(bins):  
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
-
-        # ##### test
-        # X = ax1 # full -fN ~ fN
-        # print('test bin {:d}'.format(b))
 
         # make Xi and Xj
         Xi = np.transpose(np.tile(X, (full, 1))) # columns of (-fN ~ fN)
@@ -232,16 +229,11 @@ def ritz_nonlinear(XX, YY):
             for n, ij in enumerate(idx):
                 Xk[ij] = X[k]
                 Yk[ij] = Y[k]
-                # if int(Xk[ij].real) == int(Xi[ij].real + Xj[ij].real): # for test
-                #     pass
-                # else:
-                #     print('uncorrect')
-                #     print('k {:g}, Xk {:g}, Xi + Xj {:g}, Xi {:g}, Xj {:g}'.format(k, Xk[ij], Xi[ij] + Xj[ij], Xi[ij], Xj[ij]))
-        # plt.imshow(Xk)
-        # plt.show()
 
         # do ensemble average
         Aijk = Aijk + Xi * Xj * np.matrix.conjugate(Xk) / bins
+
+        cAijk = cAijk + np.matrix.conjugate(Xi) * np.matrix.conjugate(Xj) * Xk / bins
 
         Bijk = Bijk + np.matrix.conjugate(Xi) * np.matrix.conjugate(Xj) * Yk / bins
 
@@ -271,49 +263,9 @@ def ritz_nonlinear(XX, YY):
         for n, ij in enumerate(idx):
             Lkk[ij] = Lk[k]
 
-    Qijk = (Bijk - Lkk * Aijk) / Aij
+    Qijk = (Bijk - Lkk * cAijk) / Aij
 
     return Lk, Qijk, Bk, Aijk
-
-
-def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd=50000.0):
-    full = len(Lk)
-
-    kidx = get_kidx(full)
-
-    # Cross phase related terms
-    Ek = Bk / np.abs(Bk) # Exp[-i(dth)]
-    Tk = np.arctan2(Bk.imag, Bk.real).real
-
-    Ekk = np.zeros((full, full), dtype=np.complex_)
-    for k in range(full):
-        idx = kidx[k]
-        for n, ij in enumerate(idx):
-            Ekk[ij] = Ek[k]
-
-    # Linear kernel
-    Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dz
-    # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dz
-
-    # Linear growth rate
-    gk = vd * Gk.real
-
-    # Quadratic kernel
-    Mijk = Qijk * Ekk / dz
-    # Mijk = Qijk * Exp[-i(dth)] / dz
-
-    # Nonlinear energy transfer rate
-    Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
-
-    # summed Tijk
-    sum_Tijk = np.zeros(full)
-    for k in range(full):
-        idx = kidx[k]
-        for n, ij in enumerate(idx):
-            # sum_Tijk[k] += Tijk[ij] ############# divide by number of pairs?
-            sum_Tijk[k] += Tijk[ij] / len(idx)
-
-    return gk, Tijk, sum_Tijk
 
 
 def wit_nonlinear(XX, YY):
@@ -373,6 +325,80 @@ def wit_nonlinear(XX, YY):
         Bk = Bk + Y * np.matrix.conjugate(X) / bins
 
     return Lk, Qijk, Bk, Aijk
+
+
+def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd=50000.0):
+    full = len(Lk)
+
+    kidx = get_kidx(full)
+
+    # Cross phase related terms
+    Ek = Bk / np.abs(Bk) # Exp[-i(dth)]
+    Tk = np.arctan2(Bk.imag, Bk.real).real
+
+    Ekk = np.zeros((full, full), dtype=np.complex_)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            Ekk[ij] = Ek[k]
+
+    # Linear kernel
+    Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dz
+    # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dz
+
+    # Linear growth rate
+    gk = vd * Gk.real
+
+    # Quadratic kernel
+    Mijk = Qijk * Ekk / dz
+    # Mijk = Qijk * Exp[-i(dth)] / dz
+
+    # Nonlinear energy transfer rate
+    Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
+
+    # summed Tijk
+    sum_Tijk = np.zeros(full)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            # sum_Tijk[k] += Tijk[ij] ############# divide by number of pairs?
+            sum_Tijk[k] += Tijk[ij] / len(idx)
+
+    return gk, Tijk, sum_Tijk
+
+
+def nonlinear_test(ax, XX):
+    bins = len(XX)
+    full = len(XX[0,:]) # full length
+
+    pN = ax[-1]
+
+    kidx = get_kidx(full)
+
+    # Lk = np.zeros(full, dtype=np.complex_)
+    Lk = 1.0 - 0.4*ax**2/pN**2 + 0.8j*ax/pN
+
+    Qijk = np.zeros((full, full), dtype=np.complex_)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            pi = ax[ij[0]]
+            pj = ax[ij[1]]
+            pk = ax[k]
+
+            Qijk[ij] = 1.0j/(5.0*pN**4)*pi*pj*(pj**2 - pi**2)/(1.0 + pk**2/pN**2)
+
+    # modeled YY from Lk and Qijk
+    YY = np.zeros(XX.shape, dtype=np.complex_)
+    for b in range(bins):
+        for k in range(full):
+            YY[b, k] = Lk[k]*XX[b, k]
+
+            idx = kidx[k]
+            for n, ij in enumerate(idx):
+                YY[b, k] += Qijk[ij]*XX[b, ij[0]]*XX[b, ij[1]]
+
+    return YY, Lk, Qijk
 
 
 def get_kidx(full):
