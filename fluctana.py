@@ -822,15 +822,17 @@ class FluctAna(object):
             YY, _, _ = sp.nonlinear_test(ax1, XX)
             print('TEST with MODEL DATA')
 
-        # calculate
+        # calculate transfer functions
         if wit == 0:
             print('Ritz method')
             Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY)
-            gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
         else:
             print('Wit method')
             Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY)
-            gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
+
+        # calculate rates
+        # gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
+        gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Qijk, XX, dt)
 
         # plot info
         pshot = self.Dlist[dtwo].shot

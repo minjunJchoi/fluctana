@@ -329,6 +329,7 @@ def wit_nonlinear(XX, YY):
 
 
 def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
+    ## Linear growth rate and nonlinear energy transfer rates 
     # dt = vd / dz
     full = len(Lk)
 
@@ -367,6 +368,35 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
         for n, ij in enumerate(idx):
             sum_Tijk[k] += Tijk[ij] 
             # sum_Tijk[k] += Tijk[ij] / len(idx) # divide by number of pairs?
+
+    return gk, Tijk, sum_Tijk
+
+
+def nonlinear_ratesJS(Lk, Qijk, XX, dt):
+    ## Linear growth rate and nonlinear energy transfer rates from JS Kim PoP 96
+    # dt = vd / dz
+    full = len(Lk)
+
+    kidx = get_kidx(full)
+
+    gk = (np.abs(Lk)**2 - 1)/dt # JSKim 96
+
+    sum_Tijk = np.zeros(full, dtype=np.complex_)
+    for k in range(full):
+        idx = kidx[k]
+        
+        for n, ij in enumerate(idx):
+            XXX = np.mean(XX[:,ij[0]]*XX[:,ij[1]]*np.conjugate(XX[:,k])) # verify this with Aijk 
+            sum_Tijk[k] += np.conjugate(Lk[k])*Qijk[ij]*XXX/dt
+        
+        sum_Tijk[k] = 2.0*sum_Tijk[k].real
+
+        # for n, ij in enumerate(idx):
+        #     for m, lm in enumerate(idx):
+        #         XXXX = np.mean(XX[:,ij[0]]*XX[:,ij[1]]*np.conjugate(XX[:,lm[0]])*np.conjugate(XX[:,lm[1]]))
+        #         sum_Tijk[k] += Qijk[ij]*np.conjugate(Qijk[lm])*XXXX /dt
+    
+    Tijk = np.abs(Qijk)
 
     return gk, Tijk, sum_Tijk
 
