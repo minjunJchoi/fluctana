@@ -305,6 +305,7 @@ def wit_nonlinear(XX, YY):
     Aijk = np.zeros((full, full), dtype=np.complex_) # Xo1 Xo2 cXo
     Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
+    # print('DO NOT CALCULATE RATES')
     for b in range(bins):  
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
@@ -327,13 +328,14 @@ def wit_nonlinear(XX, YY):
     return Lk, Qijk, Bk, Aijk
 
 
-def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd):
+def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
+    # dt = vd / dz
     full = len(Lk)
 
     kidx = get_kidx(full)
 
     # Cross phase related terms
-    Ek = Bk / np.abs(Bk) # Exp[-i(dth)]
+    Ek = (Bk / np.abs(Bk))**(-1.0) # Exp[-i(dth)]
     Tk = np.arctan2(Bk.imag, Bk.real).real
 
     Ekk = np.zeros((full, full), dtype=np.complex_)
@@ -343,18 +345,20 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dz, vd):
             Ekk[ij] = Ek[k]
 
     # Linear kernel
-    Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dz
+    # Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dz
     # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dz
 
     # Linear growth rate
-    gk = vd * Gk.real
+    # gk = vd * Gk.real
+    gk = 1.0/dt * (Lk * Ek - 1.0 + 1.0j*Tk).real
 
     # Quadratic kernel
-    Mijk = Qijk * Ekk / dz
+    # Mijk = Qijk * Ekk / dz
     # Mijk = Qijk * Exp[-i(dth)] / dz
 
     # Nonlinear energy transfer rate
-    Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
+    # Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
+    Tijk = 1.0/2.0 * 1.0/dt * (Qijk * Ekk * Aijk).real
 
     # summed Tijk
     sum_Tijk = np.zeros(full)
