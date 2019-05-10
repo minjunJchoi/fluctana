@@ -335,7 +335,7 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
     kidx = get_kidx(full)
 
     # Cross phase related terms
-    Ek = (Bk / np.abs(Bk))**(-1.0) # Exp[-i(dth)]
+    Ek = (Bk / np.abs(Bk))**(-1.0) # Exp[-i(Tk)]
     Tk = np.arctan2(Bk.imag, Bk.real).real
 
     Ekk = np.zeros((full, full), dtype=np.complex_)

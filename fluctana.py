@@ -807,11 +807,13 @@ class FluctAna(object):
             print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[0], self.Dlist[dtwo].clist[1]))
             
             # reconstructed XX (sub averaging??)
-            XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real)
+            XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real) # amplitude of the cross power
+            # XXc = np.abs(XXa * np.matrix.conjugate(XXb)) / (np.abs(XXa)*np.abs(XXb)) # coherence
             XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
             XX = XXc * np.cos(XXt) + 1.0j * XXc * np.sin(XXt)
             # reconstructed YY (sub averaging??)
-            YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real)
+            YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real) # amplitude of the cross power
+            # YYc = np.abs(YYa * np.matrix.conjugate(YYb)) / (np.abs(YYa)*np.abs(YYb)) # coherence
             YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
             YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
 
