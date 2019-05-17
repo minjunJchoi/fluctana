@@ -209,19 +209,19 @@ class FluctAna(object):
             D.detrend = detrend
             D.bins = bins
 
-            # make fftdata
+            # make fft data
             cnum = len(D.data)
             if full == 1: # full shift to -fN ~ 0 ~ fN
                 if np.mod(nfft, 2) == 0:  # even nfft
-                    D.fftdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
+                    D.spdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
                 else:  # odd nfft
-                    D.fftdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
+                    D.spdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
             else: # half 0 ~ fN
-                D.fftdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
+                D.spdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
 
             for c in range(cnum):
                 x = D.data[c,:]
-                D.ax, D.fftdata[c,:,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
+                D.ax, D.spdata[c,:,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
 
             # update attributes
             if np.mod(nfft, 2) == 0:
@@ -259,7 +259,7 @@ class FluctAna(object):
 
             cnum = len(D.data)  # number of cmp channels
             # value dimension
-            D.cwtdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
+            D.spdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
             for c in range(cnum):
                 x = D.data[c,:]
 
@@ -277,14 +277,14 @@ class FluctAna(object):
                     Wns[:,j] = np.fft.fftshift(np.fft.ifft(X * WF) * nfft**2)
 
                 # return resized
-                D.cwtdata[c,:,:] = Wns[0:tnum,:]
+                D.spdata[c,:,:] = Wns[0:tnum,:]
 
                 # plot (not default)
                 pshot = D.shot
                 pname = D.clist[c]
                 ptime = D.time
                 pfreq = f/1000.0
-                pdata = np.transpose(np.abs(D.cwtdata[c,:,:])**2)
+                pdata = np.transpose(np.abs(D.spdata[c,:,:])**2)
 
                 plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
 
@@ -295,7 +295,7 @@ class FluctAna(object):
 
                 plt.show()
 
-            D.cwtf = f
+            D.ax = f
             D.cwtdf = df
             D.cwtsj = sj
             D.cwtdj = dj
@@ -321,12 +321,12 @@ class FluctAna(object):
             # reference channel number
             if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-                XX = self.Dlist[done].fftdata[0,:,:]
+                XX = self.Dlist[done].spdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-                XX = self.Dlist[done].fftdata[c,:,:]
+                XX = self.Dlist[done].spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].fftdata[c,:,:]
+            YY = self.Dlist[dtwo].spdata[c,:,:]
 
             if self.Dlist[dtwo].ax[1] < 0: # full range
                 self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor)
@@ -353,12 +353,12 @@ class FluctAna(object):
             # reference channel names
             if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-                XX = self.Dlist[done].fftdata[0,:,:]
+                XX = self.Dlist[done].spdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-                XX = self.Dlist[done].fftdata[c,:,:]
+                XX = self.Dlist[done].spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].fftdata[c,:,:]
+            YY = self.Dlist[dtwo].spdata[c,:,:]
 
             self.Dlist[dtwo].val[c,:] = sp.coherence(XX, YY)
 
@@ -388,14 +388,14 @@ class FluctAna(object):
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
                 self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
                 (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
-                XX = self.Dlist[done].fftdata[0,:,:]
+                XX = self.Dlist[done].spdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
                 self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
                 (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
-                XX = self.Dlist[done].fftdata[c,:,:]
+                XX = self.Dlist[done].spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].fftdata[c,:,:]
+            YY = self.Dlist[dtwo].spdata[c,:,:]
 
             self.Dlist[dtwo].val[c,:] = sp.cross_phase(XX, YY)
 
@@ -432,11 +432,11 @@ class FluctAna(object):
             # calculate cross power for each channel and each bins
             for b in range(bins):
                 if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].fftdata[0,b,:]
+                    X = self.Dlist[done].spdata[0,b,:]
                 else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].fftdata[c,b,:]
+                    X = self.Dlist[done].spdata[c,b,:]
 
-                Y = self.Dlist[dtwo].fftdata[c,b,:]
+                Y = self.Dlist[dtwo].spdata[c,b,:]
 
                 val[b,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
                 val[b,:] = np.fft.ifft(val[b,:], n=nfft)*nfft
@@ -481,11 +481,11 @@ class FluctAna(object):
             # calculate cross power for each channel and each bins
             for b in range(bins):
                 if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].fftdata[0,b,:]
+                    X = self.Dlist[done].spdata[0,b,:]
                 else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].fftdata[c,b,:]
+                    X = self.Dlist[done].spdata[c,b,:]
 
-                Y = self.Dlist[dtwo].fftdata[c,b,:]
+                Y = self.Dlist[dtwo].spdata[c,b,:]
 
                 x = np.fft.ifft(np.fft.ifftshift(X), n=nfft)*nfft/np.sqrt(win_factor)
                 Rxx = np.mean(x**2)
@@ -549,8 +549,8 @@ class FluctAna(object):
             pdata = np.zeros((bins, len(self.Dlist[dtwo].ax)))  # (full length for calculation)
 
             # calculate cross power for each channel and each bins
-            XX = self.Dlist[done].fftdata[c,:,:]
-            YY = self.Dlist[dtwo].fftdata[c,:,:]
+            XX = self.Dlist[done].spdata[c,:,:]
+            YY = self.Dlist[dtwo].spdata[c,:,:]
 
             pdata = sp.xspec(XX, YY, win_factor)
 
@@ -629,8 +629,8 @@ class FluctAna(object):
 
             # calculate auto power and cross phase (wavenumber)
             for b in range(bins):
-                X = self.Dlist[done].fftdata[c,b,:]
-                Y = self.Dlist[dtwo].fftdata[c,b,:]
+                X = self.Dlist[done].spdata[c,b,:]
+                Y = self.Dlist[dtwo].spdata[c,b,:]
 
                 Pxx[b,:] = X*np.matrix.conjugate(X) / win_factor
                 Pyy[b,:] = Y*np.matrix.conjugate(Y) / win_factor
@@ -705,15 +705,15 @@ class FluctAna(object):
             # reference channel
             if rnum == 1:
                 rname = self.Dlist[done].clist[0]
-                XX = self.Dlist[done].fftdata[0,:,:]
+                XX = self.Dlist[done].spdata[0,:,:]
             else:
                 rname = self.Dlist[done].clist[c]
-                XX = self.Dlist[done].fftdata[c,:,:]
+                XX = self.Dlist[done].spdata[c,:,:]
             self.Dlist[dtwo].rname.append(rname)
 
             # cmp channel
             pname = self.Dlist[dtwo].clist[c]
-            YY = self.Dlist[dtwo].fftdata[c,:,:]
+            YY = self.Dlist[dtwo].spdata[c,:,:]
 
             self.Dlist[dtwo].val[c,:,:] = sp.bicoherence(XX, YY)
 
@@ -766,7 +766,7 @@ class FluctAna(object):
 
     def nonlin_evolution(self, done=0, dtwo=1, dt=1.0, wit=1, test=0, **kwargs):
         # rnum = cnum = 1 or 2
-        self.Dlist[dtwo].vkind = 'ritz_nonlin'
+        self.Dlist[dtwo].vkind = 'nonlin_rates'
 
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
 
@@ -788,22 +788,22 @@ class FluctAna(object):
         if cnum == 1:
             # reference channel
             rname = self.Dlist[done].clist[0]
-            XX = self.Dlist[done].fftdata[0,:,:]
+            XX = self.Dlist[done].spdata[0,:,:]
             self.Dlist[dtwo].rname.append(rname)
             # cmp channel
             pname = self.Dlist[dtwo].clist[0]
-            YY = self.Dlist[dtwo].fftdata[0,:,:]
+            YY = self.Dlist[dtwo].spdata[0,:,:]
         else:
             # reference channel
             rname = self.Dlist[done].clist[0]
             self.Dlist[dtwo].rname.append(rname)
-            XXa = self.Dlist[done].fftdata[0,:,:]
-            XXb = self.Dlist[done].fftdata[1,:,:]
+            XXa = self.Dlist[done].spdata[0,:,:]
+            XXb = self.Dlist[done].spdata[1,:,:]
             print('use {:s} and {:s} for XX'.format(self.Dlist[done].clist[0], self.Dlist[done].clist[1]))
             # cmp channel
             pname = self.Dlist[dtwo].clist[0]
-            YYa = self.Dlist[dtwo].fftdata[0,:,:]
-            YYb = self.Dlist[dtwo].fftdata[1,:,:]
+            YYa = self.Dlist[dtwo].spdata[0,:,:]
+            YYb = self.Dlist[dtwo].spdata[1,:,:]
             print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[0], self.Dlist[dtwo].clist[1]))
             
             # reconstructed XX (sub averaging??)
@@ -1206,7 +1206,7 @@ class FluctAna(object):
                 # set base
                 if vkind in ['correlation','corr_coef']:
                     pbase = self.Dlist[dnum].ax*1e6
-                elif vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+                elif vkind in ['cross_power','coherence','cross_phase','bicoherence']:
                     pbase = self.Dlist[dnum].ax/1000
                 elif vkind in ['skewness','kurtosis']:
                     pbase = self.Dlist[dnum].time
@@ -1258,7 +1258,7 @@ class FluctAna(object):
                 plt.xlabel('Time [s]')
                 plt.ylabel('Signal')
             elif type == 'val':
-                if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+                if vkind in ['cross_power','coherence','cross_phase','bicoherence']:
                     plt.xlabel('Frequency [kHz]')
                     plt.ylabel(vkind)
                 elif vkind == 'hurst':
@@ -1332,7 +1332,7 @@ class FluctAna(object):
 
         vkind = self.Dlist[dnum].vkind
 
-        if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+        if vkind in ['cross_power','coherence','cross_phase','bicoherence']:
             # axis
             sbase = self.Dlist[dnum].ax/1000  # [kHz]
 
@@ -1403,7 +1403,7 @@ class FluctAna(object):
         else:
             axs[0].set_xlim([sbase[0], sbase[-1]])
 
-        if vkind in ['cross_power','coherence','cross_phase','bicoherence','ritz_nonlin']:
+        if vkind in ['cross_power','coherence','cross_phase','bicoherence']:
             axs[0].set_xlabel('Frequency [kHz]')
             axs[0].set_ylabel(vkind)
         elif vkind == 'hurst':
