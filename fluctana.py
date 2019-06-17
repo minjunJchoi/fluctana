@@ -1153,7 +1153,7 @@ class FluctAna(object):
 
 ############################# default plot functions ###########################
 
-    def mplot(self, dnum=1, cnl=[0], type='time', **kwargs):
+    def mplot(self, dnum=1, cnl=[0], type='time', show=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
@@ -1274,13 +1274,14 @@ class FluctAna(object):
                     plt.xlabel('Time [s]')
                     plt.ylabel('Signal')
 
-        plt.show()
+        if show == 1:
+            plt.show()
 
     def oplot(self, dnum, cnl, type='time', **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
-        for c in cnl:
+        for i, c in enumerate(cnl):
             pname = self.Dlist[dnum].clist[c]
 
             if type == 'time':
