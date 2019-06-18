@@ -355,26 +355,26 @@ def expand_clist(clist):
     # KSTAR ECEI
     exp_clist = []
     for c in range(len(clist)):
-        if 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
+        if len(clist[c]) < 15:
+            exp_clist.append(clist[c])
+            continue
+        elif 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
             vi = int(clist[c][6:8])
             fi = int(clist[c][8:10])
             vf = int(clist[c][11:13])
             ff = int(clist[c][13:15])
-
-            for v in range(vi, vf+1):
-                for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:6] + '{:02d}{:02d}'.format(v, f))
+            ip = 6
         elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
             vi = int(clist[c][7:9])
             fi = int(clist[c][9:11])
             vf = int(clist[c][12:14])
             ff = int(clist[c][14:16])
+            ip = 7
+         
+        for v in range(vi, vf+1):
+            for f in range(fi, ff+1):
+                exp_clist.append(clist[c][0:ip] + '{:02d}{:02d}'.format(v, f))
 
-            for v in range(vi, vf+1):
-                for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:7] + '{:02d}{:02d}'.format(v, f))
-        else:
-            exp_clist.append(clist[c])
     clist = exp_clist
 
     return clist
