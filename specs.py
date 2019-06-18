@@ -213,7 +213,7 @@ def ritz_nonlinear(XX, YY):
     Ak = np.zeros(full) # Xo cXo
     Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
-    for b in range(bins):  
+    for b in range(bins):
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
 
@@ -306,7 +306,7 @@ def wit_nonlinear(XX, YY):
     Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
     # print('DO NOT CALCULATE RATES')
-    for b in range(bins):  
+    for b in range(bins):
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
 
@@ -329,7 +329,7 @@ def wit_nonlinear(XX, YY):
 
 
 def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
-    ## Linear growth rate and nonlinear energy transfer rates 
+    ## Linear growth rate and nonlinear energy transfer rates
     # dt = vd / dz
     full = len(Lk)
 
@@ -351,7 +351,7 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
 
     # Linear growth rate
     # gk = vd * Gk.real
-    gk = 1.0/dt * (Lk * Ek - 1.0 + 1.0j*Tk).real
+    gk = 1.0/dt * (Lk * Ek - 1.0).real
 
     # Quadratic kernel
     # Mijk = Qijk * Ekk / dz
@@ -366,13 +366,13 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
     for k in range(full):
         idx = kidx[k]
         for n, ij in enumerate(idx):
-            sum_Tijk[k] += Tijk[ij] 
+            sum_Tijk[k] += Tijk[ij]
             # sum_Tijk[k] += Tijk[ij] / len(idx) # divide by number of pairs?
 
     return gk, Tijk, sum_Tijk
 
 
-def nonlinear_ratesJS(Lk, Qijk, XX, dt):
+def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt):
     ## Linear growth rate and nonlinear energy transfer rates from JS Kim PoP 96
     # dt = vd / dz
     full = len(Lk)
@@ -384,21 +384,17 @@ def nonlinear_ratesJS(Lk, Qijk, XX, dt):
     sum_Tijk = np.zeros(full, dtype=np.complex_)
     for k in range(full):
         idx = kidx[k]
-        
+
         for n, ij in enumerate(idx):
-            XXX = np.mean(XX[:,ij[0]]*XX[:,ij[1]]*np.conjugate(XX[:,k])) # verify this with Aijk 
-            sum_Tijk[k] += np.conjugate(Lk[k])*Qijk[ij]*XXX/dt
-        
-        sum_Tijk[k] = 2.0*sum_Tijk[k].real
+            # XXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,k]) ) # same with Aijk[ij]
+            sum_Tijk[k] += 2.0*(np.conjugate(Lk[k]) * Qijk[ij] * Aijk[ij] / dt).real
 
         # for n, ij in enumerate(idx):
         #     for m, lm in enumerate(idx):
-        #         XXXX = np.mean(XX[:,ij[0]]*XX[:,ij[1]]*np.conjugate(XX[:,lm[0]])*np.conjugate(XX[:,lm[1]]))
-        #         sum_Tijk[k] += Qijk[ij]*np.conjugate(Qijk[lm])*XXXX /dt
-    
-    Tijk = np.abs(Qijk)
+        #         XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
+        #         sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX /dt
 
-    return gk, Tijk, sum_Tijk
+    return gk, sum_Tijk
 
 
 def nonlinear_test(ax, XX):

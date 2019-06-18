@@ -765,6 +765,8 @@ class FluctAna(object):
         plt.show()
 
     def nonlin_evolution(self, done=0, dtwo=1, dt=1.0, wit=1, test=0, **kwargs):
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
         # rnum = cnum = 1 or 2
         self.Dlist[dtwo].vkind = 'nonlin_rates'
 
@@ -805,19 +807,39 @@ class FluctAna(object):
             YYa = self.Dlist[dtwo].spdata[0,:,:]
             YYb = self.Dlist[dtwo].spdata[1,:,:]
             print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[0], self.Dlist[dtwo].clist[1]))
-            
-            # reconstructed XX (sub averaging??)
-            XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real) # amplitude of the cross power
-            # XXc = np.abs(XXa * np.matrix.conjugate(XXb)) / (np.abs(XXa)*np.abs(XXb)) # coherence
-            XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-            XX = XXc * np.cos(XXt) + 1.0j * XXc * np.sin(XXt)
-            # reconstructed YY (sub averaging??)
-            YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real) # amplitude of the cross power
-            # YYc = np.abs(YYa * np.matrix.conjugate(YYb)) / (np.abs(YYa)*np.abs(YYb)) # coherence
-            YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-            YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
 
-        # modeled data 
+            # # reconstructed XX
+            # XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real) # amplitude of the cross power
+            # # XXc = np.abs(XXa * np.matrix.conjugate(XXb)) / (np.abs(XXa)*np.abs(XXb)) # coherence
+            # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+            # XX = XXc * np.cos(XXt) + 1.0j * XXc * np.sin(XXt)
+            # # reconstructed YY
+            # YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real) # amplitude of the cross power
+            # # YYc = np.abs(YYa * np.matrix.conjugate(YYb)) / (np.abs(YYa)*np.abs(YYb)) # coherence
+            # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
+            # YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
+
+            # reconstruction using sub averg
+            sdim = 20
+            XX = np.zeros(XXa.shape, dtype=np.complex_)
+            XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+            for i in range(XXa.shape[0]):
+                si = i
+                ei = i+sdim
+                Xc = np.sqrt(np.abs(np.mean(XXa[si:ei,:]*np.matrix.conjugate(XXb[si:ei,:]), 0)))
+                Xt = np.mean(XXt[si:ei,:])
+                XX[i,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
+
+            YY = np.zeros(YYa.shape, dtype=np.complex_)
+            YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
+            for i in range(YYa.shape[0]):
+                si = i
+                ei = i+sdim
+                Yc = np.sqrt(np.abs(np.mean(YYa[si:ei,:]*np.matrix.conjugate(YYb[si:ei,:]), 0)))
+                Yt = np.mean(YYt[si:ei,:])
+                YY[i,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
+
+        # modeled data
         if test == 1:
             YY, _, _ = sp.nonlinear_test(ax1, XX)
             print('TEST with MODEL DATA')
@@ -829,10 +851,6 @@ class FluctAna(object):
         else:
             print('Wit method')
             Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY)
-
-        # calculate rates
-        # gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
-        gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Qijk, XX, dt)
 
         # plot info
         pshot = self.Dlist[dtwo].shot
@@ -846,7 +864,7 @@ class FluctAna(object):
         pax2 = ax1/1000.0 # [kHz]
 
         # linear transfer function
-        a1.plot(pax1, Lk.real)
+        a1.plot(pax1, Lk.real, 'k')
         a1.set_xlabel('Frequency [kHz]')
         a1.set_ylabel('Linear transfer function')
         a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
@@ -862,31 +880,40 @@ class FluctAna(object):
 
         plt.show()
 
+        # calculate rates
+        # gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
+        # gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Qijk, XX, dt)
+        gk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt)
+
         # Plot results
-        fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,2,1]})
+        fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,1,2]})
         plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
 
         pax1 = ax1/1000.0 # [kHz]
         pax2 = ax1/1000.0 # [kHz]
 
         # linear growth rate
-        a1.plot(pax1, gk)
+        a1.plot(pax1, gk, 'k')
         a1.set_xlabel('Frequency [kHz]')
         a1.set_ylabel('Growth rate [1/s]')
         a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+        a1.axhline(y=0, ls='--', color='k')
+        if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
 
         # Nonlinear transfer rate
-        im = a2.imshow(Tijk, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+        a2.plot(pax1, sum_Tijk.real, 'k')
         a2.set_xlabel('Frequency [kHz]')
-        a2.set_ylabel('Frequency [kHz]')
-        a2.set_title('Nonlinear transfer rate [1/s]')
-        divider = make_axes_locatable(a2)
+        a2.set_ylabel('Nonlinear transfer rate [1/s]')
+        a2.axhline(y=0, ls='--', color='k')
+        if 'xlimits' in kwargs: a2.set_xlim([xlimits[0], xlimits[1]])
+
+        im = a3.imshow(np.abs(Qijk), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+        a3.set_xlabel('Frequency [kHz]')
+        a3.set_ylabel('Frequency [kHz]')
+        a3.set_title('Nonlinear transfer function')
+        divider = make_axes_locatable(a3)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         fig.colorbar(im, cax=cax, orientation='vertical')
-
-        a3.plot(pax1, sum_Tijk)
-        a3.set_xlabel('Frequency [kHz]')
-        a3.set_ylabel('Nonlinear transfer rate [1/s]')
 
         plt.show()
 
