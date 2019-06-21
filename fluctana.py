@@ -698,12 +698,11 @@ class FluctAna(object):
 
                 # calculate SKw
                 for w in range(nfft):
-                    idx = (Kxy[b,w] - kstep/2 < kax) * (kax < Kxy[b,w] + kstep/2)
-                    val[c,:,w] = val[c,:,w] + (1/bins*(Pxx[b,w] + Pyy[b,w])/2) * idx
+                    idx = (Kxy[b,w] - kstep/2.0 < kax) * (kax < Kxy[b,w] + kstep/2.0)
+                    val[c,:,w] = val[c,:,w] + (1.0/bins*(Pxx[b,w] + Pyy[b,w])/2.0) * idx
 
             # calculate moments
-            with np.errstate(divide='ignore',invalid='ignore'):
-                sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
+            sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
             K[c, :] = np.sum(np.transpose(np.tile(kax, (nfft, 1))) * sklw, 0)
             for w in range(nfft):
                 sigK[c,w] = np.sqrt(np.sum( (kax - K[c,w])**2 * sklw[:,w] ))
@@ -719,7 +718,7 @@ class FluctAna(object):
         pdata = np.log10(pdata)
 
         plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
-        plt.clim([-10,-4])
+
         plt.colorbar()
 
         chpos = '({:.1f}, {:.1f})'.format(np.mean(self.Dlist[dtwo].rpos*100), np.mean(self.Dlist[dtwo].zpos*100)) # [cm]
