@@ -673,7 +673,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def bicoherence(self, done=0, dtwo=1, sum=0, **kwargs):
+    def bicoherence(self, done=0, dtwo=1, cnl=[0], **kwargs):
         # fftbins full = 1
         # number of cmp channels = number of ref channels
         self.Dlist[dtwo].vkind = 'bicoherence'
@@ -701,7 +701,7 @@ class FluctAna(object):
         self.Dlist[dtwo].val2 = np.zeros((cnum, len(ax1)))
 
         # calculation loop for multi channels
-        for c in range(cnum):
+        for i, c in enumerate(cnl):
             # reference channel
             if rnum == 1:
                 rname = self.Dlist[done].clist[0]
@@ -715,56 +715,40 @@ class FluctAna(object):
             pname = self.Dlist[dtwo].clist[c]
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:,:] = sp.bicoherence(XX, YY)
+            # calculate bicoherence
+            self.Dlist[dtwo].val[c,:,:], self.Dlist[dtwo].val2[c,:] = sp.bicoherence(XX, YY)
 
-            # set axes
-            if c == 0:
-                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                axes1 = plt.subplot(row,col,c+1)
-                axprops = dict(sharex = axes1, sharey = axes1)
-            else:
-                plt.subplot(row,col,c+1, **axprops)
-
-            # plot data
+            # plot info
             pshot = self.Dlist[dtwo].shot
             chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
-            if sum == 0:
-                pax1 = ax1/1000.0 # [kHz]
-                pax2 = ax2/1000.0 # [kHz]
-                pdata = self.Dlist[dtwo].val[c,:,:]
 
-                plt.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            # Plot results
+            fig, (a1,a2) = plt.subplots(1,2, figsize=(10,6), gridspec_kw = {'width_ratios':[1,1.5]})
+            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
 
-                plt.ylim([ax1[0]/1000.0, ax1[-1]/1000.0])
-                plt.xlim([ax2[0]/1000.0, ax2[-1]/1000.0])
-                plt.colorbar()
-                plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
-                plt.xlabel('F1 [kHz]')
-                plt.ylabel('F2 [kHz]')
-            else:
-                sum_bic = np.zeros(ax1.shape)
-                for i in range(len(ax2)):
-                    if i == 0:
-                        sum_bic = sum_bic + self.Dlist[dtwo].val[c,:,i]
-                    else:
-                        sum_bic[i:] = sum_bic[i:] + self.Dlist[dtwo].val[c,:-i,i]
+            pax1 = ax1/1000.0 # [kHz]
+            pax2 = ax2/1000.0 # [kHz]
 
-                self.Dlist[dtwo].val2[c,:] = sum_bic
+            pdata = self.Dlist[dtwo].val[c,:,:]
+            pdata2 = self.Dlist[dtwo].val2[c,:]
 
-                pax = ax1/1000.0  # [kHz]
-                N = np.array([i+1 for i in range(len(ax2))] + [len(ax2) for i in range(len(ax1)-len(ax2))])
-                pdata = sum_bic / N # element wise division
+            im = a1.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            a1.set_xlabel('F1 [kHz]')
+            a1.set_ylabel('F2 [kHz]')
+            a1.set_title('The squared bicoherence')
+            divider = make_axes_locatable(a1)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
 
-                plt.plot(pax, pdata, 'k')
+            a2.plot(pax1, pdata2, 'k')
+            a2.set_xlim([0,pax2[-1]])
+            a2.set_xlabel('F3 [kHz]')
+            a2.set_ylabel('Summed bicoherence (avg)')
+            a2.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
-                plt.xlim([ax2[0]/1000.0, ax2[-1]/1000.0])
-                plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
-                plt.xlabel('Frequency [kHz]')
-                plt.ylabel('Summed bicoherence')
+            plt.show()
 
-        plt.show()
-
-    def nonlin_evolution(self, done=0, dtwo=1, dt=1.0, wit=1, test=0, **kwargs):
+    def nonlin_evolution(self, done=0, dtwo=1, dt=1.0, wit=1, js=1, test=0, **kwargs):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         # rnum = cnum = 1 or 2
@@ -820,24 +804,49 @@ class FluctAna(object):
             # YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
 
             # reconstruction using sub averg
+            bins = XXa.shape[0]
             sdim = 20
-            XX = np.zeros(XXa.shape, dtype=np.complex_)
-            XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-            for i in range(XXa.shape[0]):
-                si = i
-                ei = i+sdim
-                Xc = np.sqrt(np.abs(np.mean(XXa[si:ei,:]*np.matrix.conjugate(XXb[si:ei,:]), 0)))
-                Xt = np.mean(XXt[si:ei,:])
-                XX[i,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
+            soverlap = 0.5
+            sbins = int(np.fix((int(bins/sdim) - soverlap)/(1.0 - soverlap)))
 
-            YY = np.zeros(YYa.shape, dtype=np.complex_)
+            XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+            XX = np.zeros((sbins, XXa.shape[1]), dtype=np.complex_)
+
             YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-            for i in range(YYa.shape[0]):
-                si = i
-                ei = i+sdim
-                Yc = np.sqrt(np.abs(np.mean(YYa[si:ei,:]*np.matrix.conjugate(YYb[si:ei,:]), 0)))
-                Yt = np.mean(YYt[si:ei,:])
-                YY[i,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
+            YY = np.zeros((sbins, YYa.shape[1]), dtype=np.complex_)
+
+            for b in range(sbins):
+                idx1 = int(b*np.fix(sdim*(1 - soverlap)))
+                idx2 = idx1 + sdim
+
+                Xc = np.sqrt(np.abs(np.mean(XXa[idx1:idx2,:]*np.matrix.conjugate(XXb[idx1:idx2,:]), 0)))
+                Xt = np.mean(XXt[idx1:idx2,:], 0)
+                XX[b,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
+
+                Yc = np.sqrt(np.abs(np.mean(YYa[idx1:idx2,:]*np.matrix.conjugate(YYb[idx1:idx2,:]), 0)))
+                Yt = np.mean(YYt[idx1:idx2,:], 0)
+                YY[b,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
+            
+            # XX = np.zeros(XXa.shape, dtype=np.complex_)
+            # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+            # for i in range(XXa.shape[0]):
+            #     si = i
+            #     ei = i+sdim
+            #     Xc = np.sqrt(np.abs(np.mean(XXa[si:ei,:]*np.matrix.conjugate(XXb[si:ei,:]), 0)))
+            #     Xt = np.mean(XXt[si:ei,:])
+            #     XX[i,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
+
+            # YY = np.zeros(YYa.shape, dtype=np.complex_)
+            # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
+            # for i in range(YYa.shape[0]):
+            #     si = i
+            #     ei = i+sdim
+            #     Yc = np.sqrt(np.abs(np.mean(YYa[si:ei,:]*np.matrix.conjugate(YYb[si:ei,:]), 0)))
+            #     Yt = np.mean(YYt[si:ei,:])
+            #     YY[i,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
+
+            self.Dlist[done].spdata = np.expand_dims(XX, axis=0)
+            self.Dlist[dtwo].spdata = np.expand_dims(YY, axis=0)
 
         # modeled data
         if test == 1:
@@ -858,7 +867,7 @@ class FluctAna(object):
 
         # Plot results
         fig, (a1,a2) = plt.subplots(2,1, figsize=(6,8), gridspec_kw = {'height_ratios':[1,2]})
-        plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+        plt.subplots_adjust(hspace = 0.8, wspace = 0.3)
 
         pax1 = ax1/1000.0 # [kHz]
         pax2 = ax1/1000.0 # [kHz]
@@ -881,9 +890,10 @@ class FluctAna(object):
         plt.show()
 
         # calculate rates
-        # gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
-        # gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Qijk, XX, dt)
-        gk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt)
+        if js == 1:
+            gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt)
+        else:
+            gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
 
         # Plot results
         fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,1,2]})
@@ -907,7 +917,7 @@ class FluctAna(object):
         a2.axhline(y=0, ls='--', color='k')
         if 'xlimits' in kwargs: a2.set_xlim([xlimits[0], xlimits[1]])
 
-        im = a3.imshow(np.abs(Qijk), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+        im = a3.imshow(Tijk.real, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
         a3.set_xlabel('Frequency [kHz]')
         a3.set_ylabel('Frequency [kHz]')
         a3.set_title('Nonlinear transfer function')

@@ -195,7 +195,18 @@ def bicoherence(XX, YY):
     # val = np.log10(np.abs(B)**2) # bispectrum
     val = (np.abs(B)**2) / P12 / P3 # bicoherence
 
-    return val
+    # summation over pairs
+    sum_val = np.zeros(full)
+    for i in range(half):
+        if i == 0:
+            sum_val = sum_val + val[:,i]
+        else:
+            sum_val[i:] = sum_val[i:] + val[:-i,i]
+
+    N = np.array([i+1 for i in range(half)] + [half for i in range(full-half)])
+    sum_val = sum_val / N # element wise division
+
+    return val, sum_val
 
 
 def ritz_nonlinear(XX, YY):
@@ -389,12 +400,14 @@ def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt):
             # XXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,k]) ) # same with Aijk[ij]
             sum_Tijk[k] += 2.0*(np.conjugate(Lk[k]) * Qijk[ij] * Aijk[ij] / dt).real
 
-        # for n, ij in enumerate(idx):
-        #     for m, lm in enumerate(idx):
-        #         XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
-        #         sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX /dt
+        for n, ij in enumerate(idx):
+            for m, lm in enumerate(idx):
+                XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
+                sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX /dt
 
-    return gk, sum_Tijk
+    Tijk = Qijk
+
+    return gk, Tijk, sum_Tijk
 
 
 def nonlinear_test(ax, XX):
