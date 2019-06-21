@@ -8,13 +8,15 @@
 #  2018.03.23 : version 0.10; Mirnov data resampling
 
 from MDSplus import Connection
-from MDSplus import DisconnectFromMds
-from MDSplus._mdsshr import MdsException
-
-from kstarecei import KstarEcei
+# from MDSplus import DisconnectFromMds
+# from MDSplus._mdsshr import MdsException
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+from kstardata import ep_pos
+from kstardata import ece_pos
+from kstardata import mc_pos
 
 VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'ECH_VFWD1', 'ECCD':'EC1_RFFWD1',
             'ICRF':'ICRF_FWD', 'LHCD':'LH1_AFWD', 'GASI':'I_GFLOW_IN:FOO', 'GASK':'K_GFLOW_IN:FOO', 'SMBI':'SM_VAL_OUT:FOO',
@@ -44,9 +46,6 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
 # nodes NOT support segment reading in 2018
 NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
 
-
-# ECE frequency 2016--2018
-FreqECE = [110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 109, 110] 
 
 # TS position 2018
 PosCoreTS = [1807, 1830, 1851, 1874, 1897, 1920, 1943, 1968, 1993, 2018, 2043, 2070, 2096, 2124]
@@ -108,7 +107,7 @@ class KstarMds(Connection):
                 pnode = POST_NODE[node]
             else:
                 pnode = ''
-            
+
             # data node name
             dnode = snode + pnode
 
@@ -131,7 +130,7 @@ class KstarMds(Connection):
             idx2 = int(idx[0][-1]+2)
             time = time[idx1:idx2]
             v = v[idx1:idx2]
-              
+
             # normalize if necessary
             if norm == 1:
                 v = v/np.mean(v) - 1
@@ -150,7 +149,7 @@ class KstarMds(Connection):
 
         # get channel position
         self.channel_position()
-        
+
         # get measurement error
         self.meas_error()
 
@@ -160,43 +159,64 @@ class KstarMds(Connection):
         return time, data
 
     def channel_position(self):  # Needs updates ####################
-        if 'ECE' in self.clist[0]: # ECE cold resonance
-            E = KstarEcei(self.shot, ['ECEI_GT1201']) # to get Bt info
-            self.bt = E.bt
+        # get channel positions from kstardata
+        if 'ECE' == self.clist[0][0:3]: # ECE
+            ece_rpos = ece_pos.get_ece_pos(self.shot)
+        elif 'EP' == self.clist[0][0:2]:
+            ep_rpos, ep_zpos = ep_pos.get_ep_pos()
+        elif 'MC1' == self.clist[0][0:3]:
+            mc1t_apos, mc1p_apos = mc_pos.get_mc_pos()
 
-        # read from MDSplus node
+        # try to read from MDSplus node
         cnum = len(self.clist)
         self.rpos = np.arange(cnum, dtype=np.float64)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
         for c in range(cnum):
-            if 'CES' in self.clist[0]: # CES
+            # set rnode 
+            if 'CES' == self.clist[0][0:3]: # CES
                 rnode = '\{:s}RT{:}'.format(self.clist[c][:4],self.clist[c][6:])
-            elif 'ECE' in self.clist[0]: # ECE
+            elif 'ECE' == self.clist[0][0:3]: # ECE
                 rnode = '\{:s}:RPOS2ND'.format(self.clist[c])
-            
-            try:
-                self.rpos[c] = self.get(rnode).data()[0]
-            except:
-                pass
-            
-            # ECE 2018 2nd harmonics cold resonance
-            if 'ECE' in self.clist[0] and self.shot > 19390:
-                cECE = int(self.clist[c][3:5])
-                self.rpos[c] = 1.80*27.99*2*self.bt/(FreqECE[cECE-1])
+            else:
+                rnode = ''
 
-            # TS 2018 position
-            if 'TS' in self.clist[0] and self.shot > 19390:
-                dTS = self.clist[c][3:7]
-                prec = self.clist[c].split(':')[0]
-                if len(prec) == 8:
-                    cTS = int(prec[7:8])
-                elif len(prec) == 9:
-                    cTS = int(prec[7:9])
-                if dTS == 'CORE':
-                    self.rpos[c] = PosCoreTS[cTS-1]/1000.0
-                elif dTS == 'EDGE':
-                    self.rpos[c] = PosEdgeTS[cTS-1]/1000.0
+            try:
+                # try to read from MDSplus node
+                self.rpos[c] = self.get(rnode).data()[0]
+                print('channel position read from MDSplus rnode {:s}'.format(rnode))
+            except:
+                print('channel position {:s} not found from MDSplus; try to read from kstardata'.format(rnode))
+
+                # ECE 2nd harmonics cold resonance
+                if 'ECE' == self.clist[0][0:3]:
+                    self.rpos[c] = ece_rpos[self.clist[c][0:5]]
+
+                # TS 2018 position
+                if 'TS' == self.clist[0][0:2] and self.shot > 19390:
+                    dTS = self.clist[c][3:7]
+                    prec = self.clist[c].split(':')[0]
+                    if len(prec) == 8:
+                        cTS = int(prec[7:8])
+                    elif len(prec) == 9:
+                        cTS = int(prec[7:9])
+                    if dTS == 'CORE':
+                        self.rpos[c] = PosCoreTS[cTS-1]/1000.0
+                    elif dTS == 'EDGE':
+                        self.rpos[c] = PosEdgeTS[cTS-1]/1000.0
+
+                # Get EP position
+                if 'EP' == self.clist[0][0:2]:
+                    self.rpos[c] = ep_rpos[self.clist[c][0:4]]
+                    self.zpos[c] = ep_zpos[self.clist[c][0:4]]
+                    self.apos[c] = float(self.clist[c][2:4])
+
+                # Get MC1T and MC1P position
+                if 'MC1T' == self.clist[0][0:4]:
+                    self.apos[c] = mc1t_apos[self.clist[c]]
+                elif 'MC1P' == self.clist[0][0:4]:
+                    self.apos[c] = mc1p_apos[self.clist[c]]
+
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node

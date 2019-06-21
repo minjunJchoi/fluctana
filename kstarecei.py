@@ -12,6 +12,8 @@
 import numpy as np
 import h5py
 
+import matplotlib.pyplot as plt
+
 ENUM = 5000000  # totla number of samples in an ECEI channel
 VN = 24  # number of vertical arrays
 
@@ -28,7 +30,6 @@ class KstarEcei(object):
             self.data_path = '/eceidata/exp_2013/'
         elif 9741 < shot and shot < 11723:
             self.data_path = '/eceidata/exp_2014/'
-            self.data_path = '/Volumes/myNFRI/temp/'  # for test
         elif 12272 < shot and shot < 14942:
             self.data_path = '/eceidata/exp_2015/'
         elif 14941 < shot and shot < 17356:
@@ -77,6 +78,9 @@ class KstarEcei(object):
 
             print('ECEI file = {}'.format(self.fname))
 
+        # get channel posistion
+        self.channel_position()
+
     def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0):
         self.trange = trange
 
@@ -105,7 +109,7 @@ class KstarEcei(object):
             cnum = len(self.clist)
 
             data = np.zeros((cnum, tnum))
-            for i in range(0, cnum):
+            for i in range(cnum):
                 node = "/ECEI/" + self.clist[i] + "/Voltage"
 
                 ov = f[node][oidx1:oidx2]/10000.0
@@ -118,12 +122,9 @@ class KstarEcei(object):
                     av = f[node][aidx1:aidx2]/10000.0
                     v = v/np.mean(av) - 1
 
-                data[i][:] = v
+                data[i,:] = v
 
             self.data = data
-
-        # get channel posistion
-        self.channel_position()
 
         return time, data
 
@@ -191,6 +192,16 @@ class KstarEcei(object):
 
             # get vertical position and angle at rpos
             self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
+
+    def show_ch_position(self):
+        fig, (a1) = plt.subplots(1,1, figsize=(6,6))
+        a1.plot(self.rpos, self.zpos, 'o')
+        for c, cname in enumerate(self.clist):
+            a1.annotate(cname[5:], (self.rpos[c], self.zpos[c]))
+        a1.set_title('ABCD positions (need corrections from syndia)')
+        a1.set_xlabel('R [m]')
+        a1.set_ylabel('z [m]')
+        plt.show()
 
     def beam_path(self, rpos, vn):
         # IN : shot, device name, R posistion [m], vertical channel number
@@ -344,26 +355,26 @@ def expand_clist(clist):
     # KSTAR ECEI
     exp_clist = []
     for c in range(len(clist)):
-        if 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
+        if len(clist[c]) < 15:
+            exp_clist.append(clist[c])
+            continue
+        elif 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
             vi = int(clist[c][6:8])
             fi = int(clist[c][8:10])
             vf = int(clist[c][11:13])
             ff = int(clist[c][13:15])
-
-            for v in range(vi, vf+1):
-                for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:6] + '{:02d}{:02d}'.format(v, f))
+            ip = 6
         elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
             vi = int(clist[c][7:9])
             fi = int(clist[c][9:11])
             vf = int(clist[c][12:14])
             ff = int(clist[c][14:16])
+            ip = 7
+        
+        for v in range(vi, vf+1):
+            for f in range(fi, ff+1):
+                exp_clist.append(clist[c][0:ip] + '{:02d}{:02d}'.format(v, f))
 
-            for v in range(vi, vf+1):
-                for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:7] + '{:02d}{:02d}'.format(v, f))
-        else:
-            exp_clist.append(clist[c])
     clist = exp_clist
 
     return clist
