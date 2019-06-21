@@ -2,22 +2,21 @@ import sys, os
 sys.path.append(os.pardir)
 from fluctana import *
 
-import pickle
-import math
+# HOW TO RUN
+# ./python3 check_spec.py 10186 [15.9,16] ECEI_L1303-1305
 
-shot = int(sys.argv[1]) # 20896
-trange = eval(sys.argv[2]) # [1,10]
-clist1 = sys.argv[3].split(',') # MC1T06
+shot = int(sys.argv[1]) 
+trange = eval(sys.argv[2])
+clist = sys.argv[3].split(',')
+
+# call fluctana
+A = FluctAna()
 
 # add data
-A = FluctAna()
-if clist1[0][0:4] == 'ECEI':
-    A.add_data(KstarEcei(shot=shot, clist=clist1), trange=trange, norm=0)
-else:
-    A.add_data(KstarMds(shot=shot, clist=clist1), trange=trange, norm=0)
+A.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=1)
 
 # list data
 A.list_data()
 
-## spec
+# plot spectrogram of data set dnum; cnl = channel number list to plot
 A.spec(dnum=0,cnl=range(len(A.Dlist[0].clist)), nfft=2048)
