@@ -719,7 +719,7 @@ class FluctAna(object):
         pdata = np.log10(pdata)
 
         plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
-
+        plt.clim([-10,-4])
         plt.colorbar()
 
         chpos = '({:.1f}, {:.1f})'.format(np.mean(self.Dlist[dtwo].rpos*100), np.mean(self.Dlist[dtwo].zpos*100)) # [cm]
