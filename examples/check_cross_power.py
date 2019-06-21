@@ -3,7 +3,7 @@ sys.path.append(os.pardir)
 from fluctana import *
 
 # HOW TO RUN
-# ./python3 check_coherence.py 10186 [15.9,16] ECEI_L1303 ECEI_L1403
+# ./python3 check_cross_power.py 10186 [15.9,16] ECEI_L1303 ECEI_L1403
 
 shot = int(sys.argv[1]) 
 trange = eval(sys.argv[2]) 
