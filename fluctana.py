@@ -33,6 +33,65 @@ import filtdata as ft
 CM = plt.cm.get_cmap('hot')
 
 
+class FluctData(object):
+    def __init__(self, shot, clist, time, data, rpos, zpos, apos):
+        self.shot = shot
+        self.clist = clist
+        self.time = time # 1xN [time] 
+        self.data = data # MxN [channel,time]  
+        self.rpos = rpos # 1XM [channel]
+        self.zpos = zpos # 1XM [channel]
+        self.apos = apos # 1XM [channel]
+
+    def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0):
+        # trim, normalize data
+        self.trange = trange
+
+        if norm == 0:
+            print('data is not normalized')
+        elif norm == 1:
+            print('data is normalized by trange average')
+        elif norm == 2:
+            print('data is normalized by atrange average')
+
+        # trim time
+        time, idx1, idx2 = self.time_base(trange)
+
+        if norm == 2:
+            _, aidx1, aidx2 = self.time_base(atrange)
+
+        # time series length
+        tnum = idx2 - idx1
+        # number of channels
+        cnum = len(self.clist)
+
+        raw_data = self.data
+        data = np.zeros((cnum, tnum))
+        for i in range(cnum):
+            v = raw_data[i,idx1:idx2]
+
+            if norm == 1:
+                v = v/np.mean(v) - 1
+            elif norm == 2:
+                v = v/np.mean(raw_data[i,aidx1:aidx2]) - 1
+
+            data[i,:] = v
+
+        self.data = data
+        self.time = time
+
+        return time, data
+
+    def time_base(self, trange):
+        time = self.time
+        
+        idx = np.where((time >= trange[0])*(time <= trange[1]))
+        idx1 = int(idx[0][0])
+        idx2 = int(idx[0][-1]+2)
+
+        return time[idx1:idx2], idx1, idx2
+        
+
 class FluctAna(object):
     def __init__(self):
         self.Dlist = []
@@ -625,7 +684,7 @@ class FluctAna(object):
         for c in range(cnum):
             # reference channel name
             self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-            print(self.Dlist[dtwo].rname[c], self.Dlist[dtwo].clist[c])
+            print('pair of {:s} and {:s}'.format(self.Dlist[dtwo].rname[c], self.Dlist[dtwo].clist[c]))
 
             # calculate auto power and cross phase (wavenumber)
             for b in range(bins):
@@ -1078,7 +1137,7 @@ class FluctAna(object):
             if verbose == 1 and i == 0:
                 plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
                 axes1 = plt.subplot(row,col,i+1)
-                axprops = dict(sharex = axes1, sharey = axes1)
+                axprops = dict(sharex = axes1)
             elif verbose == 1 and i > 0:
                 plt.subplot(row,col,i+1, **axprops)
 
@@ -1261,7 +1320,7 @@ class FluctAna(object):
                     plt.axhline(y=1/np.sqrt(self.Dlist[dnum].bins), color='r')
                 elif vkind == 'hurst':
                     plt.plot(pbase, self.Dlist[dnum].fit[c,:], 'r')
-                elif vkind == 'correlation':
+                elif vkind in ['correlation','corr_coef']:
                     hdata = signal.hilbert(pdata)
                     plt.plot(pbase, np.abs(hdata), '--')
 

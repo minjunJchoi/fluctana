@@ -91,7 +91,7 @@ def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     return tax, mean_ers, std_ers, hurst_exp, fit_data
 
 
-def bp_prob(x, d=6, bins=30):
+def bp_prob(x, d=6, bins=1):
     # BP_probability
     nst = math.factorial(d) # number of possible states
     ax = np.arange(nst) + 1 # state number
@@ -225,13 +225,7 @@ def complexity_limits(d):
 
 def fmb_fgn_locus(d):
     try:
-        with open('kstardata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
-            [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
-    except:
-        pass
-
-    try:
-        with open('../kstardata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
+        with open('../chdata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
             [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
     except:
         pass
