@@ -702,7 +702,8 @@ class FluctAna(object):
                     val[c,:,w] = val[c,:,w] + (1/bins*(Pxx[b,w] + Pyy[b,w])/2) * idx
 
             # calculate moments
-            sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
+            with np.errstate(divide='ignore',invalid='ignore'):
+                sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
             K[c, :] = np.sum(np.transpose(np.tile(kax, (nfft, 1))) * sklw, 0)
             for w in range(nfft):
                 sigK[c,w] = np.sqrt(np.sum( (kax - K[c,w])**2 * sklw[:,w] ))
