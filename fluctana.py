@@ -7,7 +7,6 @@
 # Last updated
 #  2018.03.23 : version 0.10; even nfft -> odd nfft (for symmetry)
 
-
 from scipy import signal
 import math
 import itertools
@@ -807,7 +806,7 @@ class FluctAna(object):
 
             plt.show()
 
-    def nonlin_evolution(self, done=0, dtwo=1, dt=1.0, wit=1, js=1, test=0, **kwargs):
+    def nonlin_evolution(self, done=0, dtwo=1, delta=1.0, wit=1, js=1, test=0, **kwargs):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         # rnum = cnum = 1 or 2
@@ -830,82 +829,94 @@ class FluctAna(object):
         self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
 
         # obtain XX and YY
-        if cnum == 1:
-            # reference channel
-            rname = self.Dlist[done].clist[0]
-            XX = self.Dlist[done].spdata[0,:,:]
-            self.Dlist[dtwo].rname.append(rname)
-            # cmp channel
-            pname = self.Dlist[dtwo].clist[0]
-            YY = self.Dlist[dtwo].spdata[0,:,:]
-        else:
-            # reference channel
-            rname = self.Dlist[done].clist[0]
-            self.Dlist[dtwo].rname.append(rname)
-            XXa = self.Dlist[done].spdata[0,:,:]
-            XXb = self.Dlist[done].spdata[1,:,:]
-            print('use {:s} and {:s} for XX'.format(self.Dlist[done].clist[0], self.Dlist[done].clist[1]))
-            # cmp channel
-            pname = self.Dlist[dtwo].clist[0]
-            YYa = self.Dlist[dtwo].spdata[0,:,:]
-            YYb = self.Dlist[dtwo].spdata[1,:,:]
-            print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[0], self.Dlist[dtwo].clist[1]))
+        # reference channel
+        rname = self.Dlist[done].clist[0]
+        XX = self.Dlist[done].spdata[0,:,:]
+        self.Dlist[dtwo].rname.append(rname)
+        # cmp channel
+        pname = self.Dlist[dtwo].clist[0]
+        YY = self.Dlist[dtwo].spdata[0,:,:]
 
-            # # reconstructed XX
-            # XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real) # amplitude of the cross power
-            # # XXc = np.abs(XXa * np.matrix.conjugate(XXb)) / (np.abs(XXa)*np.abs(XXb)) # coherence
-            # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-            # XX = XXc * np.cos(XXt) + 1.0j * XXc * np.sin(XXt)
-            # # reconstructed YY
-            # YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real) # amplitude of the cross power
-            # # YYc = np.abs(YYa * np.matrix.conjugate(YYb)) / (np.abs(YYa)*np.abs(YYb)) # coherence
-            # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-            # YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
+        # if cnum == 1:
+        #     # reference channel
+        #     rname = self.Dlist[done].clist[0]
+        #     XX = self.Dlist[done].spdata[0,:,:]
+        #     self.Dlist[dtwo].rname.append(rname)
+        #     # cmp channel
+        #     pname = self.Dlist[dtwo].clist[0]
+        #     YY = self.Dlist[dtwo].spdata[0,:,:]
+        # else:
+        #     # reference channel
+        #     rname = self.Dlist[done].clist[0]
+        #     self.Dlist[dtwo].rname.append(rname)
+        #     XXa = self.Dlist[done].spdata[0,:,:]
+        #     XXb = self.Dlist[done].spdata[1,:,:]
+        #     print('use {:s} and {:s} for XX'.format(self.Dlist[done].clist[0], self.Dlist[done].clist[1]))
+        #     # cmp channel
+        #     pname = self.Dlist[dtwo].clist[0]
+        #     YYa = self.Dlist[dtwo].spdata[0,:,:]
+        #     YYb = self.Dlist[dtwo].spdata[1,:,:]
+        #     print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[0], self.Dlist[dtwo].clist[1]))
 
-            # reconstruction using sub averg
-            bins = XXa.shape[0]
-            sdim = 20
-            soverlap = 0.5
-            sbins = int(np.fix((int(bins/sdim) - soverlap)/(1.0 - soverlap)))
+        #     # # reconstructed XX
+        #     # XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real) # amplitude of the cross power
+        #     # # XXc = np.abs(XXa * np.matrix.conjugate(XXb)) / (np.abs(XXa)*np.abs(XXb)) # coherence
+        #     # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+        #     # XX = XXc * np.cos(XXt) + 1.0j * XXc * np.sin(XXt)
+        #     # # reconstructed YY
+        #     # YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real) # amplitude of the cross power
+        #     # # YYc = np.abs(YYa * np.matrix.conjugate(YYb)) / (np.abs(YYa)*np.abs(YYb)) # coherence
+        #     # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
+        #     # YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
 
-            XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-            XX = np.zeros((sbins, XXa.shape[1]), dtype=np.complex_)
+        #     # reconstruction using sub averg
+        #     bins = XXa.shape[0]
+        #     sdim = 20
+        #     soverlap = 0.0
+        #     sbins = int(np.fix((int(bins/sdim) - soverlap)/(1.0 - soverlap)))
 
-            YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-            YY = np.zeros((sbins, YYa.shape[1]), dtype=np.complex_)
+        #     XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+        #     XX = np.zeros((sbins, XXa.shape[1]), dtype=np.complex_)
 
-            for b in range(sbins):
-                idx1 = int(b*np.fix(sdim*(1 - soverlap)))
-                idx2 = idx1 + sdim
+        #     YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
+        #     YY = np.zeros((sbins, YYa.shape[1]), dtype=np.complex_)
 
-                Xc = np.sqrt(np.abs(np.mean(XXa[idx1:idx2,:]*np.matrix.conjugate(XXb[idx1:idx2,:]), 0)))
-                Xt = np.mean(XXt[idx1:idx2,:], 0)
-                XX[b,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
+        #     for b in range(sbins):
+        #         idx1 = int(b*np.fix(sdim*(1 - soverlap)))
+        #         idx2 = idx1 + sdim
 
-                Yc = np.sqrt(np.abs(np.mean(YYa[idx1:idx2,:]*np.matrix.conjugate(YYb[idx1:idx2,:]), 0)))
-                Yt = np.mean(YYt[idx1:idx2,:], 0)
-                YY[b,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
+        #         Xc = np.sqrt(np.abs(np.mean(XXa[idx1:idx2,:]*np.matrix.conjugate(XXb[idx1:idx2,:]), 0)))
+        #         Xt = np.mean(XXt[idx1:idx2,:], 0)
+        #         XX[b,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
+
+        #         Yc = np.sqrt(np.abs(np.mean(YYa[idx1:idx2,:]*np.matrix.conjugate(YYb[idx1:idx2,:]), 0)))
+        #         Yt = np.mean(YYt[idx1:idx2,:], 0)
+        #         YY[b,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
             
-            # XX = np.zeros(XXa.shape, dtype=np.complex_)
-            # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-            # for i in range(XXa.shape[0]):
-            #     si = i
-            #     ei = i+sdim
-            #     Xc = np.sqrt(np.abs(np.mean(XXa[si:ei,:]*np.matrix.conjugate(XXb[si:ei,:]), 0)))
-            #     Xt = np.mean(XXt[si:ei,:])
-            #     XX[i,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
+        #     # XX = np.zeros(XXa.shape, dtype=np.complex_)
+        #     # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
+        #     # for i in range(XXa.shape[0]):
+        #     #     si = i
+        #     #     ei = i+sdim
+        #     #     Xc = np.sqrt(np.abs(np.mean(XXa[si:ei,:]*np.matrix.conjugate(XXb[si:ei,:]), 0)))
+        #     #     Xt = np.mean(XXt[si:ei,:])
+        #     #     XX[i,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
 
-            # YY = np.zeros(YYa.shape, dtype=np.complex_)
-            # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-            # for i in range(YYa.shape[0]):
-            #     si = i
-            #     ei = i+sdim
-            #     Yc = np.sqrt(np.abs(np.mean(YYa[si:ei,:]*np.matrix.conjugate(YYb[si:ei,:]), 0)))
-            #     Yt = np.mean(YYt[si:ei,:])
-            #     YY[i,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
+        #     # YY = np.zeros(YYa.shape, dtype=np.complex_)
+        #     # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
+        #     # for i in range(YYa.shape[0]):
+        #     #     si = i
+        #     #     ei = i+sdim
+        #     #     Yc = np.sqrt(np.abs(np.mean(YYa[si:ei,:]*np.matrix.conjugate(YYb[si:ei,:]), 0)))
+        #     #     Yt = np.mean(YYt[si:ei,:])
+        #     #     YY[i,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
 
-            self.Dlist[done].spdata = np.expand_dims(XX, axis=0)
-            self.Dlist[dtwo].spdata = np.expand_dims(YY, axis=0)
+        #     self.Dlist[done].spdata = np.expand_dims(XX, axis=0)
+        #     self.Dlist[dtwo].spdata = np.expand_dims(YY, axis=0)
+
+        # # check bicoherence
+        # self.bicoherence(done, dtwo, cnl=[0])
+        # return 0
 
         # modeled data
         if test == 1:
@@ -932,7 +943,7 @@ class FluctAna(object):
         pax2 = ax1/1000.0 # [kHz]
 
         # linear transfer function
-        a1.plot(pax1, Lk.real, 'k')
+        a1.plot(pax1, np.abs(Lk), 'k')
         a1.set_xlabel('Frequency [kHz]')
         a1.set_ylabel('Linear transfer function')
         a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
@@ -950,7 +961,7 @@ class FluctAna(object):
 
         # calculate rates
         if js == 1:
-            gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt)
+            gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Aijk, Qijk, XX, delta)
         else:
             gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
 
@@ -964,7 +975,7 @@ class FluctAna(object):
         # linear growth rate
         a1.plot(pax1, gk, 'k')
         a1.set_xlabel('Frequency [kHz]')
-        a1.set_ylabel('Growth rate [1/s]')
+        a1.set_ylabel('Growth rate [a.b.]')
         a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
         a1.axhline(y=0, ls='--', color='k')
         if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
@@ -972,7 +983,7 @@ class FluctAna(object):
         # Nonlinear transfer rate
         a2.plot(pax1, sum_Tijk.real, 'k')
         a2.set_xlabel('Frequency [kHz]')
-        a2.set_ylabel('Nonlinear transfer rate [1/s]')
+        a2.set_ylabel('Nonlinear transfer rate [a.b.]')
         a2.axhline(y=0, ls='--', color='k')
         if 'xlimits' in kwargs: a2.set_xlim([xlimits[0], xlimits[1]])
 

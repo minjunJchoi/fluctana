@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from scipy import signal
 
@@ -383,14 +385,14 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
     return gk, Tijk, sum_Tijk
 
 
-def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt):
+def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, delta):
     ## Linear growth rate and nonlinear energy transfer rates from JS Kim PoP 96
-    # dt = vd / dz
+    # delta = dt or dz
     full = len(Lk)
 
     kidx = get_kidx(full)
 
-    gk = (np.abs(Lk)**2 - 1)/dt # JSKim 96
+    gk = (np.abs(Lk)**2 - 1)/delta # JSKim 96
 
     sum_Tijk = np.zeros(full, dtype=np.complex_)
     for k in range(full):
@@ -398,12 +400,13 @@ def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, dt):
 
         for n, ij in enumerate(idx):
             # XXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,k]) ) # same with Aijk[ij]
-            sum_Tijk[k] += 2.0*(np.conjugate(Lk[k]) * Qijk[ij] * Aijk[ij] / dt).real
+            sum_Tijk[k] += 2.0*(np.conjugate(Lk[k]) * Qijk[ij] * Aijk[ij] / delta).real
 
-        for n, ij in enumerate(idx):
-            for m, lm in enumerate(idx):
-                XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
-                sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX /dt
+        # # fourth order terms
+        # for n, ij in enumerate(idx):
+        #     for m, lm in enumerate(idx):
+        #         XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
+        #         sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX / delta
 
     Tijk = Qijk
 
