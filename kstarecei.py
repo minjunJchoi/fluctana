@@ -97,8 +97,9 @@ class KstarEcei(object):
 
         # get time base
         time, idx1, idx2, oidx1, oidx2 = self.time_base(trange)
+
         if norm == 2:
-            atime, aidx1, aidx2, aoidx1, aoidx2 = self.time_base(atrange)
+            _, aidx1, aidx2, _, _ = self.time_base(atrange)
 
         # get data
         with h5py.File(self.fname, 'r') as f:
@@ -125,6 +126,8 @@ class KstarEcei(object):
                 data[i,:] = v
 
             self.data = data
+
+        self.time = time
 
         return time, data
 
@@ -170,8 +173,6 @@ class KstarEcei(object):
             print('#### offset from end in KstarEcei.time_base ####')
             oidx1 = int(ENUM - 0.01*fs)
             oidx2 = int(ENUM - 1)
-
-        self.time = fulltime[idx1:idx2]
 
         return fulltime[idx1:idx2], idx1, idx2, oidx1, oidx2
 
