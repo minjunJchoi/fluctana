@@ -181,9 +181,12 @@ class KstarMds(Connection):
             else:
                 rnode = ''
 
-            try:
-                # try to read from MDSplus node
-                self.rpos[c] = self.get(rnode).data()[0]
+            try: # try to read rpos from MDSplus node
+                rpos = self.get(rnode).data()
+                if hasattr(rpos, "__len__"):
+                    self.rpos[c] = self.get(rnode).data()[0]
+                else:
+                    self.rpos[c] = rpos
                 print('channel position read from MDSplus rnode {:s}'.format(rnode))
             except:
                 print('channel position {:s} not found from MDSplus; try to read from kstardata'.format(rnode))
