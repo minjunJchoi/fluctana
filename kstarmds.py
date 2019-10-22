@@ -178,6 +178,8 @@ class KstarMds(Connection):
                 else:
                     self.rpos[c] = rpos
 
+                print('a')
+
                 print('channel position read from MDSplus rnode {:s}'.format(rnode))
             except:
                 # get channel positions from kstardata
