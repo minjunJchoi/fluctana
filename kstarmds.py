@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 from kstardata import ep_pos
 from kstardata import ece_pos
 from kstardata import mc_pos
+from kstardata import ts_pos
+from kstardata import tor_field
 
 VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'ECH_VFWD1', 'ECCD':'EC1_RFFWD1',
             'ICRF':'ICRF_FWD', 'LHCD':'LH1_AFWD', 'GASI':'I_GFLOW_IN:FOO', 'GASK':'K_GFLOW_IN:FOO', 'SMBI':'SM_VAL_OUT:FOO',
@@ -29,7 +31,7 @@ VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'E
             'RMP_B3':'PCRMPBBULI', 'RMP_B4':'PCRMPBFULI', 'RMP_B1':'PCRMPBJULI', 'RMP_B2':'PCRMPBNULI'}
 
 # nodes in PCS_KSTAR tree
-PCS_TREE = ['LMSR', 'LMSZ', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI', 'PCRMPTNULI',
+PCS_TREE = ['LMSR', 'LMSZ', 'PCITFMSRD', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI', 'PCRMPTNULI',
             'PCRMPMBULI', 'PCRMPMFULI', 'PCRMPMJULI', 'PCRMPMNULI', 'PCRMPBBULI', 'PCRMPBFULI', 'PCRMPBJULI', 'PCRMPBNULI']
 
 # nodes in CSS tree
@@ -45,11 +47,6 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
 
 # nodes NOT support segment reading in 2018
 NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
-
-
-# TS position 2018
-PosCoreTS = [1807, 1830, 1851, 1874, 1897, 1920, 1943, 1968, 1993, 2018, 2043, 2070, 2096, 2124]
-PosEdgeTS = [2106, 2124, 2138, 2156, 2173, 2190, 2208, 2223, 2241, 2260, 2276, 2295, 2310]
 
 class KstarMds(Connection):
     def __init__(self, shot ,clist):
@@ -74,7 +71,6 @@ class KstarMds(Connection):
         tree = find_tree(self.clist[0])
         try:
             self.openTree(tree,self.shot)
-            print('Open tree {:s}'.format(tree))
         except:
             print('Failed to open tree {:s}'.format(tree))
             time, data = None, None
@@ -154,46 +150,43 @@ class KstarMds(Connection):
         self.meas_error()
 
         # close tree
-        self.closeTree(tree,self.shot)
+        self.closeTree(tree, self.shot)
 
         return time, data
 
     def channel_position(self):  # Needs updates ####################
-        # get channel positions from kstardata
-        if 'ECE' == self.clist[0][0:3]: # ECE
-            ece_rpos = ece_pos.get_ece_pos(self.shot)
-        elif 'EP' == self.clist[0][0:2]:
-            ep_rpos, ep_zpos = ep_pos.get_ep_pos()
-        elif 'MC1' == self.clist[0][0:3]:
-            mc1t_apos, mc1p_apos = mc_pos.get_mc_pos()
-
-        # try to read from MDSplus node
+        # get channel position either from MDSplus server or kstardata
         cnum = len(self.clist)
         self.rpos = np.arange(cnum, dtype=np.float64)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
-        for c in range(cnum):
-            # set rnode 
-            if 'CES' == self.clist[0][0:3]: # CES
-                rnode = '\{:s}RT{:}'.format(self.clist[c][:4],self.clist[c][6:])
-            elif 'ECE' == self.clist[0][0:3]: # ECE
-                rnode = '\{:s}:RPOS2ND'.format(self.clist[c])
-            else:
-                rnode = ''
 
+        for c in range(cnum):
             try:
+                # set rnode 
+                if 'CES' == self.clist[0][0:3]: # CES
+                    rnode = '\{:s}RT{:}'.format(self.clist[c][:4],self.clist[c][6:])
+                elif 'ECE' == self.clist[0][0:3]: # ECE
+                    rnode = '\{:s}:RPOS2ND'.format(self.clist[c])
+                else:
+                    rnode = ''
+
                 # try to read from MDSplus node
-                self.rpos[c] = self.get(rnode).data()[0]
+                rpos = self.get(rnode).data()
+                if hasattr(rpos, "__len__"):
+                    self.rpos[c] = self.get(rnode).data()[0]
+                else:
+                    self.rpos[c] = rpos
+
                 print('channel position read from MDSplus rnode {:s}'.format(rnode))
             except:
-                print('channel position {:s} not found from MDSplus; try to read from kstardata'.format(rnode))
-
-                # ECE 2nd harmonics cold resonance
-                if 'ECE' == self.clist[0][0:3]:
+                # get channel positions from kstardata
+                if 'ECE' == self.clist[0][0:3]: # ECE 2nd harmonics cold resonance
+                    if c == 0: bt = tor_field.get_bt(self.shot)
+                    ece_rpos = ece_pos.get_ece_pos(self.shot, bt)
                     self.rpos[c] = ece_rpos[self.clist[c][0:5]]
-
-                # TS 2018 position
-                if 'TS' == self.clist[0][0:2] and self.shot > 19390:
+                elif 'TS' == self.clist[0][0:2]:
+                    ts_core_rpos, ts_edge_rpos = ts_pos.get_ts_pos(self.shot)
                     dTS = self.clist[c][3:7]
                     prec = self.clist[c].split(':')[0]
                     if len(prec) == 8:
@@ -201,22 +194,22 @@ class KstarMds(Connection):
                     elif len(prec) == 9:
                         cTS = int(prec[7:9])
                     if dTS == 'CORE':
-                        self.rpos[c] = PosCoreTS[cTS-1]/1000.0
+                        self.rpos[c] = ts_core_rpos[cTS-1]/1000.0
                     elif dTS == 'EDGE':
-                        self.rpos[c] = PosEdgeTS[cTS-1]/1000.0
-
-                # Get EP position
-                if 'EP' == self.clist[0][0:2]:
+                        self.rpos[c] = ts_edge_rpos[cTS-1]/1000.0
+                elif 'EP' == self.clist[0][0:2]:
+                    ep_rpos, ep_zpos = ep_pos.get_ep_pos()
                     self.rpos[c] = ep_rpos[self.clist[c][0:4]]
                     self.zpos[c] = ep_zpos[self.clist[c][0:4]]
                     self.apos[c] = float(self.clist[c][2:4])
-
-                # Get MC1T and MC1P position
-                if 'MC1T' == self.clist[0][0:4]:
-                    self.apos[c] = mc1t_apos[self.clist[c]]
-                elif 'MC1P' == self.clist[0][0:4]:
-                    self.apos[c] = mc1p_apos[self.clist[c]]
-
+                elif 'MC1' == self.clist[0][0:3]:
+                    mc1t_apos, mc1p_apos = mc_pos.get_mc_pos()
+                    if 'MC1T' == self.clist[0][0:4]:
+                        self.apos[c] = mc1t_apos[self.clist[c]]
+                    elif 'MC1P' == self.clist[0][0:4]:
+                        self.apos[c] = mc1p_apos[self.clist[c]]
+                
+                print('channel position from kstardata'.format(rnode))
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node
