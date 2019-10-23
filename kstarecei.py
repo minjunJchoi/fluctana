@@ -36,8 +36,10 @@ class KstarEcei(object):
             self.data_path = '/eceidata2/exp_2016/'
         elif 17963 < shot and shot < 19392:
             self.data_path = '/eceidata2/exp_2017/'
-        elif 19391 < shot:
+        elif 19391 < shot and shot < 21779:
             self.data_path = '/eceidata2/exp_2018/'
+        elif 21778 < shot:
+            self.data_path = '/eceidata2/exp_2019/'
 
         self.clist = expand_clist(clist)
 
@@ -89,11 +91,11 @@ class KstarEcei(object):
         # norm = 2 : normalization by atrange average
         # res  = 0 : no resampling
         if norm == 0:
-            print('data is not normalized')
+            print('Data is not normalized ECEI')
         elif norm == 1:
-            print('data is normalized by trange average')
+            print('Data is normalized by trange average ECEI')
         elif norm == 2:
-            print('data is normalized by atrange average')
+            print('Data is normalized by atrange average ECEI')
 
         # get time base
         time, idx1, idx2, oidx1, oidx2 = self.time_base(trange)

@@ -57,6 +57,11 @@ class KstarMds(Connection):
         self.shot = shot
         self.clist = clist
 
+        if ('ECE' == self.clist[0][0:3]) or ('CES' == self.clist[0][0:3]) or ('TS' == self.clist[0][0:2]) or \
+        ('EP' == self.clist[0][0:2]) or ('MC1' == self.clist[0][0:3]):
+            # get channel position
+            self.channel_position()
+
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
             print('Data is not normalized {:s}'.format(self.clist[0]))
@@ -150,13 +155,6 @@ class KstarMds(Connection):
         # close tree
         self.closeTree(tree, self.shot)
 
-        # read channel position for local(+quasi local) diagnostics
-        if not hasattr(self, 'rpos'):
-            if ('ECE' == self.clist[0][0:3]) or ('CES' == self.clist[0][0:3]) or ('TS' == self.clist[0][0:2]) or \
-            ('EP' == self.clist[0][0:2]) or ('MC1' == self.clist[0][0:3]):
-                # get channel position
-                self.channel_position()
-
         return time, data
 
     def channel_position(self):  # Needs updates ####################
@@ -193,6 +191,10 @@ class KstarMds(Connection):
                     self.rpos[c] = self.get(rnode).data()[0]
                 else:
                     self.rpos[c] = rpos
+
+                # post processing
+                if 'CES' == self.clist[0][0:3]: # CES
+                    self.rpos[c] = self.rpos[c]/1000.0                    
 
             # close tree
             self.closeTree(tree, self.shot)
