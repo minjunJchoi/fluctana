@@ -49,7 +49,7 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
 NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
 
 class KstarMds(Connection):
-    def __init__(self, shot ,clist):
+    def __init__(self, shot, clist):
         # from iKSTAR
         super(KstarMds,self).__init__('172.17.250.23:8005')  # call __init__ in Connection
         # from opi to CSS Host PC
@@ -59,11 +59,11 @@ class KstarMds(Connection):
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
-            print('data is not normalized')
+            print('Data is not normalized {:s}'.format(self.clist[0]))
         elif norm == 1:
-            print('data is normalized by trange average')
+            print('Data is normalized by trange average {:s}'.format(self.clist[0]))
         elif norm == 2:
-            print('data is normalized by atrange average')
+            print('Data is normalized by atrange average {:s}'.format(self.clist[0]))
 
         self.trange = trange
 
@@ -71,8 +71,9 @@ class KstarMds(Connection):
         tree = find_tree(self.clist[0])
         try:
             self.openTree(tree,self.shot)
+            print('Open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
         except:
-            print('Failed to open tree {:s}'.format(tree))
+            print('Failed to open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
             time, data = None, None
             return time, data
 
@@ -94,7 +95,7 @@ class KstarMds(Connection):
                 snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
                 tnode = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
 
-            if 'ECE' in clist_temp[0]: # do not use setTimeContext for ECE
+            if 'ECE' == self.clist[0][0:3]: # do not use setTimeContext for ECE
                 snode = 'setTimeContext(*,*,*),\{:s}'.format(node)
                 tnode = 'setTimeContext(*,*,*),dim_of(\{:s})'.format(node)
 
@@ -143,14 +144,18 @@ class KstarMds(Connection):
         self.fs = round(1/(time[1] - time[0])/1000)*1000.0
         self.data = data
 
-        # get channel position
-        self.channel_position()
-
         # get measurement error
         self.meas_error()
 
         # close tree
         self.closeTree(tree, self.shot)
+
+        # read channel position for local(+quasi local) diagnostics
+        if not hasattr(self, 'rpos'):
+            if ('ECE' == self.clist[0][0:3]) or ('CES' == self.clist[0][0:3]) or ('TS' == self.clist[0][0:2]) or \
+            ('EP' == self.clist[0][0:2]) or ('MC1' == self.clist[0][0:3]):
+                # get channel position
+                self.channel_position()
 
         return time, data
 
@@ -161,57 +166,67 @@ class KstarMds(Connection):
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
 
-        for c in range(cnum):
-            try:
+        try: 
+            if ('CES' == self.clist[0][0:3]) or ('ECE' == self.clist[0][0:3]):
+                pass
+            else:
+                raise NoPosMdsError()
+
+            # find tree
+            tree = find_tree(self.clist[0])
+
+            # open tree
+            self.openTree(tree, self.shot)
+            print('Open tree {:s} to get channel position {:s}'.format(tree, self.clist[0]))
+            
+            # read rnode from MDSplus 
+            for c in range(cnum):
                 # set rnode 
                 if 'CES' == self.clist[0][0:3]: # CES
                     rnode = '\{:s}RT{:}'.format(self.clist[c][:4],self.clist[c][6:])
                 elif 'ECE' == self.clist[0][0:3]: # ECE
                     rnode = '\{:s}:RPOS2ND'.format(self.clist[c])
-                else:
-                    rnode = ''
 
-                # try to read from MDSplus node
+                # read rnode
                 rpos = self.get(rnode).data()
                 if hasattr(rpos, "__len__"):
                     self.rpos[c] = self.get(rnode).data()[0]
                 else:
                     self.rpos[c] = rpos
 
-                print('a')
+            # close tree
+            self.closeTree(tree, self.shot)
 
-                print('channel position read from MDSplus rnode {:s}'.format(rnode))
-            except:
-                # get channel positions from kstardata
-                if 'ECE' == self.clist[0][0:3]: # ECE 2nd harmonics cold resonance
-                    if c == 0: bt = tor_field.get_bt(self.shot)
-                    ece_rpos = ece_pos.get_ece_pos(self.shot, bt)
-                    self.rpos[c] = ece_rpos[self.clist[c][0:5]]
+            print('Channel position read from MDSplus {:s}'.format(self.clist[0]))
+        except:
+            print('Failed to read channel position from MDSplus {:s}'.format(self.clist[0]))
+            print('Try to get position from kstardata {:s}'.format(self.clist[0]))
+
+            if 'ECE' == self.clist[0][0:3]: # ECE 2nd harmonics cold resonance
+                bt = tor_field.get_bt(self.shot)
+                ece_rpos = ece_pos.get_ece_pos(self.shot, bt)
+            elif 'TS' == self.clist[0][0:2]:
+                ts_rpos = ts_pos.get_ts_pos(self.shot)
+            elif 'EP' == self.clist[0][0:2]:
+                ep_rpos, ep_zpos = ep_pos.get_ep_pos()
+            elif 'MC1' == self.clist[0][0:3]:
+                mc1t_apos, mc1p_apos = mc_pos.get_mc_pos()
+
+            for c in range(cnum):
+                if 'ECE' == self.clist[0][0:3]:
+                    self.rpos[c] = ece_rpos[self.clist[c]]
                 elif 'TS' == self.clist[0][0:2]:
-                    ts_core_rpos, ts_edge_rpos = ts_pos.get_ts_pos(self.shot)
-                    dTS = self.clist[c][3:7]
-                    prec = self.clist[c].split(':')[0]
-                    if len(prec) == 8:
-                        cTS = int(prec[7:8])
-                    elif len(prec) == 9:
-                        cTS = int(prec[7:9])
-                    if dTS == 'CORE':
-                        self.rpos[c] = ts_core_rpos[cTS-1]/1000.0
-                    elif dTS == 'EDGE':
-                        self.rpos[c] = ts_edge_rpos[cTS-1]/1000.0
+                    self.rpos[c] = ts_rpos[self.clist[c].split(':')[0]]/1000.0
                 elif 'EP' == self.clist[0][0:2]:
-                    ep_rpos, ep_zpos = ep_pos.get_ep_pos()
                     self.rpos[c] = ep_rpos[self.clist[c][0:4]]
                     self.zpos[c] = ep_zpos[self.clist[c][0:4]]
                     self.apos[c] = float(self.clist[c][2:4])
-                elif 'MC1' == self.clist[0][0:3]:
-                    mc1t_apos, mc1p_apos = mc_pos.get_mc_pos()
-                    if 'MC1T' == self.clist[0][0:4]:
-                        self.apos[c] = mc1t_apos[self.clist[c]]
-                    elif 'MC1P' == self.clist[0][0:4]:
-                        self.apos[c] = mc1p_apos[self.clist[c]]
-                
-                print('channel position from kstardata'.format(rnode))
+                elif 'MC1T' == self.clist[0][0:4]:
+                    self.apos[c] = mc1t_apos[self.clist[c]]
+                elif 'MC1P' == self.clist[0][0:4]:
+                    self.apos[c] = mc1p_apos[self.clist[c]]
+            
+            print('Channel position obtained from kstardata {:s}'.format(self.clist[0]))
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node
@@ -225,6 +240,7 @@ class KstarMds(Connection):
                 self.err[c] = np.mean(self.get(enode).data())
             except:
                 pass
+
 
 def find_tree(cname):
     # cname -> node
@@ -244,6 +260,14 @@ def find_tree(cname):
         tree = 'KSTAR'
 
     return tree
+
+
+class NoPosMdsError(Exception):
+    def __init__(self, msg='No position in MDSplus server'):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
 
 
 if __name__ == "__main__":
