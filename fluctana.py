@@ -47,11 +47,11 @@ class FluctData(object):
         self.trange = trange
 
         if norm == 0:
-            print('data is not normalized')
+            print('Data is not normalized')
         elif norm == 1:
-            print('data is normalized by trange average')
+            print('Data is normalized by trange average')
         elif norm == 2:
-            print('data is normalized by atrange average')
+            print('Data is normalized by atrange average')
 
         # trim time
         time, idx1, idx2 = self.time_base(trange)
@@ -200,46 +200,47 @@ class FluctAna(object):
 
 ############################# data filtering functions #########################
 
-    def filt(self, name, fL, fH, b=0.08, verbose=0):
-        for d, D in enumerate(self.Dlist):
+    def filt(self, dnum, name, fL, fH, b=0.08, verbose=0):
+        # for d, D in enumerate(self.Dlist):
+        D = self.Dlist[dnum]        
 
-            cnum = len(D.data)
+        cnum = len(D.data)
 
-            # plot dimension
-            if cnum < 4:
-                row = cnum
-            else:
-                row = 4
-            col = math.ceil(cnum/row)
+        # plot dimension
+        if cnum < 4:
+            row = cnum
+        else:
+            row = 4
+        col = math.ceil(cnum/row)
 
-            if name[0:3] == 'FIR': # for FIR filters
-                filter = ft.FirFilter(name, D.fs, fL, fH, b)
+        if name[0:3] == 'FIR': # for FIR filters
+            filter = ft.FirFilter(name, D.fs, fL, fH, b)
 
-            for c in range(cnum):
-                x = np.copy(D.data[c,:])
-                D.data[c,:] = filter.apply(x)
+        for c in range(cnum):
+            x = np.copy(D.data[c,:])
+            D.data[c,:] = filter.apply(x)
 
-                if verbose == 1:
-                    # plot info
-                    pshot = D.shot
-                    pname = D.clist[c]
+            if verbose == 1:
+                # plot info
+                pshot = D.shot
+                pname = D.clist[c]
 
-                    # set axes
-                    if c == 0:
-                        plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                        axes1 = plt.subplot(row,col,c+1)
-                        axprops = dict(sharex = axes1, sharey = axes1)
-                    elif c > 0:
-                        plt.subplot(row,col,c+1, **axprops)
+                # set axes
+                if c == 0:
+                    plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+                    axes1 = plt.subplot(row,col,c+1)
+                    axprops = dict(sharex = axes1, sharey = axes1)
+                elif c > 0:
+                    plt.subplot(row,col,c+1, **axprops)
 
-                    plt.plot(D.time, x)
-                    plt.plot(D.time, D.data[c,:])
+                plt.plot(D.time, x)
+                plt.plot(D.time, D.data[c,:])
 
-                    plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
+                plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
 
-            print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(d, name, fL, fH, b))
+        print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
-            if verbose == 1: plt.show()
+        if verbose == 1: plt.show()
 
 
     def svd_filt(self, cutoff=0.9, verbose=0):

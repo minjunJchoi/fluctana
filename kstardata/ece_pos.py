@@ -1,17 +1,6 @@
-from kstarecei import KstarEcei
 
-def get_bt(shot):
-    if shot >= 19400:
-        E = KstarEcei(shot, ['ECEI_GT1201']) # to get Bt info
-    else:
-        E = KstarEcei(shot, ['ECEI_L1201']) # to get Bt info
-    bt = E.bt
-
-    return bt
-
-def get_ece_pos(shot):
+def get_ece_pos(shot, bt):
     freqECE = get_ece_freq(shot)
-    bt = get_bt(shot)
     harm = 2
 
     ece_rpos = {}
