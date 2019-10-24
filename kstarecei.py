@@ -146,7 +146,7 @@ class KstarEcei(object):
         self.time = time
 
         # check data quality
-        self.check_data_quality()
+        self.find_bad_channel()
 
         return time, data
 
@@ -195,7 +195,7 @@ class KstarEcei(object):
 
         return fulltime[idx1:idx2], idx1, idx2, oidx1, oidx2
 
-    def check_data_quality(self):
+    def find_bad_channel(self):
         # auto-find bad 
         for c in range(len(self.clist)):
             # check signal level

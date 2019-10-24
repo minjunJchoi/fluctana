@@ -1555,63 +1555,9 @@ class FluctAna(object):
 
             plt.show()
 
-    def massage(self, dnum):
-        # for d, D in enumerate(self.Dlist):
-        D = self.Dlist[dnum]        
-        tidx = 100
-        psize = 500
-
-        cnum = len(D.data)
-
-        # take data
-        pdata = D.data[:,tidx]
-        ## fake data
-        # dist = np.sqrt((D.rpos - 1.8)**2 + (D.zpos - 0)**2)
-        # pdata = 0.1*(1 - (dist/0.5)**2)
-        # pdata = pdata*D.good_channels
-
-        # position
-        zpos = D.zpos[:]
-        rpos = D.rpos[:]
-
-        # remove NaN
-        pdata[np.isnan(pdata)] = 0
-        # recovery
-        cutoff = 0.01
-        for c in range(cnum):
-            if D.good_channels[c] == 0:
-                dist = np.sqrt((D.rpos - D.rpos[c])**2 + (D.zpos - D.zpos[c])**2)
-                dfct = np.exp(-2*(dist/cutoff)**4) * D.good_channels
-                pdata[c] = np.sum(pdata * dfct)/np.sum(dfct)
-
-        # plot
-        CM = plt.cm.get_cmap('RdYlBu_r')
-
-        fig = plt.figure(facecolor='w', figsize=(5,10))
-        ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
-        ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
-        ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
-        axs = [ax1, ax2, ax3]        
-
-        axs[0].plot(D.time, D.data[10,:])  
-        axs[0].axvline(x=D.time[tidx], color='g')
-        sc = axs[1].scatter(rpos, zpos, psize, pdata, marker='s', vmin=-0.1, vmax=0.1, cmap=CM)
-        axs[1].set_aspect('equal')
-        plt.colorbar(sc, cax=axs[2])
-
-        axs[1].set_xlabel('R [m]')
-        axs[1].set_ylabel('z [m]')
-        axs[1].set_title('ECE image')
-
-        plt.show()
-
-
-        # griddata
-
-
-    def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], **kwargs):
+    def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', cutoff=0.03, pmethod='scatter', **kwargs):
         # keyboard interactive iplot
-        # (intp='none', climits=[-0.1,0.1], **kwargs)
+        D = self.Dlist[dnum]
 
         CM = plt.cm.get_cmap('RdYlBu_r')
 
@@ -1626,13 +1572,18 @@ class FluctAna(object):
             axs = [ax1, ax2, ax3]
 
             tstep = int(input('time step [idx]: '))  # jumping index # tstep = 10
-            for tidx in range(tidx1, len(self.Dlist[dnum].time), tstep):
-                # take data
-                pdata = self.Dlist[dnum].data[:,tidx]
+            for tidx in range(tidx1, len(D.time), tstep):
+                # take data and channel position
+                pdata = D.data[:,tidx]
+                rpos = D.rpos[:]
+                zpos = D.zpos[:]
 
-                # position
-                rpos = self.Dlist[dnum].rpos[:]
-                zpos = self.Dlist[dnum].zpos[:]
+                # fill bad channel
+                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, cutoff)
+
+                # interpolation
+                if istep > 0:
+                    ri, zi, pi = ms.interp_pdata(pdata, rpos, zpos, istep, imethod)
 
                 # plot
                 axs[0].cla()
@@ -1640,11 +1591,17 @@ class FluctAna(object):
                 axs[2].cla()
                 plt.ion()
 
-                axs[0].plot(self.Dlist[dnum].time, self.Dlist[dnum].data[snum,:])  # ax1.hold(True)
-                axs[0].axvline(x=self.Dlist[dnum].time[tidx], color='g')
-                sc = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                axs[0].plot(D.time, D.data[snum,:])  # ax1.hold(True)
+                axs[0].axvline(x=D.time[tidx], color='g')
+                if istep > 0:
+                    if pmethod == 'scatter':
+                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                    elif pmethod == 'contour':
+                        im = axs[1].contourf(ri, zi, pi, 50, cmap=CM)
+                else:
+                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 axs[1].set_aspect('equal')
-                plt.colorbar(sc, cax=axs[2])
+                plt.colorbar(im, cax=axs[2])
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
@@ -1666,12 +1623,17 @@ class FluctAna(object):
                 ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
                 axs = [ax1, ax2, ax3]
 
-                # take data
-                pdata = self.Dlist[dnum].data[:,tidx]
+                # take data and channel position
+                pdata = D.data[:,tidx]
+                rpos = D.rpos[:]
+                zpos = D.zpos[:]
 
-                # position
-                rpos = self.Dlist[dnum].rpos[:]
-                zpos = self.Dlist[dnum].zpos[:]
+                # fill bad channel
+                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, cutoff)
+
+                # interpolation
+                if istep > 0:
+                    ri, zi, pi = ms.interp_pdata(pdata, rpos, zpos, istep, imethod)
 
                 # plot
                 axs[0].cla()
@@ -1679,11 +1641,17 @@ class FluctAna(object):
                 axs[2].cla()
                 plt.ion()
 
-                axs[0].plot(self.Dlist[dnum].time, self.Dlist[dnum].data[snum,:])  # ax1.hold(True)
-                axs[0].axvline(x=self.Dlist[dnum].time[tidx], color='g')
-                sc = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                axs[0].plot(D.time, D.data[snum,:])  # ax1.hold(True)
+                axs[0].axvline(x=D.time[tidx], color='g')
+                if istep > 0:
+                    if pmethod == 'scatter':
+                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                    elif pmethod == 'contour':
+                        im = axs[1].contourf(ri, zi, pi, 50, cmap=CM)
+                else:
+                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 axs[1].set_aspect('equal')
-                plt.colorbar(sc, cax=axs[2])
+                plt.colorbar(im, cax=axs[2])
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
@@ -1701,13 +1669,13 @@ class FluctAna(object):
                 except:
                     pass
 
-                if tidx + tstep < len(self.Dlist[dnum].time) - 1 and 0 < tidx + tstep:
+                if tidx + tstep < len(D.time) - 1 and 0 < tidx + tstep:
                     tidx = tidx + tstep
 
                 plt.ioff()
                 plt.close()
 
-        self.Dlist[dnum].pdata = pdata
+        D.pdata = pdata
 
 ############################# test functions ###################################
 
