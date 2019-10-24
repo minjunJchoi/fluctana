@@ -63,7 +63,7 @@ class KstarEcei(object):
             self.tt = dset.attrs['TriggerTime'] # in [s]
             self.toff = self.tt[0]+0.001
             self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz] same sampling rate
-            self.bt = dset.attrs['TFcurrent']*0.0995556  # [kA] -> [T]
+            self.itf = dset.attrs['TFcurrent']*1e3  # [A]
             try:
                 self.mode = dset.attrs['Mode'].strip().decode()
                 if self.mode == 'O':
@@ -180,6 +180,12 @@ class KstarEcei(object):
 
     def channel_position(self):
         # get self.rpos, self.zpos, self.apos
+        # NEED corrections using syndia
+        
+        me = 9.1e-31        # electron mass
+        e = 1.602e-19       # charge
+        mu0 = 4*np.pi*1e-7  # permeability
+        ttn = 56*16         # total TF coil turns
 
         cnum = len(self.clist)
         self.rpos = np.zeros(cnum)  # R [m] of each channel
@@ -189,9 +195,8 @@ class KstarEcei(object):
             vn = int(self.clist[c][(self.cnidx1):(self.cnidx1+2)])
             fn = int(self.clist[c][(self.cnidx1+2):(self.cnidx1+4)])
 
-            # assume cold resonance
-            self.rpos[c] = 1.80*27.99*self.hn*self.bt/((fn - 1)*0.9 + 2.6 + self.lo)  # this assumes bt ~ 1/R
-            # bt should be bt[vn][fn]
+            # assume cold resonance with Bt ~ 1/R
+            self.rpos[c] = self.hn*e*mu0*ttn*self.itf/((2*np.pi)**2*me*((fn - 1)*0.9 + 2.6 + self.lo)*1e9)
 
             # get vertical position and angle at rpos
             self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
