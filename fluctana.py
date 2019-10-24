@@ -1558,49 +1558,55 @@ class FluctAna(object):
     def massage(self, dnum):
         # for d, D in enumerate(self.Dlist):
         D = self.Dlist[dnum]        
+        tidx = 100
+        psize = 500
 
         cnum = len(D.data)
 
-        # plot dimension
-        if cnum < 4:
-            row = cnum
-        else:
-            row = 4
-        col = math.ceil(cnum/row)
+        # take data
+        pdata = D.data[:,tidx]
+        ## fake data
+        # dist = np.sqrt((D.rpos - 1.8)**2 + (D.zpos - 0)**2)
+        # pdata = 0.1*(1 - (dist/0.5)**2)
+        # pdata = pdata*D.good_channels
 
-        # # select filter except svd
-        # if name[0:3] == 'FIR': 
-        #     filter = ft.FirFilter(name, D.fs, fL, fH, b)
+        # position
+        zpos = D.zpos[:]
+        rpos = D.rpos[:]
 
-        D.good_channels = np.ones(len(D.clist))
-        # auto-find bad 
+        # remove NaN
+        pdata[np.isnan(pdata)] = 0
+        # recovery
+        cutoff = 0.01
         for c in range(cnum):
-            x = np.copy(D.data[c,:])
-            
+            if D.good_channels[c] == 0:
+                dist = np.sqrt((D.rpos - D.rpos[c])**2 + (D.zpos - D.zpos[c])**2)
+                dfct = np.exp(-2*(dist/cutoff)**4) * D.good_channels
+                pdata[c] = np.sum(pdata * dfct)/np.sum(dfct)
 
-            # D.data[c,:] = filter.apply(x)
+        # plot
+        CM = plt.cm.get_cmap('RdYlBu_r')
 
-        #     if verbose == 1:
-        #         # plot info
-        #         pshot = D.shot
-        #         pname = D.clist[c]
+        fig = plt.figure(facecolor='w', figsize=(5,10))
+        ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
+        ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
+        ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
+        axs = [ax1, ax2, ax3]        
 
-        #         # set axes
-        #         if c == 0:
-        #             plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-        #             axes1 = plt.subplot(row,col,c+1)
-        #             axprops = dict(sharex = axes1, sharey = axes1)
-        #         elif c > 0:
-        #             plt.subplot(row,col,c+1, **axprops)
+        axs[0].plot(D.time, D.data[10,:])  
+        axs[0].axvline(x=D.time[tidx], color='g')
+        sc = axs[1].scatter(rpos, zpos, psize, pdata, marker='s', vmin=-0.1, vmax=0.1, cmap=CM)
+        axs[1].set_aspect('equal')
+        plt.colorbar(sc, cax=axs[2])
 
-        #         plt.plot(D.time, x)
-        #         plt.plot(D.time, D.data[c,:])
+        axs[1].set_xlabel('R [m]')
+        axs[1].set_ylabel('z [m]')
+        axs[1].set_title('ECE image')
 
-        #         plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
+        plt.show()
 
-        # print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
-        # if verbose == 1: plt.show()
+        # griddata
 
 
     def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], **kwargs):

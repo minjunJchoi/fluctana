@@ -63,7 +63,7 @@ class KstarEcei(object):
             self.tt = dset.attrs['TriggerTime'] # in [s]
             self.toff = self.tt[0]+0.001
             self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz] same sampling rate
-            self.itf = dset.attrs['TFcurrent']*1e3  # [A]
+            self.itf = dset.attrs['TFcurrent']*1.0e3  # [A]
             try:
                 self.mode = dset.attrs['Mode'].strip().decode()
                 if self.mode == 'O':
@@ -79,6 +79,13 @@ class KstarEcei(object):
             self.sz = dset.attrs['LensZoom']
 
             print('ECEI file = {}'.format(self.fname))
+
+        # data quality
+        self.good_channels = np.ones(len(self.clist))
+        self.offlev = np.zeros(len(self.clist))
+        self.offstd = np.zeros(len(self.clist))
+        self.siglev = np.zeros(len(self.clist))
+        self.sigstd = np.zeros(len(self.clist))
 
         # get channel posistion
         self.channel_position()
@@ -118,7 +125,14 @@ class KstarEcei(object):
                 ov = f[node][oidx1:oidx2]/10000.0
                 v = f[node][idx1:idx2]/10000.0
 
-                v = v - np.mean(ov)
+                self.offlev[i] = np.median(ov)
+                self.offstd[i] = np.std(ov)
+
+                v = v - self.offlev[i]
+
+                self.siglev[i] = np.median(v)
+                self.sigstd[i] = np.std(v)
+
                 if norm == 1:
                     v = v/np.mean(v) - 1
                 elif norm == 2:
@@ -130,6 +144,9 @@ class KstarEcei(object):
             self.data = data
 
         self.time = time
+
+        # check data quality
+        self.check_data_quality()
 
         return time, data
 
@@ -177,6 +194,28 @@ class KstarEcei(object):
             oidx2 = int(ENUM - 1)
 
         return fulltime[idx1:idx2], idx1, idx2, oidx1, oidx2
+
+    def check_data_quality(self):
+        # auto-find bad 
+        for c in range(len(self.clist)):
+            # check signal level
+            if self.siglev[c] > 0.01:
+                ref = 100*self.offstd[c]/self.siglev[c]
+            else:
+                ref = 100            
+            if ref > 30:
+                self.good_channels[c] = 0
+                print('LOW signal level channel {:s}, ref = {:g}%, siglevel = {:g} V'.format(self.clist[c], ref, self.siglev[c]))
+            
+            # check bottom saturation
+            if self.offstd[c] < 0.001:
+                self.good_channels[c] = 0
+                print('SAT offset data  channel {:s}, offstd = {:g}%, offlevel = {:g} V'.format(self.clist[c], self.offstd[c], self.offlev[c]))
+
+            # check top saturation.               
+            if self.sigstd[c] < 0.001:
+                self.good_channels[c] = 0
+                print('SAT signal data  channel {:s}, offstd = {:g}%, siglevel = {:g} V'.format(self.clist[c], self.sigstd[c], self.siglev[c]))
 
     def channel_position(self):
         # get self.rpos, self.zpos, self.apos

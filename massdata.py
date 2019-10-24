@@ -7,7 +7,6 @@ import pickle
 
 import matplotlib.pyplot as plt
 
-
 def skewness(t, x, detrend=1):
     # normalize
     x = x / x[0]
