@@ -18,7 +18,6 @@ from kstardata import ep_pos
 from kstardata import ece_pos
 from kstardata import mc_pos
 from kstardata import ts_pos
-from kstardata import tor_field
 
 VAR_NODE = {'NBI11':'NB11_pnb', 'NBI12':'NB12_pnb', 'NBI13':'NB13_pnb', 'ECH':'ECH_VFWD1', 'ECCD':'EC1_RFFWD1',
             'ICRF':'ICRF_FWD', 'LHCD':'LH1_AFWD', 'GASI':'I_GFLOW_IN:FOO', 'GASK':'K_GFLOW_IN:FOO', 'SMBI':'SM_VAL_OUT:FOO',
@@ -56,6 +55,11 @@ class KstarMds(Connection):
         # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot
         self.clist = clist
+
+        if ('ECE' == self.clist[0][0:3]) or ('CES' == self.clist[0][0:3]) or ('TS' == self.clist[0][0:2]) or \
+        ('EP' == self.clist[0][0:2]) or ('MC1' == self.clist[0][0:3]):
+            # get channel position
+            self.channel_position()
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
         if norm == 0:
@@ -150,13 +154,6 @@ class KstarMds(Connection):
         # close tree
         self.closeTree(tree, self.shot)
 
-        # read channel position for local(+quasi local) diagnostics
-        if not hasattr(self, 'rpos'):
-            if ('ECE' == self.clist[0][0:3]) or ('CES' == self.clist[0][0:3]) or ('TS' == self.clist[0][0:2]) or \
-            ('EP' == self.clist[0][0:2]) or ('MC1' == self.clist[0][0:3]):
-                # get channel position
-                self.channel_position()
-
         return time, data
 
     def channel_position(self):  # Needs updates ####################
@@ -168,6 +165,7 @@ class KstarMds(Connection):
 
         try: 
             if ('CES' == self.clist[0][0:3]) or ('ECE' == self.clist[0][0:3]):
+                raise NoPosMdsError()
                 pass
             else:
                 raise NoPosMdsError()
@@ -194,6 +192,10 @@ class KstarMds(Connection):
                 else:
                     self.rpos[c] = rpos
 
+                # post processing
+                if 'CES' == self.clist[0][0:3]: # CES
+                    self.rpos[c] = self.rpos[c]/1000.0                    
+
             # close tree
             self.closeTree(tree, self.shot)
 
@@ -203,8 +205,7 @@ class KstarMds(Connection):
             print('Try to get position from kstardata {:s}'.format(self.clist[0]))
 
             if 'ECE' == self.clist[0][0:3]: # ECE 2nd harmonics cold resonance
-                bt = tor_field.get_bt(self.shot)
-                ece_rpos = ece_pos.get_ece_pos(self.shot, bt)
+                ece_rpos = ece_pos.get_ece_pos(self.shot)
             elif 'TS' == self.clist[0][0:2]:
                 ts_rpos = ts_pos.get_ts_pos(self.shot)
             elif 'EP' == self.clist[0][0:2]:
