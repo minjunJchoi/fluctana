@@ -1595,11 +1595,11 @@ class FluctAna(object):
                 axs[0].axvline(x=D.time[tidx], color='g')
                 if istep > 0:
                     if pmethod == 'scatter':
-                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
                     elif pmethod == 'contour':
                         im = axs[1].contourf(ri, zi, pi, 50, cmap=CM)
                 else:
-                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
                 axs[1].set_aspect('equal')
                 plt.colorbar(im, cax=axs[2])
 
@@ -1646,11 +1646,11 @@ class FluctAna(object):
                 axs[0].axvline(x=D.time[tidx], color='g')
                 if istep > 0:
                     if pmethod == 'scatter':
-                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
                     elif pmethod == 'contour':
                         im = axs[1].contourf(ri, zi, pi, 50, cmap=CM)
                 else:
-                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
                 axs[1].set_aspect('equal')
                 plt.colorbar(im, cax=axs[2])
 
