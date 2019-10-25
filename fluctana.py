@@ -1616,13 +1616,13 @@ class FluctAna(object):
         elif c == 1:
             tidx = tidx1
             print('Select a point in the top axes to plot the image')
+            # make axes
+            fig = plt.figure(facecolor='w', figsize=(5,10))
+            ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
+            ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
+            ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
+            axs = [ax1, ax2, ax3]
             while True:
-                # make axes
-                fig = plt.figure(facecolor='w', figsize=(5,10))
-                ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
-                ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
-                ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
-                axs = [ax1, ax2, ax3]
 
                 # take data and channel position
                 pdata = D.data[:,tidx]
@@ -1685,7 +1685,7 @@ class FluctAna(object):
                 #     tidx = tidx + tstep
 
                 plt.ioff()
-                plt.close()
+            plt.close()
 
         D.pdata = pdata
 
