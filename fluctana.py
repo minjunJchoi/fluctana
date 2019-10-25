@@ -1616,6 +1616,7 @@ class FluctAna(object):
         elif c == 1:
             tidx = tidx1
             print('Select a point in the top axes to plot the image')
+            
             # make axes
             fig = plt.figure(facecolor='w', figsize=(5,10))
             ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
