@@ -1605,7 +1605,7 @@ class FluctAna(object):
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
-                axs[1].set_title('ECE image')
+                axs[1].set_title('ECE image at t = {:g} sec'.format(D.time[tidx]))
 
                 plt.show()
                 plt.pause(0.1)
@@ -1615,6 +1615,7 @@ class FluctAna(object):
 
         elif c == 'm':
             tidx = tidx1
+            print('Select a point in the top axes to plot the image')
             while True:
                 # make axes
                 fig = plt.figure(facecolor='w', figsize=(5,10))
@@ -1655,22 +1656,33 @@ class FluctAna(object):
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
-                axs[1].set_title('ECE image')
+                axs[1].set_title('ECE image at t = {:g} sec'.format(D.time[tidx]))
 
                 plt.show()
 
-                k = input('set time step [idx][+,-,0]: ')
-                try:
-                    tstep = int(k)
-                    if tstep == 0:
-                        plt.ioff()
-                        plt.close()
-                        break
-                except:
-                    pass
+                ## mouse input
+                g = plt.ginput(1)[0][0]
+                if g >= D.time[0] and g <= D.time[-1]:
+                    tidx = np.where(D.time > g)[0][0]
+                else:
+                    print('Out of the time range')
+                    plt.ioff()
+                    plt.close()
+                    break
 
-                if tidx + tstep < len(D.time) - 1 and 0 < tidx + tstep:
-                    tidx = tidx + tstep
+                ## keyboard input 
+                # k = input('set time step [idx][+,-,0]: ')
+                # try:
+                #     tstep = int(k)
+                #     if tstep == 0:
+                #         plt.ioff()
+                #         plt.close()
+                #         break
+                # except:
+                #     pass
+
+                # if tidx + tstep < len(D.time) - 1 and 0 < tidx + tstep:
+                #     tidx = tidx + tstep
 
                 plt.ioff()
                 plt.close()
