@@ -1,15 +1,15 @@
+import sys, os
+sys.path.append(os.pardir)
+import kstarmds
+import numpy as np
 
-def get_ece_pos(shot, bt):
-    freqECE = get_ece_freq(shot)
-    harm = 2
+def get_tf_current(shot):
+    print('Read I_TF from MDSplus')
+    B = kstarmds.KstarMds(shot, ['PCITFMSRD'])
+    _, data = B.get_data(trange=[3,6], norm=0)
+    itf = np.mean(data)
 
-    ece_rpos = {}
-    for i, f in enumerate(freqECE):
-        chname = 'ECE{:02d}'.format(i+1)
-        
-        ece_rpos[chname] = 1.80*27.99*harm*bt/f # [m]
-
-    return ece_rpos
+    return itf
 
 def get_ece_freq(shot):
     if shot < 12273:
@@ -29,3 +29,23 @@ def get_ece_freq(shot):
         # print('YEAR 2018 ECE')
 
     return freqECE
+
+def get_ece_pos(shot):
+
+    me = 9.1e-31        # electron mass
+    e = 1.602e-19       # charge
+    mu0 = 4*np.pi*1e-7  # permeability
+    ttn = 56*16         # total TF coil turns
+    harm = 2            # harmonic number
+
+    itf = get_tf_current(shot)
+    freqECE = get_ece_freq(shot)
+
+    ece_rpos = {}
+    for i, f in enumerate(freqECE):
+        chname = 'ECE{:02d}'.format(i+1)
+        
+        # ece_rpos[chname] = 1.80*27.99*harm*bt/f # [m]
+        ece_rpos[chname] = harm*e*mu0*ttn*itf/((2*np.pi)**2*me*f*1e9) # [m]
+
+    return ece_rpos

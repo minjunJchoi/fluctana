@@ -23,6 +23,7 @@ from kstarmds import *
 
 import specs as sp
 import stats as st
+import massdata as ms
 import filtdata as ft
 
 # CM = plt.cm.get_cmap('RdYlBu_r')
@@ -201,54 +202,26 @@ class FluctAna(object):
 ############################# data filtering functions #########################
 
     def filt(self, dnum, name, fL, fH, b=0.08, verbose=0):
-        # for d, D in enumerate(self.Dlist):
-        D = self.Dlist[dnum]        
+        D = self.Dlist[dnum]
 
-        cnum = len(D.data)
-
-        # plot dimension
-        if cnum < 4:
-            row = cnum
-        else:
-            row = 4
-        col = math.ceil(cnum/row)
-
-        if name[0:3] == 'FIR': # for FIR filters
+        # select filter except svd
+        if name[0:3] == 'FIR': 
             filter = ft.FirFilter(name, D.fs, fL, fH, b)
 
-        for c in range(cnum):
+        for c in range(len(D.clist)):
             x = np.copy(D.data[c,:])
             D.data[c,:] = filter.apply(x)
 
-            if verbose == 1:
-                # plot info
-                pshot = D.shot
-                pname = D.clist[c]
-
-                # set axes
-                if c == 0:
-                    plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                    axes1 = plt.subplot(row,col,c+1)
-                    axprops = dict(sharex = axes1, sharey = axes1)
-                elif c > 0:
-                    plt.subplot(row,col,c+1, **axprops)
-
-                plt.plot(D.time, x)
-                plt.plot(D.time, D.data[c,:])
-
-                plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
-
         print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
-        if verbose == 1: plt.show()
+    def svd_filt(self, dnum, cutoff=0.9, verbose=0):
+        D = self.Dlist[dnum]
 
+        svd = ft.SvdFilter(cutoff = cutoff)
 
-    def svd_filt(self, cutoff=0.9, verbose=0):
-        for d, D in enumerate(self.Dlist):
-            svd = ft.SvdFilter(cutoff = cutoff)
-            D.data = svd.apply(D.data, verbose=verbose)
+        D.data = svd.apply(D.data, verbose=verbose)
 
-            print('dnum {:d} svd filter with cutoff {:g}'.format(d, cutoff))
+        print('dnum {:d} svd filter with cutoff {:g}'.format(dnum, cutoff))
 
 ############################# spectral methods #############################
 
@@ -1547,7 +1520,6 @@ class FluctAna(object):
 
         plt.show()
 
-
     def spec(self, dnum=0, cnl=[0], nfft=512, **kwargs):
         if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
@@ -1583,13 +1555,13 @@ class FluctAna(object):
 
             plt.show()
 
-    def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], **kwargs):
+    def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', cutoff=0.03, pmethod='scatter', **kwargs):
         # keyboard interactive iplot
-        # (intp='none', climits=[-0.1,0.1], **kwargs)
+        D = self.Dlist[dnum]
 
-        # data filtering
+        CM = plt.cm.get_cmap('RdYlBu_r')
 
-        c = raw_input('automatic, or manual [a,m]: ')
+        c = input('automatic, or manual [a,m]: ')
         tidx1 = 0  # starting index
         if c == 'a':
             # make axes
@@ -1600,13 +1572,18 @@ class FluctAna(object):
             axs = [ax1, ax2, ax3]
 
             tstep = int(input('time step [idx]: '))  # jumping index # tstep = 10
-            for tidx in range(tidx1, len(self.Dlist[dnum].time), tstep):
-                # prepare data
-                pdata = self.Dlist[dnum].data[:,tidx]
+            for tidx in range(tidx1, len(D.time), tstep):
+                # take data and channel position
+                pdata = D.data[:,tidx]
+                rpos = D.rpos[:]
+                zpos = D.zpos[:]
 
-                # position
-                rpos = self.Dlist[dnum].rpos[:]
-                zpos = self.Dlist[dnum].zpos[:]
+                # fill bad channel
+                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, cutoff)
+
+                # interpolation
+                if istep > 0:
+                    ri, zi, pi = ms.interp_pdata(pdata, rpos, zpos, istep, imethod)
 
                 # plot
                 axs[0].cla()
@@ -1614,15 +1591,21 @@ class FluctAna(object):
                 axs[2].cla()
                 plt.ion()
 
-                axs[0].plot(self.Dlist[dnum].time, self.Dlist[dnum].data[snum,:])  # ax1.hold(True)
-                axs[0].axvline(x=self.Dlist[dnum].time[tidx], color='g')
-                sc = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                axs[0].plot(D.time, D.data[snum,:])  # ax1.hold(True)
+                axs[0].axvline(x=D.time[tidx], color='g')
+                if istep > 0:
+                    if pmethod == 'scatter':
+                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                    elif pmethod == 'contour':
+                        im = axs[1].contourf(ri, zi, pi, 50, cmap=CM)
+                else:
+                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 axs[1].set_aspect('equal')
-                plt.colorbar(sc, cax=axs[2])
+                plt.colorbar(im, cax=axs[2])
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
-                axs[1].set_title('ECE image')
+                axs[1].set_title('ECE image at t = {:g} sec'.format(D.time[tidx]))
 
                 plt.show()
                 plt.pause(0.1)
@@ -1632,6 +1615,7 @@ class FluctAna(object):
 
         elif c == 'm':
             tidx = tidx1
+            print('Select a point in the top axes to plot the image')
             while True:
                 # make axes
                 fig = plt.figure(facecolor='w', figsize=(5,10))
@@ -1640,12 +1624,17 @@ class FluctAna(object):
                 ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
                 axs = [ax1, ax2, ax3]
 
-                # prepare data
-                pdata = self.Dlist[dnum].data[:,tidx]
+                # take data and channel position
+                pdata = D.data[:,tidx]
+                rpos = D.rpos[:]
+                zpos = D.zpos[:]
 
-                # position
-                rpos = self.Dlist[dnum].rpos[:]
-                zpos = self.Dlist[dnum].zpos[:]
+                # fill bad channel
+                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, cutoff)
+
+                # interpolation
+                if istep > 0:
+                    ri, zi, pi = ms.interp_pdata(pdata, rpos, zpos, istep, imethod)
 
                 # plot
                 axs[0].cla()
@@ -1653,35 +1642,52 @@ class FluctAna(object):
                 axs[2].cla()
                 plt.ion()
 
-                axs[0].plot(self.Dlist[dnum].time, self.Dlist[dnum].data[snum,:])  # ax1.hold(True)
-                axs[0].axvline(x=self.Dlist[dnum].time[tidx], color='g')
-                sc = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                axs[0].plot(D.time, D.data[snum,:])  # ax1.hold(True)
+                axs[0].axvline(x=D.time[tidx], color='g')
+                if istep > 0:
+                    if pmethod == 'scatter':
+                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                    elif pmethod == 'contour':
+                        im = axs[1].contourf(ri, zi, pi, 50, cmap=CM)
+                else:
+                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 axs[1].set_aspect('equal')
-                plt.colorbar(sc, cax=axs[2])
+                plt.colorbar(im, cax=axs[2])
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
-                axs[1].set_title('ECE image')
+                axs[1].set_title('ECE image at t = {:g} sec'.format(D.time[tidx]))
 
                 plt.show()
 
-                k = raw_input('set time step [idx][+,-,0]: ')
-                try:
-                    tstep = int(k)
-                    if tstep == 0:
-                        plt.ioff()
-                        plt.close()
-                        break
-                except:
-                    pass
+                ## mouse input
+                g = plt.ginput(1)[0][0]
+                if g >= D.time[0] and g <= D.time[-1]:
+                    tidx = np.where(D.time > g)[0][0]
+                else:
+                    print('Out of the time range')
+                    plt.ioff()
+                    plt.close()
+                    break
 
-                if tidx + tstep < len(self.Dlist[dnum].time) - 1 and 0 < tidx + tstep:
-                    tidx = tidx + tstep
+                ## keyboard input 
+                # k = input('set time step [idx][+,-,0]: ')
+                # try:
+                #     tstep = int(k)
+                #     if tstep == 0:
+                #         plt.ioff()
+                #         plt.close()
+                #         break
+                # except:
+                #     pass
+
+                # if tidx + tstep < len(D.time) - 1 and 0 < tidx + tstep:
+                #     tidx = tidx + tstep
 
                 plt.ioff()
                 plt.close()
 
-        self.Dlist[dnum].pdata = pdata
+        D.pdata = pdata
 
 ############################# test functions ###################################
 
