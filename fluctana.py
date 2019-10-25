@@ -1561,9 +1561,9 @@ class FluctAna(object):
 
         CM = plt.cm.get_cmap('RdYlBu_r')
 
-        c = input('automatic, or manual [a,m]: ')
+        c = int(input('automatic, or manual [0,1]: '))
         tidx1 = 0  # starting index
-        if c == 'a':
+        if c == 0:
             # make axes
             fig = plt.figure(facecolor='w', figsize=(5,10))
             ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
@@ -1613,7 +1613,7 @@ class FluctAna(object):
             plt.ioff()
             plt.close()
 
-        elif c == 'm':
+        elif c == 1:
             tidx = tidx1
             print('Select a point in the top axes to plot the image')
             while True:
