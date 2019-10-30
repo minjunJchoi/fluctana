@@ -61,13 +61,13 @@ class KstarMds(Connection):
             # get channel position
             self.channel_position()
 
-    def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
+    def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0, verbose=1):
         if norm == 0:
-            print('Data is not normalized {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Data is not normalized {:s}'.format(self.clist[0]))
         elif norm == 1:
-            print('Data is normalized by trange average {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Data is normalized by trange average {:s}'.format(self.clist[0]))
         elif norm == 2:
-            print('Data is normalized by atrange average {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Data is normalized by atrange average {:s}'.format(self.clist[0]))
 
         self.trange = trange
 
@@ -75,9 +75,9 @@ class KstarMds(Connection):
         tree = find_tree(self.clist[0])
         try:
             self.openTree(tree,self.shot)
-            print('Open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('Open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
         except:
-            print('Failed to open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('Failed to open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
             time, data = None, None
             return time, data
 
@@ -116,10 +116,10 @@ class KstarMds(Connection):
                 # get data
                 time = self.get(tnode).data()
                 v = self.get(dnode).data()
-                print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
+                if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
             except:
                 self.clist.remove(cname)
-                print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
+                if verbose == 1: print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                 continue
 
             if tree == 'EFIT01':
@@ -175,7 +175,7 @@ class KstarMds(Connection):
 
             # open tree
             self.openTree(tree, self.shot)
-            print('Open tree {:s} to get channel position {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('Open tree {:s} to get channel position {:s}'.format(tree, self.clist[0]))
             
             # read rnode from MDSplus 
             for c in range(cnum):
@@ -199,10 +199,10 @@ class KstarMds(Connection):
             # close tree
             self.closeTree(tree, self.shot)
 
-            print('Channel position read from MDSplus {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Channel position read from MDSplus {:s}'.format(self.clist[0]))
         except:
-            print('Failed to read channel position from MDSplus {:s}'.format(self.clist[0]))
-            print('Try to get position from kstardata {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Failed to read channel position from MDSplus {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Try to get position from kstardata {:s}'.format(self.clist[0]))
 
             if 'ECE' == self.clist[0][0:3]: # ECE 2nd harmonics cold resonance
                 ece_rpos = ece_pos.get_ece_pos(self.shot)
@@ -227,7 +227,7 @@ class KstarMds(Connection):
                 elif 'MC1P' == self.clist[0][0:4]:
                     self.apos[c] = mc1p_apos[self.clist[c]]
             
-            print('Channel position obtained from kstardata {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Channel position obtained from kstardata {:s}'.format(self.clist[0]))
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node

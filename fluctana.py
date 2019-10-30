@@ -43,16 +43,16 @@ class FluctData(object):
         self.zpos = zpos # 1XM [channel]
         self.apos = apos # 1XM [channel]
 
-    def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0):
+    def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0, verbose=1):
         # trim, normalize data
         self.trange = trange
 
         if norm == 0:
-            print('Data is not normalized')
+            if verbose == 1: print('Data is not normalized')
         elif norm == 1:
-            print('Data is normalized by trange average')
+            if verbose == 1: print('Data is normalized by trange average')
         elif norm == 2:
-            print('Data is normalized by atrange average')
+            if verbose == 1: print('Data is normalized by atrange average')
 
         # trim time
         time, idx1, idx2 = self.time_base(trange)
@@ -96,9 +96,9 @@ class FluctAna(object):
     def __init__(self):
         self.Dlist = []
 
-    def add_data(self, D, trange, norm=1, atrange=[1.0, 1.01], res=0):
+    def add_data(self, D, trange, norm=1, atrange=[1.0, 1.01], res=0, verbose=1):
 
-        D.get_data(trange, norm=norm, atrange=atrange, res=res)
+        D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
 
     def del_data(self, dnum):
