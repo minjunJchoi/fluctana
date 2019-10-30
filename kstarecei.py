@@ -71,14 +71,14 @@ class KstarEcei(object):
                 elif self.mode == 'X':
                     self.hn = 2
             except:
-                print('#### no Mode attribute in file, default: 2nd X-mode ####')
+                if verbose == 1: print('#### no Mode attribute in file, default: 2nd X-mode ####')
                 self.mode = 'X'
                 self.hn = 2
             self.lo = dset.attrs['LoFreq']
             self.sf = dset.attrs['LensFocus']
             self.sz = dset.attrs['LensZoom']
 
-            print('ECEI file = {}'.format(self.fname))
+            if verbose == 1: print('ECEI file = {}'.format(self.fname))
 
         # data quality
         self.good_channels = np.ones(len(self.clist))
@@ -90,7 +90,7 @@ class KstarEcei(object):
         # get channel posistion
         self.channel_position()
 
-    def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0):
+    def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0, verbose=1):
         self.trange = trange
 
         # norm = 0 : no normalization
@@ -98,11 +98,11 @@ class KstarEcei(object):
         # norm = 2 : normalization by atrange average
         # res  = 0 : no resampling
         if norm == 0:
-            print('Data is not normalized ECEI')
+            if verbose == 1: print('Data is not normalized ECEI')
         elif norm == 1:
-            print('Data is normalized by trange average ECEI')
+            if verbose == 1: print('Data is normalized by trange average ECEI')
         elif norm == 2:
-            print('Data is normalized by atrange average ECEI')
+            if verbose == 1: print('Data is normalized by atrange average ECEI')
 
         # get time base
         time, idx1, idx2, oidx1, oidx2 = self.time_base(trange)

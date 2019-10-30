@@ -56,7 +56,7 @@ class KstarMir(object):
         # get channel posistion
         self.channel_position()
 
-    def get_data(self, trange, norm=0, atrange=[1.0, 1.01], res=0):
+    def get_data(self, trange, norm=0, atrange=[1.0, 1.01], res=0, verbose=1):
         self.trange = trange
 
         # norm = 0 : no normalization
@@ -64,11 +64,11 @@ class KstarMir(object):
         # norm = 2 : normalization by atrange average
         # res  = 0 : no resampling
         if norm == 0:
-            print('data is not normalized')
+            if verbose == 1: print('Data is not normalized MIR')
         elif norm == 1:
-            print('data is normalized by trange std')
+            if verbose == 1: print('Data is normalized by trange std MIR')
         elif norm == 2:
-            print('data is normalized by atrange std')
+            if verbose == 1: print('Data is normalized by atrange std MIR')
 
         # get time base
         time, idx1, idx2 = self.time_base(trange)
