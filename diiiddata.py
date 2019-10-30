@@ -24,13 +24,13 @@ class DiiidData():
         self.shot = shot
         self.clist = clist
 
-    def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0):
+    def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0, verbose=1):
         if norm == 0:
-            print('data is not normalized')
+            if verbose == 1: print('Data is not normalized')
         elif norm == 1:
-            print('data is normalized by trange average')
+            if verbose == 1: print('Data is normalized by trange average')
         elif norm == 2:
-            print('data is normalized by atrange average')
+            if verbose == 1: print('Data is normalized by atrange average')
 
         self.trange = trange
 
@@ -52,10 +52,10 @@ class DiiidData():
                 #idl.pro('gadat,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
                 idl.pro('gadat2,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
                 time, v = idl.time, idl.data
-                print("Read {:d} - {:s} (number of data points = {:d})".format(self.shot, node, len(v)))
+                if verbose == 1: print("Read {:d} - {:s} (number of data points = {:d})".format(self.shot, node, len(v)))
             except:
                 self.clist.remove(cname)
-                print("Failed   {:s}".format(node))
+                if verbose == 1: print("Failed   {:s}".format(node))
                 continue
 
             # [ms] -> [s]
