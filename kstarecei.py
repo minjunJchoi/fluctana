@@ -71,14 +71,14 @@ class KstarEcei(object):
                 elif self.mode == 'X':
                     self.hn = 2
             except:
-                if verbose == 1: print('#### no Mode attribute in file, default: 2nd X-mode ####')
+                print('#### no Mode attribute in file, default: 2nd X-mode ####')
                 self.mode = 'X'
                 self.hn = 2
             self.lo = dset.attrs['LoFreq']
             self.sf = dset.attrs['LensFocus']
             self.sz = dset.attrs['LensZoom']
 
-            if verbose == 1: print('ECEI file = {}'.format(self.fname))
+            print('ECEI file = {}'.format(self.fname))
 
         # data quality
         self.good_channels = np.ones(len(self.clist))
