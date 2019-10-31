@@ -165,7 +165,6 @@ class KstarMds(Connection):
 
         try: 
             if ('CES' == self.clist[0][0:3]) or ('ECE' == self.clist[0][0:3]):
-                raise NoPosMdsError()
                 pass
             else:
                 raise NoPosMdsError()
