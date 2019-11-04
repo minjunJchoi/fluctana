@@ -26,11 +26,11 @@ import stats as st
 import massdata as ms
 import filtdata as ft
 
-# CM = plt.cm.get_cmap('RdYlBu_r')
+CM = plt.cm.get_cmap('RdYlBu_r')
 # CM = plt.cm.get_cmap('spectral')
 # CM = plt.cm.get_cmap('YlGn')
 # CM = plt.cm.get_cmap('jet')
-CM = plt.cm.get_cmap('hot')
+# CM = plt.cm.get_cmap('hot')
 
 
 class FluctData(object):
