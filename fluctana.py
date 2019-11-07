@@ -4,8 +4,6 @@
 #
 # Acknowledgement : Dr. S. Zoletnik and Prof. Y.-c. Ghim
 #
-# Last updated
-#  2018.03.23 : version 0.10; even nfft -> odd nfft (for symmetry)
 
 from scipy import signal
 import math
@@ -219,7 +217,10 @@ class FluctAna(object):
 
         svd = ft.SvdFilter(cutoff = cutoff)
 
-        D.data = svd.apply(D.data, verbose=verbose)
+        if hasattr(D, 'good_channels'):
+            D.data = svd.apply(D.data, D.good_channels, verbose=verbose)
+        else:
+            D.data = svd.apply(D.data, np.zeros(len(D.clist)), verbose=verbose)
 
         print('dnum {:d} svd filter with cutoff {:g}'.format(dnum, cutoff))
 

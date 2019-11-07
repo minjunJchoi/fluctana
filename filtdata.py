@@ -82,10 +82,11 @@ class SvdFilter(object):
     def __init__(self, cutoff=0.9):
         self.cutoff = cutoff
 
-    def apply(self, data, verbose=0):
-        good_channels = self.check_data(data)
+    def apply(self, data, good_channels, verbose=0):
+        if np.sum(good_channels) == 0:
+            good_channels = self.check_data(data)
         cnum, tnum = data.shape
-
+        
         X = np.zeros((tnum, int(np.sum(good_channels))))
         xm = np.zeros(int(np.sum(good_channels)))
 
