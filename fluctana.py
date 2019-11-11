@@ -1567,9 +1567,9 @@ class FluctAna(object):
         if c == 0:
             # make axes
             fig = plt.figure(facecolor='w', figsize=(5,10))
-            ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
-            ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
-            ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
+            ax1 = fig.add_axes([0.1, 0.77, 0.7, 0.2])  # [left bottom width height]
+            ax2 = fig.add_axes([0.1, 0.07, 0.7, 0.60])
+            ax3 = fig.add_axes([0.83, 0.07, 0.03, 0.6])
             axs = [ax1, ax2, ax3]
 
             tstep = int(input('time step [idx]: '))  # jumping index # tstep = 10
@@ -1620,9 +1620,9 @@ class FluctAna(object):
             
             # make axes
             fig = plt.figure(facecolor='w', figsize=(5,10))
-            ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
-            ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
-            ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
+            ax1 = fig.add_axes([0.1, 0.77, 0.7, 0.2])  # [left bottom width height]
+            ax2 = fig.add_axes([0.1, 0.07, 0.7, 0.60])
+            ax3 = fig.add_axes([0.83, 0.07, 0.03, 0.6])
             axs = [ax1, ax2, ax3]
             while True:
 
