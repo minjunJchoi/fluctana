@@ -35,8 +35,8 @@ class FluctData(object):
     def __init__(self, shot, clist, time, data, rpos, zpos, apos):
         self.shot = shot
         self.clist = clist
-        self.time = time # 1xN [time] 
-        self.data = data # MxN [channel,time]  
+        self.time = time # 1xN [time]
+        self.data = data # MxN [channel,time]
         self.rpos = rpos # 1XM [channel]
         self.zpos = zpos # 1XM [channel]
         self.apos = apos # 1XM [channel]
@@ -82,13 +82,13 @@ class FluctData(object):
 
     def time_base(self, trange):
         time = self.time
-        
+
         idx = np.where((time >= trange[0])*(time <= trange[1]))
         idx1 = int(idx[0][0])
         idx2 = int(idx[0][-1]+2)
 
         return time[idx1:idx2], idx1, idx2
-        
+
 
 class FluctAna(object):
     def __init__(self):
@@ -203,7 +203,7 @@ class FluctAna(object):
         D = self.Dlist[dnum]
 
         # select filter except svd
-        if name[0:3] == 'FIR': 
+        if name[0:3] == 'FIR':
             filter = ft.FirFilter(name, D.fs, fL, fH, b)
 
         for c in range(len(D.clist)):
@@ -272,67 +272,55 @@ class FluctAna(object):
             nfft = nextpow2(tnum) # power of 2
             t = np.arange(nfft)*dt
 
-            # make a f-axis
-            fs = round(1/(dt)/1000)*1000.0 # [Hz]
-            s0 = 2/fs # the smallest scale
-            fmin = 0 # fmin
-            f = np.sign(df) * np.arange(fmin, 1.0/(1.03*s0), np.abs(df))
+            # make a f-axis with constant df
+            s0 = 2.0*dt # the smallest scale
+            ax = np.arange(0.0, 1.0/(1.03*s0), df)
 
             # scales
             old_settings = np.seterr(divide='ignore')
-            sj = 1.0/(1.03*f)
+            sj = 1.0/(1.03*ax)
             np.seterr(**old_settings)
-            dj = np.log2(sj/s0) / np.arange(len(sj)) # dj
+            dj = np.log2(sj/s0) / np.arange(len(sj)) # dj; necessary for reconstruction
+            sj[0] = tnum*dt/2.0
             dj[0] = 0 # remove infinity point due to fmin = 0
 
             # Morlet wavelet function (unnormalized)
             omega0 = 6.0 # nondimensional wavelet frequency
-            ts = np.sqrt(2)*np.abs(sj) # e-folding time for Morlet wavelet with omega0 = 6
+            ts = np.sqrt(2)*sj # e-folding time for Morlet wavelet with omega0 = 6
             wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
 
             cnum = len(D.data)  # number of cmp channels
+            snum = len(sj)
             # value dimension
-            D.spdata = np.zeros((cnum, tnum, len(sj)), dtype=np.complex_)
+            D.spdata = np.zeros((cnum, tnum, 2*snum-1), dtype=np.complex_)
             for c in range(cnum):
                 x = D.data[c,:]
 
                 # FFT of signal
                 X = np.fft.fft(x, n=nfft)/nfft
 
-                # calculate
-                Wns = np.zeros((nfft, len(sj)), dtype=np.complex_)
+                # calculate CWT
+                cwtdata = np.zeros((nfft, snum), dtype=np.complex_)
                 for j, s in enumerate(sj):
-                    # nondimensional time axis at scale s
+                    # nondimensional time axis at time scale s
                     eta = t/s
-                    # FFT of wavelet function with normalization
-                    WF = np.fft.fft(wf0(eta - np.mean(eta))*np.abs(dt/s)) / nfft
+                    # FFT of the normalized wavelet function
+                    W = np.fft.fft( np.conj( wf0(eta - np.mean(eta))*np.sqrt(dt/s) ) )
                     # Wavelet transform at scae s for all n time
-                    Wns[:,j] = np.fft.fftshift(np.fft.ifft(X * WF) * nfft**2)
+                    cwtdata[:,j] = np.fft.fftshift(np.fft.ifft(X * W) * nfft)
 
-                # return resized
-                D.spdata[c,:,:] = Wns[0:tnum,:]
+                # full size
+                ax = np.hstack([np.flip(-ax), ax[1:]])
+                cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
 
-                # plot (not default)
-                pshot = D.shot
-                pname = D.clist[c]
-                ptime = D.time
-                pfreq = f/1000.0
-                pdata = np.transpose(np.abs(D.spdata[c,:,:])**2)
+                # return until tnum
+                D.spdata[c,:,:] = cwtdata[0:tnum,:]
 
-                plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower')
+            D.ax = ax
+            D.cwtdj = dj # for reconstruction
+            D.cwtts = ts # for significance level
 
-                chpos = '({:.1f}, {:.1f})'.format(D.rpos[c]*100, D.zpos[c]*100) # [cm]
-                plt.title('#{:d}, {:s} {:s}'.format(pshot, pname, chpos), fontsize=10)
-                plt.xlabel('Time [s]')
-                plt.ylabel('Frequency [kHz]')
-
-                plt.show()
-
-            D.ax = f
-            D.cwtdf = df
-            D.cwtsj = sj
-            D.cwtdj = dj
-            D.cwtts = ts
+            print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}'.format(d, df))
 
     def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -867,7 +855,7 @@ class FluctAna(object):
         #         Yc = np.sqrt(np.abs(np.mean(YYa[idx1:idx2,:]*np.matrix.conjugate(YYb[idx1:idx2,:]), 0)))
         #         Yt = np.mean(YYt[idx1:idx2,:], 0)
         #         YY[b,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
-            
+
         #     # XX = np.zeros(XXa.shape, dtype=np.complex_)
         #     # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
         #     # for i in range(XXa.shape[0]):
@@ -1617,7 +1605,7 @@ class FluctAna(object):
         elif c == 1:
             tidx = tidx1
             print('Select a point in the top axes to plot the image')
-            
+
             # make axes
             fig = plt.figure(facecolor='w', figsize=(5,10))
             ax1 = fig.add_axes([0.1, 0.77, 0.7, 0.2])  # [left bottom width height]
@@ -1672,7 +1660,7 @@ class FluctAna(object):
                     plt.close()
                     break
 
-                ## keyboard input 
+                ## keyboard input
                 # k = input('set time step [idx][+,-,0]: ')
                 # try:
                 #     tstep = int(k)
