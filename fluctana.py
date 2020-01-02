@@ -16,7 +16,7 @@ import pickle
 
 from kstarecei import *
 from kstarmir import *
-# from kstarmds import *
+from kstarmds import *
 #from diiiddata import *  # needs pidly
 
 import specs as sp
