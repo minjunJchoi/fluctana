@@ -16,7 +16,7 @@ import pickle
 
 from kstarecei import *
 from kstarmir import *
-from kstarmds import *
+# from kstarmds import *
 #from diiiddata import *  # needs pidly
 
 import specs as sp
@@ -264,7 +264,7 @@ class FluctAna(object):
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
-    def cwt(self, df): ## problem in recovering the signal
+    def cwt(self, df, full=0): ## problem in recovering the signal
         for d, D in enumerate(self.Dlist):
             # make a t-axis
             dt = D.time[1] - D.time[0]  # time step
@@ -292,7 +292,7 @@ class FluctAna(object):
             cnum = len(D.data)  # number of cmp channels
             snum = len(sj)
             # value dimension
-            D.spdata = np.zeros((cnum, tnum, 2*snum-1), dtype=np.complex_)
+            D.spdata = np.zeros((cnum, tnum, (1+full)*snum-(1*full)), dtype=np.complex_)
             for c in range(cnum):
                 x = D.data[c,:]
 
@@ -310,8 +310,9 @@ class FluctAna(object):
                     cwtdata[:,j] = np.fft.fftshift(np.fft.ifft(X * W) * nfft)
 
                 # full size
-                ax = np.hstack([np.flip(-ax), ax[1:]])
-                cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
+                if full == 1:
+                    ax = np.hstack([np.flip(-ax), ax[1:]])
+                    cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
 
                 # return until tnum
                 D.spdata[c,:,:] = cwtdata[0:tnum,:]
