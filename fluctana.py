@@ -1232,11 +1232,11 @@ class FluctAna(object):
 
         # plot dimension
         nch = len(cnl)
-        if nch < 4:
-            row = nch
+        if nch < 8:
+            col = nch
         else:
-            row = 4
-        col = math.ceil(nch/row)
+            col = 8
+        row = math.ceil(nch/col)
 
         for i, c in enumerate(cnl):
             # set axes
