@@ -1451,9 +1451,9 @@ class FluctAna(object):
 
         # prepare figure
         fig = plt.figure(facecolor='w', figsize=(5,10))
-        ax1 = fig.add_axes([0.1, 0.75, 0.7, 0.2])  # [left bottom width height]
-        ax2 = fig.add_axes([0.1, 0.1, 0.7, 0.60])
-        ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6])
+        ax1 = fig.add_axes([0.20, 0.8, 0.65, 0.15])  # [left bottom width height]
+        ax2 = fig.add_axes([0.20, 0.1, 0.65, 0.60])
+        ax3 = fig.add_axes([0.88, 0.2, 0.03, 0.4])
         axs = [ax1, ax2, ax3]
 
         # sample plot
