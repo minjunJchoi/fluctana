@@ -94,16 +94,20 @@ class KstarMds(Connection):
             # resampling, time node
             if res != 0:
                 snode = 'resample(\{:s},{:f},{:f},{:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
-                tnode = 'dim_of(resample(\{:s},{:f},{:f},{:f}))'.format(node,self.trange[0],self.trange[1],res)  # resampling
+                tnode = 'dim_of(resample(\{:s},{:f},{:f},{:f}))'.format(node,self.trange[0],self.trange[1],res)  # resampling                
+
+                if 'ECE' == self.clist[0][0:3]: 
+                    snode = 'setTimeContext(*,*,{:f}),\{:s}'.format(res,node)
+                    tnode = 'setTimeContext(*,*,{:f}),dim_of(\{:s})'.format(res,node)                
             else:
                 snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
                 tnode = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
 
-                if 'ECE' == self.clist[0][0:3]: # do not use setTimeContext for ECE
+                if 'ECE' == self.clist[0][0:3]: # do not sub-sample for ECE (KSTAR MDSplus bug?)
                     snode = 'setTimeContext(*,*,*),\{:s}'.format(node)
                     tnode = 'setTimeContext(*,*,*),dim_of(\{:s})'.format(node)
 
-            # post processing for data
+            # simple post processing for data
             if node in POST_NODE:
                 pnode = POST_NODE[node]
             else:
@@ -122,8 +126,14 @@ class KstarMds(Connection):
                 if verbose == 1: print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                 continue
 
-            if tree == 'EFIT01':
+            # post-formatting
+            if tree == 'EFIT01': # time unit in sec
                 time = time*0.001
+            if res != 0 and 'ECE' == self.clist[0][0:3]: # remove offest for ECE
+                idx = np.where((time >= -0.5)*(time <= -0.1))
+                idx1 = int(idx[0][0])
+                idx2 = int(idx[0][-1]+2)
+                v = v - np.mean(v[idx1:idx2])
 
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))
