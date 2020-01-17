@@ -321,6 +321,7 @@ class FluctAna(object):
             D.ax = ax
             D.cwtdj = dj # for reconstruction
             D.cwtts = ts # for significance level
+            D.win_factor = 1.0
 
             print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}'.format(d, df))
 
@@ -1706,11 +1707,11 @@ class FluctAna(object):
             cnum = len(self.Dlist[dnum].data)
             if full == 1: # full shift to -fN ~ 0 ~ fN
                 if np.mod(nfft, 2) == 0:  # even nfft
-                    self.Dlist[dnum].fftdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
+                    self.Dlist[dnum].spdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
                 else:  # odd nfft
-                    self.Dlist[dnum].fftdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
+                    self.Dlist[dnum].spdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
             else: # half 0 ~ fN
-                self.Dlist[dnum].fftdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
+                self.Dlist[dnum].spdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
 
             pbs = 2*np.pi*(0.5 - np.random.randn(bins))
             pcs = 2*np.pi*(0.5 - np.random.randn(bins))
@@ -1737,7 +1738,7 @@ class FluctAna(object):
                     pd = pds[b] # non-coherent case
 
                     sx = np.cos(2*np.pi*fb*st + pb) + np.cos(2*np.pi*fc*st + pc) + 1/2*np.cos(2*np.pi*fd*st + pd) + 1/2*np.random.randn(len(sx))
-                    sx = sx + np.cos(2*np.pi*fb*st + pb)*np.cos(2*np.pi*fc*st + pc)
+                    # sx = sx + np.cos(2*np.pi*fb*st + pb)*np.cos(2*np.pi*fc*st + pc) # +,- coupling
 
                     if detrend == 1:
                         sx = signal.detrend(sx, type='linear')
@@ -1753,7 +1754,7 @@ class FluctAna(object):
                         fftdata = np.fft.fftshift(fftdata)
                     else: # half 0 ~ fN
                         fftdata = fftdata[0:int(nfft/2+1)]
-                    self.Dlist[dnum].fftdata[c,b,:] = fftdata
+                    self.Dlist[dnum].spdata[c,b,:] = fftdata
 
             # update attributes
             if np.mod(nfft, 2) == 0:
