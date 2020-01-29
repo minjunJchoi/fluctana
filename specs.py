@@ -170,7 +170,7 @@ def bicoherence(XX, YY, bidx=0):
         bidx = np.arange(len(XX))
     full = len(XX[0,:]) # full length
     half = int(full/2+1) # half length
-    print(bidx)
+
     # calculate bicoherence
     B = np.zeros((full, half), dtype=np.complex_)
     P12 = np.zeros((full, half))
@@ -284,7 +284,7 @@ def ritz_nonlinear(XX, YY):
     return Lk, Qijk, Bk, Aijk
 
 
-def wit_nonlinear(XX, YY):
+def wit_nonlinear(XX, YY, bidx=0):
     # calculate
     bins = len(XX)
     full = len(XX[0,:]) # full length
