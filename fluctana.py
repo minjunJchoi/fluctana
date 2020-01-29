@@ -705,13 +705,14 @@ class FluctAna(object):
 
         plt.show()
 
-    def bicoherence(self, done=0, dtwo=1, cnl=[0], tavg=0, **kwargs):
+    def bicoherence(self, done=0, dtwo=1, cnl=[0], **kwargs):
         # fftbins full = 1
         # number of cmp channels = number of ref channels
         self.Dlist[dtwo].vkind = 'bicoherence'
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        bidx = self.Dlist[dtwo].bidx  # number of bins
 
         # plot dimension
         if cnum < 4:
@@ -731,13 +732,6 @@ class FluctAna(object):
         # value dimension
         self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
         self.Dlist[dtwo].val2 = np.zeros((cnum, len(ax1)))
-
-        # bidx (averaging time window)
-        if tavg == 0:
-            bidx = np.arange(self.Dlist[dtwo].spdata.shape[1])
-        else:
-            time = self.Dlist[dtwo].time
-            bidx = np.where((np.mean(time) - tavg*1e-6/2 < time)*(time < np.mean(time) + tavg*1e-6/2))[0]
 
         # calculation loop for multi channels
         for i, c in enumerate(cnl):
@@ -790,10 +784,11 @@ class FluctAna(object):
     def nonlin_evolution(self, done=0, dtwo=1, delta=1.0, wit=1, js=1, test=0, **kwargs):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
-        # rnum = cnum = 1 or 2
         self.Dlist[dtwo].vkind = 'nonlin_rates'
 
+        # rnum = cnum = 1
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        bidx = self.Dlist[dtwo].bidx  # number of bins
 
         # reference channel names
         self.Dlist[dtwo].rname = []
@@ -910,7 +905,7 @@ class FluctAna(object):
             Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY)
         else:
             print('Wit method')
-            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY)
+            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY, bidx)
 
         # plot info
         pshot = self.Dlist[dtwo].shot

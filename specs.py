@@ -286,7 +286,9 @@ def ritz_nonlinear(XX, YY):
 
 def wit_nonlinear(XX, YY, bidx=0):
     # calculate
-    bins = len(XX)
+    if type(bidx) is int:
+        bidx = np.arange(len(XX))
+    bins = len(bidx)
     full = len(XX[0,:]) # full length
 
     kidx = get_kidx(full)
@@ -302,13 +304,13 @@ def wit_nonlinear(XX, YY, bidx=0):
         U = np.zeros((bins, len(idx)+1), dtype=np.complex_)  # N (number of ensembles) x P (number of pairs + 1)
         V = np.zeros(bins, dtype=np.complex_) # N x 1
 
-        for b in range(bins):
+        for i,b in enumerate(bidx):
 
-            U[b,0] = XX[b,k]
+            U[i,0] = XX[b,k]
             for n, ij in enumerate(idx):
-                U[b,n+1] = XX[b, ij[0]]*XX[b, ij[1]]
+                U[i,n+1] = XX[b, ij[0]]*XX[b, ij[1]]
 
-            V[b] = YY[b,k]
+            V[i] = YY[b,k]
 
         # solution for each k
         H = np.matmul(np.linalg.pinv(U), V)
@@ -322,7 +324,7 @@ def wit_nonlinear(XX, YY, bidx=0):
     Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
     # print('DO NOT CALCULATE RATES')
-    for b in range(bins):
+    for b in bidx:
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
 
