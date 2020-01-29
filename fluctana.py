@@ -310,12 +310,12 @@ class FluctAna(object):
                     # FFT of the normalized wavelet function
                     W = np.fft.fft( np.conj( wf0(eta - np.mean(eta))*np.sqrt(dt/s) ) )
                     # Wavelet transform at scae s for all n time
-                    cwtdata[:,j] = np.fft.fftshift(np.fft.ifft(X * W) * nfft)
+                    # cwtdata[:,j] = np.fft.fftshift(np.fft.ifft(X * W) * nfft)
+                    cwtdata[:,j] = np.conj(np.fft.fftshift(np.fft.ifft(X * W) * nfft)) # phase direction correct
 
                 # full size
                 if full == 1:
-                    # cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
-                    cwtdata = np.hstack([np.fliplr(cwtdata), (cwtdata[:,1:].real - 1.0j*cwtdata[:,1:].imag)])
+                    cwtdata = np.hstack([np.fliplr(np.conj(cwtdata)), cwtdata[:,1:]])
 
                 # return until tnum
                 D.spdata[c,:,:] = cwtdata[0:tnum,:]
@@ -623,6 +623,7 @@ class FluctAna(object):
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
+        bidx = self.Dlist[dtwo].bidx  # number of bins
         win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # reference channel names
@@ -659,19 +660,19 @@ class FluctAna(object):
             print('pair of {:s} and {:s}'.format(self.Dlist[dtwo].rname[c], self.Dlist[dtwo].clist[c]))
 
             # calculate auto power and cross phase (wavenumber)
-            for b in range(bins):
+            for i,b in enumerate(bidx):
                 X = self.Dlist[done].spdata[c,b,:]
                 Y = self.Dlist[dtwo].spdata[c,b,:]
 
-                Pxx[b,:] = X*np.matrix.conjugate(X) / win_factor
-                Pyy[b,:] = Y*np.matrix.conjugate(Y) / win_factor
+                Pxx[i,:] = X*np.matrix.conjugate(X) / win_factor
+                Pyy[i,:] = Y*np.matrix.conjugate(Y) / win_factor
                 Pxy = X*np.matrix.conjugate(Y)
-                Kxy[b,:] = np.arctan2(Pxy.imag, Pxy.real).real / (self.Dlist[dtwo].dist[c]*100) # [cm^-1]
+                Kxy[i,:] = np.arctan2(Pxy.imag, Pxy.real).real / (self.Dlist[dtwo].dist[c]*100) # [cm^-1]
 
                 # calculate SKw
                 for w in range(nfft):
-                    idx = (Kxy[b,w] - kstep/2.0 < kax) * (kax < Kxy[b,w] + kstep/2.0)
-                    val[c,:,w] = val[c,:,w] + (1.0/bins*(Pxx[b,w] + Pyy[b,w])/2.0) * idx
+                    idx = (Kxy[i,w] - kstep/2.0 < kax) * (kax < Kxy[i,w] + kstep/2.0)
+                    val[c,:,w] = val[c,:,w] + (1.0/bins*(Pxx[i,w] + Pyy[i,w])/2.0) * idx
 
             # calculate moments
             sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
