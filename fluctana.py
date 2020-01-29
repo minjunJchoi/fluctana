@@ -312,7 +312,7 @@ class FluctAna(object):
 
                 # full size
                 if full == 1:
-                    ax = np.hstack([np.flip(-ax), ax[1:]])
+                    ax = np.hstack([-ax[::-1], ax[1:]])
                     cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
 
                 # return until tnum
