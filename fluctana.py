@@ -312,16 +312,17 @@ class FluctAna(object):
 
                 # full size
                 if full == 1:
-                    ax = np.hstack([-ax[::-1], ax[1:]])
                     cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
 
                 # return until tnum
                 D.spdata[c,:,:] = cwtdata[0:tnum,:]
 
+            if full == 1:
+                ax = np.hstack([-ax[::-1], ax[1:]])
             D.ax = ax
             D.cwtdj = dj # for reconstruction
             D.cwtts = ts # for significance level
-            D.win_factor = 1.0
+            D.win_factor = 1.0 
 
             print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}'.format(d, df))
 
