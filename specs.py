@@ -82,18 +82,19 @@ def fftbins(x, dt, nfft, window, overlap, detrend, full):
     return ax, fftdata, win_factor
 
 
-def cross_power(XX, YY, win_factor):
+def cross_power(XX, YY, win_factor, bidx=0):
     # calculate cross power
     # IN : bins x faxis fftdata
-    bins = len(XX)
+    if type(bidx) is int:
+        bidx = np.arange(len(XX))
 
-    val = np.zeros(XX.shape, dtype=np.complex_)
+    val = np.zeros((len(bidx),XX.shape[1]), dtype=np.complex_)
 
-    for b in range(bins):
+    for i,b in enumerate(bidx):
         X = XX[b,:]
         Y = YY[b,:]
 
-        val[b,:] = X*np.matrix.conjugate(Y) / win_factor
+        val[i,:] = X*np.matrix.conjugate(Y) / win_factor
 
     # average over bins
     Pxy = np.mean(val, 0)
@@ -102,19 +103,20 @@ def cross_power(XX, YY, win_factor):
     return Pxy
 
 
-def coherence(XX, YY):
-    bins = len(XX)
+def coherence(XX, YY, bidx=0):
+    if type(bidx) is int:
+        bidx = np.arange(len(XX))
 
-    val = np.zeros(XX.shape, dtype=np.complex_)
+    val = np.zeros((len(bidx),XX.shape[1]), dtype=np.complex_)
 
-    for b in range(bins):
+    for i,b in enumerate(bidx):
         X = XX[b,:]
         Y = YY[b,:]
 
         Pxx = X * np.matrix.conjugate(X)
         Pyy = Y * np.matrix.conjugate(Y)
 
-        val[b,:] = X*np.matrix.conjugate(Y) / np.sqrt(Pxx*Pyy)
+        val[i,:] = X*np.matrix.conjugate(Y) / np.sqrt(Pxx*Pyy)
         # saturated data gives zero Pxx!!
 
     # average over bins
@@ -124,16 +126,17 @@ def coherence(XX, YY):
     return Gxy
 
 
-def cross_phase(XX, YY):
-    bins = len(XX)
+def cross_phase(XX, YY, bidx=0):
+    if type(bidx) is int:
+        bidx = np.arange(len(XX))
 
-    val = np.zeros(XX.shape, dtype=np.complex_)
+    val = np.zeros((len(bidx),XX.shape[1]), dtype=np.complex_)
 
-    for b in range(bins):
+    for i,b in enumerate(bidx):
         X = XX[b,:]
         Y = YY[b,:]
 
-        val[b,:] = X*np.matrix.conjugate(Y)
+        val[i,:] = X*np.matrix.conjugate(Y)
 
     # average over bins
     Pxy = np.mean(val, 0)
@@ -159,22 +162,22 @@ def xspec(XX, YY, win_factor):
     return val
 
 
-def bicoherence(XX, YY):
+def bicoherence(XX, YY, bidx=0):
     # ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
     # ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
     # ax2 = ax2[0:int(nfft/2+1)] # half 0 ~ fN
-
-    bins = len(XX)
+    if type(bidx) is int:
+        bidx = np.arange(len(XX))
     full = len(XX[0,:]) # full length
     half = int(full/2+1) # half length
-
+    print(bidx)
     # calculate bicoherence
     B = np.zeros((full, half), dtype=np.complex_)
     P12 = np.zeros((full, half))
     P3 = np.zeros((full, half))
     val = np.zeros((full, half))
 
-    for b in range(bins):
+    for b in bidx:
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
 
@@ -190,9 +193,9 @@ def bicoherence(XX, YY):
             else:
                 X3[0:(-j), j] = Y[j:]
 
-        B = B + X1 * X2 * np.matrix.conjugate(X3) / bins #  complex bin average
-        P12 = P12 + (np.abs(X1 * X2).real)**2 / bins # real average
-        P3 = P3 + (np.abs(X3).real)**2 / bins # real average
+        B = B + X1 * X2 * np.matrix.conjugate(X3) #  complex bin average
+        P12 = P12 + (np.abs(X1 * X2).real)**2 # real average
+        P3 = P3 + (np.abs(X3).real)**2 # real average
 
     # val = np.log10(np.abs(B)**2) # bispectrum
     val = (np.abs(B)**2) / P12 / P3 # bicoherence
