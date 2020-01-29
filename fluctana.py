@@ -242,6 +242,8 @@ class FluctAna(object):
             D.overlap = overlap
             D.detrend = detrend
             D.bins = bins
+            D.tavg = 0
+            D.bidx = np.arange(bins)
 
             # make fft data
             cnum = len(D.data)
@@ -265,7 +267,7 @@ class FluctAna(object):
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
-    def cwt(self, df, full=0): ## problem in recovering the signal
+    def cwt(self, df, full=0, tavg=0): ## problem in recovering the signal
         for d, D in enumerate(self.Dlist):
             # make a t-axis
             dt = D.time[1] - D.time[0]  # time step
@@ -312,7 +314,8 @@ class FluctAna(object):
 
                 # full size
                 if full == 1:
-                    cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
+                    # cwtdata = np.hstack([np.fliplr(cwtdata.real - 1.0j*cwtdata.imag), cwtdata[:,1:]])
+                    cwtdata = np.hstack([np.fliplr(cwtdata), (cwtdata[:,1:].real - 1.0j*cwtdata[:,1:].imag)])
 
                 # return until tnum
                 D.spdata[c,:,:] = cwtdata[0:tnum,:]
@@ -323,10 +326,13 @@ class FluctAna(object):
             D.cwtdj = dj # for reconstruction
             D.cwtts = ts # for significance level
             D.win_factor = 1.0 
+            D.tavg = tavg
+            D.bidx = np.where((np.mean(D.time) - tavg*1e-6/2 < D.time)*(D.time < np.mean(D.time) + tavg*1e-6/2))[0]
+            D.bins = len(D.bidx)
 
             print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}'.format(d, df))
 
-    def cross_power(self, done=0, dtwo=1, tavg=0):
+    def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
 
@@ -341,13 +347,6 @@ class FluctAna(object):
         # value dimension
         self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
 
-        # bidx (averaging time window)
-        if tavg == 0:
-            bidx = np.arange(self.Dlist[dtwo].spdata.shape[1])
-        else:
-            time = self.Dlist[dtwo].time
-            bidx = np.where((np.mean(time) - tavg*1e-6/2 < time)*(time < np.mean(time) + tavg*1e-6/2))[0]
-
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number
@@ -361,11 +360,11 @@ class FluctAna(object):
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
             if self.Dlist[dtwo].ax[1] < 0: # full range
-                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor, bidx)
+                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor, self.Dlist[dtwo].bidx)
             else: # half
-                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor, bidx)  # product 2 for half return
+                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor, self.Dlist[dtwo].bidx)  # product 2 for half return
 
-    def coherence(self, done=0, dtwo=1, tavg=0):
+    def coherence(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
 
@@ -380,13 +379,6 @@ class FluctAna(object):
         # value dimension
         self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
 
-        # bidx (averaging time window)
-        if tavg == 0:
-            bidx = np.arange(self.Dlist[dtwo].spdata.shape[1])
-        else:
-            time = self.Dlist[dtwo].time
-            bidx = np.where((np.mean(time) - tavg*1e-6/2 < time)*(time < np.mean(time) + tavg*1e-6/2))[0]
-
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel names
@@ -399,9 +391,9 @@ class FluctAna(object):
 
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.coherence(XX, YY, bidx)
+            self.Dlist[dtwo].val[c,:] = sp.coherence(XX, YY, self.Dlist[dtwo].bidx)
 
-    def cross_phase(self, done=0, dtwo=1, tavg=0):
+    def cross_phase(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp)
         # OUT : x-axis (ax), y-axis (val)
 
@@ -420,13 +412,6 @@ class FluctAna(object):
         # value dimension
         self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
 
-        # bidx (averaging time window)
-        if tavg == 0:
-            bidx = np.arange(self.Dlist[dtwo].spdata.shape[1])
-        else:
-            time = self.Dlist[dtwo].time
-            bidx = np.where((np.mean(time) - tavg*1e-6/2 < time)*(time < np.mean(time) + tavg*1e-6/2))[0]
-
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number and distance between ref and cmp channels
@@ -443,7 +428,7 @@ class FluctAna(object):
 
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.cross_phase(XX, YY, bidx)
+            self.Dlist[dtwo].val[c,:] = sp.cross_phase(XX, YY, self.Dlist[dtwo].bidx)
 
     def correlation(self, done=0, dtwo=1):
         # reguire full FFT
