@@ -1443,16 +1443,19 @@ class FluctAna(object):
         elif vkind == 'cross_phase':  # group velocity
             base = self.Dlist[dnum].ax[idx1:idx2]  # [Hz]
             pdata = np.zeros(len(self.Dlist[dnum].val))
+            phase_v = np.zeros((len(self.Dlist[dnum].val), len(base)-1))
             for c in range(len(self.Dlist[dnum].val)):
                 data = self.Dlist[dnum].val[c,idx1:idx2]
-                pfit = np.polyfit(base, data, 1)
-                fitdata = np.polyval(pfit, base)
-                pdata[c] = 2*np.pi*self.Dlist[dnum].dist[c]/pfit[0]/1000.0  # [km/s]
-
+                # pfit = np.polyfit(base, data, 1)
+                # fitdata = np.polyval(pfit, base)
                 # chisq = np.sum((data - fitdata)**2)
-                if c == snum:
-                    fbase = base/1000  # [kHz]
-                    fdata = fitdata
+                # if c == snum:
+                #     fbase = base/1000  # [kHz]
+                #     fdata = fitdata
+                # pdata[c] = 2*np.pi*self.Dlist[dnum].dist[c]/pfit[0]/1000.0  # [km/s]
+                phase_v[c,:] = 2*np.pi*self.Dlist[dnum].dist[c]/(data[1:]/base[1:])/1000.0 # [km/s]
+                pdata[c] = np.mean(phase_v[c,:])
+            self.Dlist[dnum].phase_v = phase_v
         else:
             pdata = self.Dlist[dnum].val
 
@@ -1469,8 +1472,8 @@ class FluctAna(object):
 
         # sample plot
         axs[0].plot(sbase, sdata)  # ax1.hold(True)
-        if vkind == 'cross_phase':
-            axs[0].plot(fbase, fdata)
+        # if vkind == 'cross_phase':
+        #     axs[0].plot(fbase, fdata)
         if vkind in ['cross_power','coherence','cross_phase']:
             axs[0].axvline(x=sbase[idx1], color='g')
             axs[0].axvline(x=sbase[idx2], color='g')
