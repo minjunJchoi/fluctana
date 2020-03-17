@@ -228,7 +228,7 @@ def fmb_fgn_locus(d):
         with open('../chdata/ch_fbm_fgn_d{:d}.pkl'.format(d), 'rb') as f:
             [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
     except:
-        pass
+        [c_fbm, h_fbm, c_fgn, h_fgn] = [0,0,0,0]
 
     return c_fbm, h_fbm, c_fgn, h_fgn
 
@@ -264,7 +264,7 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], v
     D = np.zeros(len(qax))
 
     # first axes
-    x = signal.detrend(x, type='linear')
+    # x = signal.detrend(x, type='linear')
 
     if verbose == 1:
         plt.subplots_adjust(hspace = 0.5, wspace = 0.3)

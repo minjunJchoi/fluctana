@@ -75,9 +75,9 @@ class KstarMds(Connection):
         tree = find_tree(self.clist[0])
         try:
             self.openTree(tree,self.shot)
-            if verbose == 1: print('Open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('Open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
         except:
-            if verbose == 1: print('Failed to open tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('Failed to open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
             time, data = None, None
             return time, data
 
@@ -123,6 +123,10 @@ class KstarMds(Connection):
                 if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
             except:
                 self.clist.remove(cname)
+                if hasattr(self, 'rpos'):
+                    self.rpos = np.delete(self.rpos, i)
+                    self.zpos = np.delete(self.zpos, i)
+                    self.apos = np.delete(self.apos, i)
                 if verbose == 1: print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                 continue
 
@@ -208,10 +212,10 @@ class KstarMds(Connection):
             # close tree
             self.closeTree(tree, self.shot)
 
-            print('Channel position read from MDSplus {:s}'.format(self.clist[0]))
+            print('The channel position read from MDSplus {:s}'.format(self.clist[0]))
         except:
-            print('Failed to read channel position from MDSplus {:s}'.format(self.clist[0]))
-            print('Try to get position from kstardata {:s}'.format(self.clist[0]))
+            print('Failed to read the channel position from MDSplus {:s}'.format(self.clist[0]))
+            print('Try to get the position from kstardata {:s}'.format(self.clist[0]))
 
             if 'ECE' == self.clist[0][0:3]: # ECE 2nd harmonics cold resonance
                 ece_rpos = ece_pos.get_ece_pos(self.shot)
@@ -236,7 +240,7 @@ class KstarMds(Connection):
                 elif 'MC1P' == self.clist[0][0:4]:
                     self.apos[c] = mc1p_apos[self.clist[c]]
             
-            print('Channel position obtained from kstardata {:s}'.format(self.clist[0]))
+            print('The channel position obtained from kstardata {:s}'.format(self.clist[0]))
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node
