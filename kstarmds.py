@@ -61,6 +61,9 @@ class KstarMds(Connection):
             # get channel position
             self.channel_position()
 
+        self.time = None
+        self.data = None
+
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0, verbose=1):
         if norm == 0:
             if verbose == 1: print('Data is not normalized {:s}'.format(self.clist[0]))
@@ -78,8 +81,7 @@ class KstarMds(Connection):
             if verbose == 1: print('Open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
         except:
             if verbose == 1: print('Failed to open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
-            time, data = None, None
-            return time, data
+            return self.time, self.data
 
         # --- loop starts --- #
         clist_temp = self.clist[:]
@@ -117,50 +119,60 @@ class KstarMds(Connection):
             dnode = snode + pnode
 
             try:
-                # get data
-                time = self.get(tnode).data()
+                # load data
                 v = self.get(dnode).data()
                 if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
+
+                if self.data is None:
+                    self.time = self.get(tnode).data()
+                    self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
+                    
+                    # find index for trange
+                    idx = np.where((self.time >= trange[0])*(self.time <= trange[1]))
+                    idx1 = int(idx[0][0])
+                    idx2 = int(idx[0][-1]+2)
+                    # time in [s]
+                    if tree == 'EFIT01': # time unit in sec
+                        self.time = self.time*0.001
+                    # find offest index for ECE
+                    if res != 0 and 'ECE' == self.clist[0][0:3]: 
+                        oidx = np.where((self.time >= -0.5)*(self.time <= -0.1))
+                        oidx1 = int(oidx[0][0])
+                        oidx2 = int(oidx[0][-1]+2)
+
+                    self.time = self.time[idx1:idx2]
+
+                # remove offest for ECE
+                if res != 0 and 'ECE' == self.clist[0][0:3]: 
+                    v = v - np.mean(v[oidx1:oidx2])
+
+                # resize data
+                v = v[idx1:idx2]
+                # normalize if necessary
+                if norm == 1:
+                    v = v/np.mean(v) - 1
+
+                # expand dimension - concatenate
+                v = np.expand_dims(v, axis=0)
+                if self.data is None:
+                    self.data = v
+                else:
+                    self.data = np.concatenate((self.data, v), axis=0)
+
             except:
                 self.clist.remove(cname)
                 if hasattr(self, 'rpos'):
-                    self.rpos = np.delete(self.rpos, i)
-                    self.zpos = np.delete(self.zpos, i)
-                    self.apos = np.delete(self.apos, i)
+                    self.rpos[i] = 0
                 if verbose == 1: print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                 continue
-
-            # post-formatting
-            if tree == 'EFIT01': # time unit in sec
-                time = time*0.001
-            if res != 0 and 'ECE' == self.clist[0][0:3]: # remove offest for ECE
-                idx = np.where((time >= -0.5)*(time <= -0.1))
-                idx1 = int(idx[0][0])
-                idx2 = int(idx[0][-1]+2)
-                v = v - np.mean(v[idx1:idx2])
-
-            # set data size
-            idx = np.where((time >= trange[0])*(time <= trange[1]))
-            idx1 = int(idx[0][0])
-            idx2 = int(idx[0][-1]+2)
-            time = time[idx1:idx2]
-            v = v[idx1:idx2]
-
-            # normalize if necessary
-            if norm == 1:
-                v = v/np.mean(v) - 1
-
-            # expand dimension - concatenate
-            v = np.expand_dims(v, axis=0)
-            if i == 0:
-                data = v
-            else:
-                data = np.concatenate((data, v), axis=0)
         # --- loop ends --- #
 
-        self.time = time
-        self.fs = round(1/(time[1] - time[0])/1000)*1000.0
-        self.data = data
+        # remove positions of bad channels
+        if hasattr(self, 'rpos'):
+            cidx = self.rpos > 0
+            self.rpos = self.rpos[cidx]
+            self.zpos = self.zpos[cidx]
+            self.apos = self.apos[cidx]
 
         # get measurement error
         self.meas_error()
@@ -168,7 +180,7 @@ class KstarMds(Connection):
         # close tree
         self.closeTree(tree, self.shot)
 
-        return time, data
+        return self.time, self.data
 
     def channel_position(self):  # Needs updates ####################
         # get channel position either from MDSplus server or kstardata
