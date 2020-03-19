@@ -125,15 +125,19 @@ class KstarMds(Connection):
 
                 if self.data is None:
                     self.time = self.get(tnode).data()
+
+                    # time in [s]
+                    if tree == 'EFIT01': # time unit in sec
+                        self.time = self.time*0.001
+
+                    # get fs
                     self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
                     
                     # find index for trange
                     idx = np.where((self.time >= trange[0])*(self.time <= trange[1]))
                     idx1 = int(idx[0][0])
                     idx2 = int(idx[0][-1]+2)
-                    # time in [s]
-                    if tree == 'EFIT01': # time unit in sec
-                        self.time = self.time*0.001
+
                     # find offest index for ECE
                     if res != 0 and 'ECE' == self.clist[0][0:3]: 
                         oidx = np.where((self.time >= -0.5)*(self.time <= -0.1))
