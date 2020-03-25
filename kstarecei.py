@@ -2,7 +2,7 @@
 
 # Author : Minjun J. Choi (mjchoi@nfri.re.kr)
 #
-# Description : This code reads the KSTAR ECEI data in iKSTAR server
+# Description : This code reads the KSTAR ECEI data via the iKSTAR server
 #
 # Acknowledgement : Dr. Y. Nam and Prof. G.S. Yun
 #

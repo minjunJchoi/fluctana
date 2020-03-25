@@ -16,6 +16,7 @@ import pickle
 
 from kstarecei import *
 from kstarmir import *
+from kstarcss import *
 from kstarmds import *
 #from diiiddata import *  # needs pidly
 
@@ -1439,12 +1440,13 @@ class FluctAna(object):
         if vkind == 'cross_power':  # rms
             pdata = np.sqrt(np.sum(self.Dlist[dnum].val[:,idx1:idx2], 1))
         elif vkind == 'coherence':  # mean coherence
-            pdata = np.mean(self.Dlist[dnum].val[:,idx1:idx2], 1)
+            pdata = np.sum(self.Dlist[dnum].val[:,idx1:idx2], 1)
         elif vkind == 'cross_phase':  # group velocity
+            cnum = len(self.Dlist[dnum].val)
             base = self.Dlist[dnum].ax[idx1:idx2]  # [Hz]
-            pdata = np.zeros(len(self.Dlist[dnum].val))
-            phase_v = np.zeros((len(self.Dlist[dnum].val), len(base)-1))
-            for c in range(len(self.Dlist[dnum].val)):
+            pdata = np.zeros(cnum)
+            phase_v = np.zeros((cnum, len(base)-1))
+            for c in range(cnum):
                 data = self.Dlist[dnum].val[c,idx1:idx2]
                 # pfit = np.polyfit(base, data, 1)
                 # fitdata = np.polyval(pfit, base)
@@ -1515,7 +1517,7 @@ class FluctAna(object):
         if vkind == 'cross_power':
             axs[1].set_title('Cross power rms')
         elif vkind == 'coherence':
-            axs[1].set_title('Coherence mean')
+            axs[1].set_title('Coherence sum')
         elif vkind == 'cross_phase':
             axs[1].set_title('Group velocity [km/s]')
         else:

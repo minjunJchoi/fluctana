@@ -2,12 +2,10 @@
 
 # Author : Minjun J. Choi (mjchoi@nfri.re.kr)
 #
-# Description : This code reads the KSTAR MIR data on iKSTAR server
+# Description : This code reads the KSTAR MIR data via the iKSTAR server
 #
 # Acknowledgement : Dr. Y. Nam and Prof. G.S. Yun
 #
-# Last updated
-#  2018.02.15 : version 0.10; cold resonance positions
 
 import numpy as np
 import h5py

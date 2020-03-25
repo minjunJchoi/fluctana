@@ -4,8 +4,6 @@
 #
 # Acknowledgement : Special thanks to Dr. Y.M. Jeon
 #
-# Last updated
-#  2018.03.23 : version 0.10; Mirnov data resampling
 
 from MDSplus import Connection
 # from MDSplus import DisconnectFromMds
@@ -123,6 +121,7 @@ class KstarMds(Connection):
                 v = self.get(dnode).data()
                 if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
 
+                # load time
                 if self.data is None:
                     self.time = self.get(tnode).data()
 
@@ -152,6 +151,7 @@ class KstarMds(Connection):
 
                 # resize data
                 v = v[idx1:idx2]
+
                 # normalize if necessary
                 if norm == 1:
                     v = v/np.mean(v) - 1
@@ -166,14 +166,13 @@ class KstarMds(Connection):
             except:
                 self.clist.remove(cname)
                 if hasattr(self, 'rpos'):
-                    self.rpos[i] = 0
+                    self.rpos[i] = -1
                 if verbose == 1: print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
-                continue
         # --- loop ends --- #
 
         # remove positions of bad channels
         if hasattr(self, 'rpos'):
-            cidx = self.rpos > 0
+            cidx = self.rpos >= 0
             self.rpos = self.rpos[cidx]
             self.zpos = self.zpos[cidx]
             self.apos = self.apos[cidx]
