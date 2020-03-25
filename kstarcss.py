@@ -89,9 +89,8 @@ class KstarCss(Connection):
                     qv = qv/np.std(qv)
 
                 # make v from iv, qv
-                # v = iv + 1.0j*qv
-                v = qv
-                print('TRY pre-filtering of iv and qv (threshold fft) and return iv + 1.0j*qv')
+                v = iv + 1.0j*qv
+                # print('TRY pre-filtering of iv and qv (threshold fft) and return iv + 1.0j*qv')
 
                 # expand dimension - concatenate
                 v = np.expand_dims(v, axis=0)
