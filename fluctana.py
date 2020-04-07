@@ -194,7 +194,7 @@ class FluctAna(object):
 
                 plt.title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
 
-        plt.show()
+        if verbose == 1: plt.show()
 
         D.fs = round(1/(D.time[1] - D.time[0]))
         print('down sample with q={:d}, fs={:g}'.format(q, D.fs))
@@ -540,7 +540,7 @@ class FluctAna(object):
     def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
         # number of cmp channels = number of ref channels
         # add x- and y- cut plot with a given mouse input
-        if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
+        if 'flimits' in kwargs: flimits = kwargs['flimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         self.Dlist[dtwo].vkind = 'xspec'
@@ -601,9 +601,9 @@ class FluctAna(object):
             plt.colorbar()
 
             if 'flimits' in kwargs:  # flimits
-                plt.ylim([flimits[0], flimits[1]])
+                plt.ylim([flimits[0]*1000, flimits[1]*1000])
             if 'xlimits' in kwargs:  # xlimits
-                plt.ylim([xlimits[0], xlimits[1]])
+                plt.xlim([xlimits[0], xlimits[1]])
             else:
                 plt.xlim([ptime[0], ptime[-1]])
 
@@ -1519,7 +1519,7 @@ class FluctAna(object):
         elif vkind == 'coherence':
             axs[1].set_title('Coherence sum')
         elif vkind == 'cross_phase':
-            axs[1].set_title('Group velocity [km/s]')
+            axs[1].set_title('Phase velocity [km/s]')
         else:
             axs[1].set_title(vkind)
 
@@ -1528,7 +1528,7 @@ class FluctAna(object):
         plt.show()
 
     def spec(self, dnum=0, cnl=[0], nfft=512, **kwargs):
-        if 'flimits' in kwargs: flimits = kwargs['flimits']*1000
+        if 'flimits' in kwargs: flimits = kwargs['flimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         fs = self.Dlist[dnum].fs
@@ -1550,9 +1550,9 @@ class FluctAna(object):
             plt.colorbar(cax)
 
             if 'flimits' in kwargs:  # flimits
-                plt.ylim([flimits[0], flimits[1]])
+                plt.ylim([flimits[0]*1000, flimits[1]*1000])
             if 'xlimits' in kwargs:  # xlimits
-                plt.ylim([xlimits[0], xlimits[1]])
+                plt.xlim([xlimits[0], xlimits[1]])
             else:
                 plt.xlim([pbase[0], pbase[-1]])
 

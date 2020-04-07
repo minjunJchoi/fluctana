@@ -148,6 +148,12 @@ class KstarMds(Connection):
                 # remove offest for ECE
                 if res != 0 and 'ECE' == self.clist[0][0:3]: 
                     v = v - np.mean(v[oidx1:oidx2])
+                    
+                    if np.mean(v) == 0: # bad channel
+                        self.clist.remove(cname)
+                        self.rpos[i] = -1 
+                        print('Null data {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
+                        continue
 
                 # resize data
                 v = v[idx1:idx2]

@@ -125,11 +125,12 @@ class KstarCss(Connection):
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.arange(cnum, dtype=np.float64)  # angle [rad]
 
-        try: 
-            print('Read channel position {:s}'.format(self.clist[0]))
-        except:
-            print('Failed to read the channel position from MDSplus {:s}'.format(self.clist[0]))
-            print('Try to get the position from kstardata {:s}'.format(self.clist[0]))
+        # need to read from google document
+        # try: 
+        #     print('Read channel position {:s}'.format(self.clist[0]))
+        # except:
+        #     print('Failed to read the channel position from MDSplus {:s}'.format(self.clist[0]))
+        #     print('Try to get the position from kstardata {:s}'.format(self.clist[0]))
 
 
 def expand_clist(clist):
