@@ -201,30 +201,66 @@ class FluctAna(object):
 
 ############################# data filtering functions #########################
 
-    def filt(self, dnum, name, fL, fH, b=0.08, verbose=0):
+    def filt(self, dnum=0, name='FIR_pass', fL=0, fH=10000, b=0.08, verbose=0):
         D = self.Dlist[dnum]
 
         # select filter except svd
         if name[0:3] == 'FIR':
-            filter = ft.FirFilter(name, D.fs, fL, fH, b)
+            freq_filter = ft.FirFilter(name, D.fs, fL, fH, b)
 
         for c in range(len(D.clist)):
             x = np.copy(D.data[c,:])
-            D.data[c,:] = filter.apply(x)
+            D.data[c,:] = freq_filter.apply(x)
 
         print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
-    def svd_filt(self, dnum, cutoff=0.9, verbose=0):
+    def svd_filt(self, dnum=0, cutoff=0.9, verbose=0):
         D = self.Dlist[dnum]
 
-        svd = ft.SvdFilter(cutoff = cutoff)
+        svd_filter = ft.SvdFilter(cutoff = cutoff)
 
         if hasattr(D, 'good_channels'):
-            D.data = svd.apply(D.data, D.good_channels, verbose=verbose)
+            D.data = svd_filter.apply(D.data, D.good_channels, verbose=verbose)
         else:
-            D.data = svd.apply(D.data, np.zeros(len(D.clist)), verbose=verbose)
+            D.data = svd_filter.apply(D.data, np.zeros(len(D.clist)), verbose=verbose)
 
         print('dnum {:d} svd filter with cutoff {:g}'.format(dnum, cutoff))
+
+    def wave2d_filt(self, dnum=0, row=24, column=8, wavename='coif3', alpha=1.0, lim=5, bcut=0.0, verbose=0):
+        D = self.Dlist[dnum]
+
+        wave2d_filter = ft.Wave2dFilter(wavename=wavename, alpha=alpha, lim=lim)
+
+        rpos = D.rpos[:]
+        zpos = D.zpos[:]
+        
+        tnum = len(D.time)
+        self.clev = np.zeros(tnum)
+        self.ilev = np.zeros(tnum)
+
+        for i in range(tnum):
+            data1d = D.data[:,i]
+
+            # fill bad channel
+            if bcut > 0:
+                data1d = ms.fill_bad_channel(data1d, rpos, zpos, D.good_channels, bcut) 
+
+            # make it 2D
+            data2d = data1d.reshape((row,column))
+
+            # apply filter
+            data2d, self.clev[i], self.ilev[i] = wave2d_filter.apply(data2d)
+
+            # make it 1D
+            D.data[:,i] = data2d.reshape(data1d.shape)
+
+            if verbose == 1 and i%100 ==0: print('wave2d filter: {:d}/{:d} done'.format(i, tnum))
+        
+        if verbose == 1:
+            plt.plot(D.time, self.clev, 'r')
+            plt.plot(D.time, self.ilev, 'b')
+            plt.show()
+
 
 ############################# spectral methods #############################
 
@@ -813,83 +849,6 @@ class FluctAna(object):
         # cmp channel
         pname = self.Dlist[dtwo].clist[0]
         YY = self.Dlist[dtwo].spdata[0,:,:]
-
-        # if cnum == 1:
-        #     # reference channel
-        #     rname = self.Dlist[done].clist[0]
-        #     XX = self.Dlist[done].spdata[0,:,:]
-        #     self.Dlist[dtwo].rname.append(rname)
-        #     # cmp channel
-        #     pname = self.Dlist[dtwo].clist[0]
-        #     YY = self.Dlist[dtwo].spdata[0,:,:]
-        # else:
-        #     # reference channel
-        #     rname = self.Dlist[done].clist[0]
-        #     self.Dlist[dtwo].rname.append(rname)
-        #     XXa = self.Dlist[done].spdata[0,:,:]
-        #     XXb = self.Dlist[done].spdata[1,:,:]
-        #     print('use {:s} and {:s} for XX'.format(self.Dlist[done].clist[0], self.Dlist[done].clist[1]))
-        #     # cmp channel
-        #     pname = self.Dlist[dtwo].clist[0]
-        #     YYa = self.Dlist[dtwo].spdata[0,:,:]
-        #     YYb = self.Dlist[dtwo].spdata[1,:,:]
-        #     print('use {:s} and {:s} for YY'.format(self.Dlist[dtwo].clist[0], self.Dlist[dtwo].clist[1]))
-
-        #     # # reconstructed XX
-        #     # XXc = np.sqrt(np.abs(XXa * np.matrix.conjugate(XXb)).real) # amplitude of the cross power
-        #     # # XXc = np.abs(XXa * np.matrix.conjugate(XXb)) / (np.abs(XXa)*np.abs(XXb)) # coherence
-        #     # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-        #     # XX = XXc * np.cos(XXt) + 1.0j * XXc * np.sin(XXt)
-        #     # # reconstructed YY
-        #     # YYc = np.sqrt(np.abs(YYa * np.matrix.conjugate(YYb)).real) # amplitude of the cross power
-        #     # # YYc = np.abs(YYa * np.matrix.conjugate(YYb)) / (np.abs(YYa)*np.abs(YYb)) # coherence
-        #     # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-        #     # YY = YYc * np.cos(YYt) + 1.0j * YYc * np.sin(YYt)
-
-        #     # reconstruction using sub averg
-        #     bins = XXa.shape[0]
-        #     sdim = 20
-        #     soverlap = 0.0
-        #     sbins = int(np.fix((int(bins/sdim) - soverlap)/(1.0 - soverlap)))
-
-        #     XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-        #     XX = np.zeros((sbins, XXa.shape[1]), dtype=np.complex_)
-
-        #     YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-        #     YY = np.zeros((sbins, YYa.shape[1]), dtype=np.complex_)
-
-        #     for b in range(sbins):
-        #         idx1 = int(b*np.fix(sdim*(1 - soverlap)))
-        #         idx2 = idx1 + sdim
-
-        #         Xc = np.sqrt(np.abs(np.mean(XXa[idx1:idx2,:]*np.matrix.conjugate(XXb[idx1:idx2,:]), 0)))
-        #         Xt = np.mean(XXt[idx1:idx2,:], 0)
-        #         XX[b,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
-
-        #         Yc = np.sqrt(np.abs(np.mean(YYa[idx1:idx2,:]*np.matrix.conjugate(YYb[idx1:idx2,:]), 0)))
-        #         Yt = np.mean(YYt[idx1:idx2,:], 0)
-        #         YY[b,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
-
-        #     # XX = np.zeros(XXa.shape, dtype=np.complex_)
-        #     # XXt = (np.arctan2(XXa.imag, XXa.real).real + np.arctan2(XXb.imag, XXb.real).real)/2.0
-        #     # for i in range(XXa.shape[0]):
-        #     #     si = i
-        #     #     ei = i+sdim
-        #     #     Xc = np.sqrt(np.abs(np.mean(XXa[si:ei,:]*np.matrix.conjugate(XXb[si:ei,:]), 0)))
-        #     #     Xt = np.mean(XXt[si:ei,:])
-        #     #     XX[i,:] = Xc * np.cos(Xt) + 1.0j * Xc * np.sin(Xt)
-
-        #     # YY = np.zeros(YYa.shape, dtype=np.complex_)
-        #     # YYt = (np.arctan2(YYa.imag, YYa.real).real + np.arctan2(YYb.imag, YYb.real).real)/2.0
-        #     # for i in range(YYa.shape[0]):
-        #     #     si = i
-        #     #     ei = i+sdim
-        #     #     Yc = np.sqrt(np.abs(np.mean(YYa[si:ei,:]*np.matrix.conjugate(YYb[si:ei,:]), 0)))
-        #     #     Yt = np.mean(YYt[si:ei,:])
-        #     #     YY[i,:] = Yc * np.cos(Yt) + 1.0j * Yc * np.sin(Yt)
-
-        #     self.Dlist[done].spdata = np.expand_dims(XX, axis=0)
-        #     self.Dlist[dtwo].spdata = np.expand_dims(YY, axis=0)
 
         # # check bicoherence
         # self.bicoherence(done, dtwo, cnl=[0])
@@ -1562,7 +1521,7 @@ class FluctAna(object):
 
             plt.show()
 
-    def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', cutoff=0.03, pmethod='scatter', **kwargs):
+    def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', bcut=0.03, pmethod='scatter', **kwargs):
         # keyboard interactive iplot
         D = self.Dlist[dnum]
 
@@ -1586,7 +1545,7 @@ class FluctAna(object):
                 zpos = D.zpos[:]
 
                 # fill bad channel
-                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, cutoff)
+                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, bcut)
 
                 # interpolation
                 if istep > 0:
@@ -1638,7 +1597,7 @@ class FluctAna(object):
                 zpos = D.zpos[:]
 
                 # fill bad channel
-                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, cutoff)
+                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, bcut)
 
                 # interpolation
                 if istep > 0:

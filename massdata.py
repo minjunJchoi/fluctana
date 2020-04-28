@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.interpolate import griddata
 
+# functions to massage the raw data including data from bad channels.
+
 def fill_bad_channel(pdata, rpos, zpos, good_channels, cutoff):
     # cutoff = 0.003 [m]
     # ## fake data

@@ -11,10 +11,16 @@
 
 import numpy as np
 import h5py
+import pywt
 
 import matplotlib.pyplot as plt
 
 import stats as st
+
+def nextpow2(i):
+    n = 1
+    while n < i: n *= 2
+    return n
 
 class FirFilter(object):
     def __init__(self, name, fs, fL, fH, b=0.08):
@@ -144,3 +150,60 @@ class SvdFilter(object):
                 good_channels[c] = 0
 
         return good_channels
+
+
+class Wave2dFilter(object):
+    def __init__(self, wavename='coif3', alpha=1.0, lim=5):
+        self.wavename = wavename
+        self.alpha = alpha
+        self.lim = lim
+
+    def apply(self, data, verbose=0):
+        wavename = self.wavename
+        alpha = self.alpha
+        lim = self.lim
+
+        dim = min(data.shape)
+
+        if np.abs(dim - nextpow2(dim)) < np.abs(dim - (nextpow2(dim)/2)):
+            level = int(np.log2(nextpow2(dim)))
+        else:
+            level = int(np.log2(nextpow2(dim)/2))
+
+        # wavelet transform
+        coeffs = pywt.wavedec2(data, wavename, level=level)
+
+        # set an intial threshold (noise level)
+        coef1d = coeffs[0].reshape((coeffs[0].size,))
+        for i in range(1,len(coeffs)):
+            for j in range(len(coeffs[i])):
+                coef1d = np.hstack((coef1d, coeffs[i][j].reshape((coeffs[i][j].size,))))  # ~ size x size
+        tlev = np.sum(coef1d**2) 
+        e = alpha*np.sqrt(np.var(coef1d)*np.log(coef1d.size))
+
+        # find the noise level via iteration
+        old_e = 0.1*e
+        new_e = e
+        while np.abs(new_e - old_e)/old_e*100 > lim:
+            old_e = new_e
+            idx = np.abs(coef1d) < old_e
+            coef1d = coef1d[idx]
+            new_e = alpha*np.sqrt(np.var(coef1d)*np.log(coef1d.size))
+        e = old_e
+
+        # get norms of the coherent and incoherent part 
+        ilev = np.sum(coef1d**2)
+        clev = tlev - ilev
+        clev = np.sqrt(clev) 
+        ilev = np.sqrt(ilev) 
+
+        # obtain the coherent part    
+        idx = np.abs(coeffs[0]) < e
+        coeffs[0][idx] = 0
+        for i in range(1,len(coeffs)):
+            for j in range(len(coeffs[i])):
+                idx = np.abs(coeffs[i][j]) < e
+                coeffs[i][j][idx] = 0
+        coh_data = pywt.waverec2(coeffs, wavename) 
+
+        return coh_data, clev, ilev

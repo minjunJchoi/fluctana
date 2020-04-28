@@ -14,6 +14,8 @@ import h5py
 
 import matplotlib.pyplot as plt
 
+import filtdata as ft
+
 ENUM = 5000000  # totla number of samples in an ECEI channel
 VN = 24  # number of vertical arrays
 
@@ -103,6 +105,8 @@ class KstarEcei(object):
             if verbose == 1: print('Data is normalized by trange average ECEI')
         elif norm == 2:
             if verbose == 1: print('Data is normalized by atrange average ECEI')
+        elif norm == 3:
+            if verbose == 1: print('Data is normalized by the low pass signal')
 
         # get time base
         time, idx1, idx2, oidx1, oidx2 = self.time_base(trange)
@@ -138,6 +142,10 @@ class KstarEcei(object):
                 elif norm == 2:
                     av = f[node][aidx1:aidx2]/10000.0
                     v = v/np.mean(av) - 1
+                elif norm == 3:
+                    fir_filter = ft.FirFilter('FIR_pass', self.fs, 0, 10, b=0.08)
+                    base = fir_filter.apply(v)
+                    v = v/base - 1
 
                 data[i,:] = v
 
