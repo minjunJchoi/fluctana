@@ -190,12 +190,12 @@ class KstarEcei(object):
 
         idx = np.where((fulltime >= trange[0])*(fulltime <= trange[1]))
         idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+2)
+        idx2 = int(idx[0][-1]+1)
 
         if toff < 0:
             oidx = np.where((fulltime >= toff)*(fulltime <= toff+0.01))
             oidx1 = int(oidx[0][0])
-            oidx2 = int(oidx[0][-1]+2)
+            oidx2 = int(oidx[0][-1]+1)
         else:
             print('#### offset from end in KstarEcei.time_base ####')
             oidx1 = int(ENUM - 0.01*fs)

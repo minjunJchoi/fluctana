@@ -133,21 +133,17 @@ class KstarMds(Connection):
                     self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
                     
                     # find index for trange
-                    idx = np.where((self.time >= trange[0])*(self.time <= trange[1]))
-                    idx1 = int(idx[0][0])
-                    idx2 = int(idx[0][-1]+2)
+                    idx = (self.time >= trange[0])*(self.time <= trange[1])
 
                     # find offest index for ECE
                     if res != 0 and 'ECE' == self.clist[0][0:3]: 
-                        oidx = np.where((self.time >= -0.5)*(self.time <= -0.1))
-                        oidx1 = int(oidx[0][0])
-                        oidx2 = int(oidx[0][-1]+2)
+                        oidx = (self.time >= -0.5)*(self.time <= -0.1)
 
-                    self.time = self.time[idx1:idx2]
+                    self.time = self.time[idx]
 
                 # remove offest for ECE
                 if res != 0 and 'ECE' == self.clist[0][0:3]: 
-                    v = v - np.mean(v[oidx1:oidx2])
+                    v = v - np.mean(v[oidx])
                     
                     if np.mean(v) == 0: # bad channel
                         self.clist.remove(cname)
@@ -156,7 +152,7 @@ class KstarMds(Connection):
                         continue
 
                 # resize data
-                v = v[idx1:idx2]
+                v = v[idx]
 
                 # normalize if necessary
                 if norm == 1:

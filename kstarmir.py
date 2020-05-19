@@ -148,7 +148,7 @@ class KstarMir(object):
 
         idx = np.where((fulltime >= trange[0])*(fulltime <= trange[1]))
         idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+2)
+        idx2 = int(idx[0][-1]+1)
 
         self.time = fulltime[idx1:idx2]
 

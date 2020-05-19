@@ -86,7 +86,7 @@ class FluctData(object):
 
         idx = np.where((time >= trange[0])*(time <= trange[1]))
         idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+2)
+        idx2 = int(idx[0][-1]+1)
 
         return time[idx1:idx2], idx1, idx2
 
