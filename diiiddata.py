@@ -64,7 +64,7 @@ class DiiidData():
             # set data size
             idx = np.where((time >= trange[0])*(time <= trange[1]))
             idx1 = int(idx[0][0])
-            idx2 = int(idx[0][-1]+2)
+            idx2 = int(idx[0][-1]+1)
             time = time[idx1:idx2]
             v = v[idx1:idx2]
 
