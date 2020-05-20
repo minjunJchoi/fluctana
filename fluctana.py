@@ -54,25 +54,25 @@ class FluctData(object):
             if verbose == 1: print('Data is normalized by atrange average')
 
         # trim time
-        time, idx1, idx2 = self.time_base(trange)
+        time, idx = self.time_base(trange)
 
         if norm == 2:
-            _, aidx1, aidx2 = self.time_base(atrange)
+            _, aidx = self.time_base(atrange)
 
         # time series length
-        tnum = idx2 - idx1
+        tnum = len(time)
         # number of channels
         cnum = len(self.clist)
 
         raw_data = self.data
         data = np.zeros((cnum, tnum))
         for i in range(cnum):
-            v = raw_data[i,idx1:idx2]
+            v = raw_data[i,idx]
 
             if norm == 1:
                 v = v/np.mean(v) - 1
             elif norm == 2:
-                v = v/np.mean(raw_data[i,aidx1:aidx2]) - 1
+                v = v/np.mean(raw_data[i,aidx]) - 1
 
             data[i,:] = v
 
@@ -84,11 +84,13 @@ class FluctData(object):
     def time_base(self, trange):
         time = self.time
 
-        idx = np.where((time >= trange[0])*(time <= trange[1]))
-        idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+1)
+        # get index
+        idx = (time >= trange[0])*(time <= trange[1])
 
-        return time[idx1:idx2], idx1, idx2
+        # get fs
+        self.fs = round(1/(time[1] - time[0])/1000)*1000.0            
+
+        return time[idx], idx
 
 
 class FluctAna(object):
@@ -298,72 +300,34 @@ class FluctAna(object):
 
             # update attributes
             if np.mod(nfft, 2) == 0:
-                D.nfft = nfft + 1
+                D.nfreq = nfft + 1
             else:
-                D.nfft = nfft
+                D.nfreq = nfft
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
-    def cwt(self, df, full=0, tavg=0): ## problem in recovering the signal
+    def cwt(self, df, full=0, tavg=0): 
         for d, D in enumerate(self.Dlist):
-            # make a t-axis
-            dt = D.time[1] - D.time[0]  # time step
-            tnum = len(D.time)
-            nfft = nextpow2(tnum) # power of 2
-            t = np.arange(nfft)*dt
+            # time step
+            dt = D.time[1] - D.time[0]  
 
             # make a f-axis with constant df
             s0 = 2.0*dt # the smallest scale
-            ax = np.arange(0.0, 1.0/(1.03*s0), df)
+            ax_half = np.arange(0.0, 1.0/(1.03*s0), df) # 1.03 for the Morlet wavelet function
 
-            # scales
-            old_settings = np.seterr(divide='ignore')
-            sj = 1.0/(1.03*ax)
-            np.seterr(**old_settings)
-            dj = np.log2(sj/s0) / np.arange(len(sj)) # dj; necessary for reconstruction
-            sj[0] = tnum*dt/2.0
-            dj[0] = 0 # remove infinity point due to fmin = 0
-
-            # Morlet wavelet function (unnormalized)
-            omega0 = 6.0 # nondimensional wavelet frequency
-            ts = np.sqrt(2)*sj # e-folding time for Morlet wavelet with omega0 = 6
-            wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
-
-            cnum = len(D.data)  # number of cmp channels
-            snum = len(sj)
             # value dimension
-            D.spdata = np.zeros((cnum, tnum, (1+full)*snum-(1*full)), dtype=np.complex_)
+            cnum = len(D.data)  # number of cmp channels
+            tnum = len(D.time)
+            snum = len(ax_half) 
+            ncwt = (1+full)*snum-(1*full)
+            D.spdata = np.zeros((cnum, tnum, ncwt), dtype=np.complex_)
             for c in range(cnum):
                 x = D.data[c,:]
+                D.ax, D.spdata[c,:,:], D.cwtdj, D.cwtts = sp.cwt(x, dt, df, full) 
 
-                # FFT of signal
-                X = np.fft.fft(x, n=nfft)/nfft
-
-                # calculate CWT
-                cwtdata = np.zeros((nfft, snum), dtype=np.complex_)
-                for j, s in enumerate(sj):
-                    # nondimensional time axis at time scale s
-                    eta = t/s
-                    # FFT of the normalized wavelet function
-                    W = np.fft.fft( np.conj( wf0(eta - np.mean(eta))*np.sqrt(dt/s) ) )
-                    # Wavelet transform at scae s for all n time
-                    # cwtdata[:,j] = np.fft.fftshift(np.fft.ifft(X * W) * nfft)
-                    cwtdata[:,j] = np.conj(np.fft.fftshift(np.fft.ifft(X * W) * nfft)) # phase direction correct
-
-                # full size
-                if full == 1:
-                    cwtdata = np.hstack([np.fliplr(np.conj(cwtdata)), cwtdata[:,1:]])
-
-                # return until tnum
-                D.spdata[c,:,:] = cwtdata[0:tnum,:]
-
-            if full == 1:
-                ax = np.hstack([-ax[::-1], ax[1:]])
-            D.ax = ax
-            D.cwtdj = dj # for reconstruction
-            D.cwtts = ts # for significance level
             D.win_factor = 1.0 
             D.tavg = tavg
+            D.nfreq = ncwt
             D.bidx = np.where((np.mean(D.time) - tavg*1e-6/2 < D.time)*(D.time < np.mean(D.time) + tavg*1e-6/2))[0]
             D.bins = len(D.bidx)
 
@@ -475,15 +439,18 @@ class FluctAna(object):
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
-        nfft = self.Dlist[dtwo].nfft
+        nfreq = self.Dlist[dtwo].nfreq
         win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # reference channel names
         self.Dlist[dtwo].rname = []
 
         # axes
-        fs = round(1/(self.Dlist[dtwo].time[1] - self.Dlist[dtwo].time[0])/1000)*1000.0
-        self.Dlist[dtwo].ax = int(nfft/2)*1.0/fs*np.linspace(1,-1,nfft)
+        fs = self.Dlist[dtwo].fs
+        self.Dlist[dtwo].ax = int(nfreq/2)*1.0/fs*np.linspace(-1,1,nfreq)
+
+        # distance
+        self.Dlist[dtwo].dist = np.zeros(cnum)
 
         # value dimension
         val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
@@ -494,27 +461,18 @@ class FluctAna(object):
             # reference channel number
             if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
+                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
+                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
+                XX = self.Dlist[done].spdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
+                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
+                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
+                XX = self.Dlist[done].spdata[c,:,:]
 
-            # calculate cross power for each channel and each bins
-            for b in range(bins):
-                if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].spdata[0,b,:]
-                else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].spdata[c,b,:]
+            YY = self.Dlist[dtwo].spdata[c,:,:]
 
-                Y = self.Dlist[dtwo].spdata[c,b,:]
-
-                val[b,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
-                val[b,:] = np.fft.ifft(val[b,:], n=nfft)*nfft
-                val[b,:] = np.fft.fftshift(val[b,:])
-
-            # average over bins
-            Cxy = np.mean(val, 0)
-            # result saved in val
-            self.Dlist[dtwo].val[c,:] = Cxy.real
-            # std saved in std
+            self.Dlist[dtwo].val[c,:] = sp.correlation(XX, YY, win_factor, self.Dlist[dtwo].bidx)
 
     def corr_coef(self, done=0, dtwo=1):
         # reguire full FFT
@@ -524,15 +482,18 @@ class FluctAna(object):
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
-        nfft = self.Dlist[dtwo].nfft
+        nfreq = self.Dlist[dtwo].nfreq
         win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # reference channel names
         self.Dlist[dtwo].rname = []
 
         # axes
-        fs = round(1/(self.Dlist[dtwo].time[1] - self.Dlist[dtwo].time[0])/1000)*1000.0
-        self.Dlist[dtwo].ax = int(nfft/2)*1.0/fs*np.linspace(1,-1,nfft)
+        fs = self.Dlist[dtwo].fs
+        self.Dlist[dtwo].ax = int(nfreq/2)*1.0/fs*np.linspace(-1,1,nfreq)
+
+        # distance
+        self.Dlist[dtwo].dist = np.zeros(cnum)
 
         # value dimension
         val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
@@ -543,36 +504,19 @@ class FluctAna(object):
             # reference channel number
             if rnum == 1:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
+                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
+                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
+                XX = self.Dlist[done].spdata[0,:,:]
             else:
                 self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
+                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
+                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
+                XX = self.Dlist[done].spdata[c,:,:]
 
-            # calculate cross power for each channel and each bins
-            for b in range(bins):
-                if rnum == 1:  # single reference channel
-                    X = self.Dlist[done].spdata[0,b,:]
-                else:  # number of ref channels = number of cmp channels
-                    X = self.Dlist[done].spdata[c,b,:]
+            YY = self.Dlist[dtwo].spdata[c,:,:]
 
-                Y = self.Dlist[dtwo].spdata[c,b,:]
+            self.Dlist[dtwo].val[c,:] = sp.corr_coef(XX, YY, win_factor, self.Dlist[dtwo].bidx)
 
-                x = np.fft.ifft(np.fft.ifftshift(X), n=nfft)*nfft/np.sqrt(win_factor)
-                Rxx = np.mean(x**2)
-                y = np.fft.ifft(np.fft.ifftshift(Y), n=nfft)*nfft/np.sqrt(win_factor)
-                Ryy = np.mean(y**2)
-
-                val[b,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
-                val[b,:] = np.fft.ifft(val[b,:], n=nfft)*nfft
-                val[b,:] = np.fft.fftshift(val[b,:])
-
-                val[b,:] = val[b,:]/np.sqrt(Rxx*Ryy)
-
-            # average over bins
-            cxy = np.mean(val, 0)
-            # result saved in val
-            self.Dlist[dtwo].val[c,:] = cxy.real
-            # std saved in std
-
-    # def xspec(self, done=0, cone=[0], dtwo=1, ctwo=[0], thres=0, **kwargs):
     def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
         # number of cmp channels = number of ref channels
         # add x- and y- cut plot with a given mouse input
@@ -678,17 +622,17 @@ class FluctAna(object):
         self.Dlist[dtwo].kax = kax
 
         nkax = len(kax)
-        nfft = len(self.Dlist[dtwo].ax)
+        nfreq = len(self.Dlist[dtwo].ax)
 
         # value dimension
-        Pxx = np.zeros((bins, nfft), dtype=np.complex_)
-        Pyy = np.zeros((bins, nfft), dtype=np.complex_)
-        Kxy = np.zeros((bins, nfft), dtype=np.complex_)
-        val = np.zeros((cnum, nkax, nfft), dtype=np.complex_)
-        self.Dlist[dtwo].val = np.zeros((nkax, nfft))
-        sklw = np.zeros((nkax, nfft), dtype=np.complex_)
-        K = np.zeros((cnum, nfft), dtype=np.complex_)
-        sigK = np.zeros((cnum, nfft), dtype=np.complex_)
+        Pxx = np.zeros((bins, nfreq), dtype=np.complex_)
+        Pyy = np.zeros((bins, nfreq), dtype=np.complex_)
+        Kxy = np.zeros((bins, nfreq), dtype=np.complex_)
+        val = np.zeros((cnum, nkax, nfreq), dtype=np.complex_)
+        self.Dlist[dtwo].val = np.zeros((nkax, nfreq))
+        sklw = np.zeros((nkax, nfreq), dtype=np.complex_)
+        K = np.zeros((cnum, nfreq), dtype=np.complex_)
+        sigK = np.zeros((cnum, nfreq), dtype=np.complex_)
 
         # calculation loop for multi channels
         for c in range(cnum):
@@ -707,14 +651,14 @@ class FluctAna(object):
                 Kxy[i,:] = np.arctan2(Pxy.imag, Pxy.real).real / (self.Dlist[dtwo].dist[c]*100) # [cm^-1]
 
                 # calculate SKw
-                for w in range(nfft):
+                for w in range(nfreq):
                     idx = (Kxy[i,w] - kstep/2.0 < kax) * (kax < Kxy[i,w] + kstep/2.0)
                     val[c,:,w] = val[c,:,w] + (1.0/bins*(Pxx[i,w] + Pyy[i,w])/2.0) * idx
 
             # calculate moments
             sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
-            K[c, :] = np.sum(np.transpose(np.tile(kax, (nfft, 1))) * sklw, 0)
-            for w in range(nfft):
+            K[c, :] = np.sum(np.transpose(np.tile(kax, (nfreq, 1))) * sklw, 0)
+            for w in range(nfreq):
                 sigK[c,w] = np.sqrt(np.sum( (kax - K[c,w])**2 * sklw[:,w] ))
 
         self.Dlist[dtwo].val[:,:] = np.mean(val, 0).real
@@ -1521,9 +1465,14 @@ class FluctAna(object):
 
             plt.show()
 
-    def iplot(self, dnum, snum=0, vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', bcut=0.03, pmethod='scatter', **kwargs):
+    def iplot(self, dnum, snum=0, type='time', vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', bcut=0.03, pmethod='contour', **kwargs):
         # keyboard interactive iplot
         D = self.Dlist[dnum]
+        if type == 'time':
+            pbase = D.time
+        elif type == 'val':
+            pbase = D.ax*1e+6
+            vkind = D.vkind
 
         CM = plt.cm.get_cmap('RdYlBu_r')
 
@@ -1532,15 +1481,20 @@ class FluctAna(object):
         if c == 0:
             # make axes
             fig = plt.figure(facecolor='w', figsize=(5,10))
-            ax1 = fig.add_axes([0.1, 0.77, 0.7, 0.2])  # [left bottom width height]
-            ax2 = fig.add_axes([0.1, 0.07, 0.7, 0.60])
-            ax3 = fig.add_axes([0.83, 0.07, 0.03, 0.6])
-            axs = [ax1, ax2, ax3]
+            ax0 = fig.add_axes([0.1, 0.77, 0.7, 0.2])  # [left bottom width height]
+            ax1 = fig.add_axes([0.1, 0.07, 0.7, 0.60])
+            ax2 = fig.add_axes([0.83, 0.07, 0.03, 0.6])
+            axs = [ax0, ax1, ax2]
 
             tstep = int(input('time step [idx]: '))  # jumping index # tstep = 10
-            for tidx in range(tidx1, len(D.time), tstep):
+            for tidx in range(tidx1, len(pbase), tstep):
                 # take data and channel position
-                pdata = D.data[:,tidx]
+                if type == 'time':
+                    pdata = D.data[:,tidx]
+                    psample = D.data[snum,:]
+                elif type == 'val':
+                    pdata = D.val[:,tidx]
+                    psample = D.val[snum,:]
                 rpos = D.rpos[:]
                 zpos = D.zpos[:]
 
@@ -1557,8 +1511,8 @@ class FluctAna(object):
                 axs[2].cla()
                 plt.ion()
 
-                axs[0].plot(D.time, D.data[snum,:])  # ax1.hold(True)
-                axs[0].axvline(x=D.time[tidx], color='g')
+                axs[0].plot(pbase, psample)  # ax1.hold(True)
+                axs[0].axvline(x=pbase[tidx], color='g')
                 if istep > 0:
                     if pmethod == 'scatter':
                         im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
@@ -1571,7 +1525,12 @@ class FluctAna(object):
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
-                axs[1].set_title('ECE image at t = {:g} sec'.format(D.time[tidx]))
+                if type == 'time':
+                    axs[0].set_xlabel('Time [s]')
+                    axs[1].set_title('ECE image at t = {:g} sec'.format(pbase[tidx]))
+                elif type == 'val':
+                    axs[0].set_xlabel('Time lag [us]')
+                    axs[1].set_title('{:s} image at time lag = {:g} us'.format(vkind, pbase[tidx]))
 
                 plt.show()
                 plt.pause(0.1)
@@ -1585,14 +1544,19 @@ class FluctAna(object):
 
             # make axes
             fig = plt.figure(facecolor='w', figsize=(5,10))
-            ax1 = fig.add_axes([0.1, 0.77, 0.7, 0.2])  # [left bottom width height]
-            ax2 = fig.add_axes([0.1, 0.07, 0.7, 0.60])
-            ax3 = fig.add_axes([0.83, 0.07, 0.03, 0.6])
-            axs = [ax1, ax2, ax3]
-            while True:
+            ax0 = fig.add_axes([0.1, 0.77, 0.7, 0.2])  # [left bottom width height]
+            ax1 = fig.add_axes([0.1, 0.07, 0.7, 0.60])
+            ax2 = fig.add_axes([0.83, 0.07, 0.03, 0.6])
+            axs = [ax0, ax1, ax2]
 
+            while True:
                 # take data and channel position
-                pdata = D.data[:,tidx]
+                if type == 'time':
+                    pdata = D.data[:,tidx]
+                    psample = D.data[snum,:]
+                elif type == 'val':
+                    pdata = D.val[:,tidx]
+                    psample = D.val[snum,:]
                 rpos = D.rpos[:]
                 zpos = D.zpos[:]
 
@@ -1609,8 +1573,8 @@ class FluctAna(object):
                 axs[2].cla()
                 plt.ion()
 
-                axs[0].plot(D.time, D.data[snum,:])  # ax1.hold(True)
-                axs[0].axvline(x=D.time[tidx], color='g')
+                axs[0].plot(pbase, psample)  # ax1.hold(True)
+                axs[0].axvline(x=pbase[tidx], color='g')
                 if istep > 0:
                     if pmethod == 'scatter':
                         im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
@@ -1623,14 +1587,19 @@ class FluctAna(object):
 
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
-                axs[1].set_title('ECE image at t = {:g} sec'.format(D.time[tidx]))
+                if type == 'time':
+                    axs[0].set_xlabel('Time [s]')
+                    axs[1].set_title('ECE image at t = {:g} sec'.format(pbase[tidx]))
+                elif type == 'val':
+                    axs[0].set_xlabel('Time lag [us]')
+                    axs[1].set_title('{:s} image at time lag = {:g} us'.format(vkind, pbase[tidx]))
 
                 plt.show()
 
                 ## mouse input
                 g = plt.ginput(1)[0][0]
-                if g >= D.time[0] and g <= D.time[-1]:
-                    tidx = np.where(D.time > g)[0][0]
+                if g >= pbase[0] and g <= pbase[-1]:
+                    tidx = np.where(pbase > g)[0][0]
                 else:
                     print('Out of the time range')
                     plt.ioff()
@@ -1731,9 +1700,9 @@ class FluctAna(object):
 
             # update attributes
             if np.mod(nfft, 2) == 0:
-                self.Dlist[dnum].nfft = nfft + 1
+                self.Dlist[dnum].nfreq = nfft + 1
             else:
-                self.Dlist[dnum].nfft = nfft
+                self.Dlist[dnum].nfreq = nfft
             self.Dlist[dnum].window = window
             self.Dlist[dnum].overlap = overlap
             self.Dlist[dnum].detrend = detrend

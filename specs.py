@@ -31,7 +31,7 @@ def fft_window(tnum, nfft, window, overlap):
     return bins, win
 
 
-def fftbins(x, dt, nfft, window, overlap, detrend, full):
+def fftbins(x, dt, nfft, window, overlap, detrend=0, full=0):
     # IN : 1 x tnum data
     # OUT : bins x faxis fftdata
     tnum = len(x)
@@ -62,9 +62,10 @@ def fftbins(x, dt, nfft, window, overlap, detrend, full):
 
         sx = x[idx1:idx2]
 
+        if detrend == 0:
+            sx = signal.detrend(sx, type='constant')  # subtract mean
         if detrend == 1:
             sx = signal.detrend(sx, type='linear')
-        sx = signal.detrend(sx, type='constant')  # subtract mean
 
         sx = sx * win  # apply window function
 
@@ -80,6 +81,51 @@ def fftbins(x, dt, nfft, window, overlap, detrend, full):
         fftdata[b,:] = SX
 
     return ax, fftdata, win_factor
+
+
+def cwt(x, dt, df, full):
+    # make a t-axis
+    tnum = len(x)
+    nfft = nextpow2(tnum) # power of 2
+    t = np.arange(nfft)*dt
+
+    # make a f-axis with constant df
+    s0 = 2.0*dt # the smallest scale
+    ax = np.arange(0.0, 1.0/(1.03*s0), df) # 1.03 for the Morlet wavelet function
+
+    # scales
+    old_settings = np.seterr(divide='ignore')
+    sj = 1.0/(1.03*ax)
+    np.seterr(**old_settings)
+    dj = np.log2(sj/s0) / np.arange(len(sj)) # dj; necessary for reconstruction
+    sj[0] = tnum*dt/2.0
+    dj[0] = 0 # remove infinity point due to fmin = 0
+
+    # Morlet wavelet function (unnormalized)
+    omega0 = 6.0 # nondimensional wavelet frequency
+    ts = np.sqrt(2)*sj # e-folding time for Morlet wavelet with omega0 = 6; significance level
+    wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
+
+    # FFT of signal
+    X = np.fft.fft(x, n=nfft)/nfft
+
+    # calculate CWT
+    snum = len(sj) 
+    cwtdata = np.zeros((nfft, snum), dtype=np.complex_)
+    for j, s in enumerate(sj):
+        # nondimensional time axis at time scale s
+        eta = t/s
+        # FFT of the normalized wavelet function
+        W = np.fft.fft( np.conj( wf0(eta - np.mean(eta))*np.sqrt(dt/s) ) )
+        # Wavelet transform at scae s for all n time
+        cwtdata[:,j] = np.conj(np.fft.fftshift(np.fft.ifft(X * W) * nfft)) # phase direction correct
+
+    # full size
+    if full == 1:
+        cwtdata = np.hstack([np.fliplr(np.conj(cwtdata)), cwtdata[:,1:]]) # real x only
+        ax = np.hstack([-ax[::-1], ax[1:]])
+
+    return ax, cwtdata[0:tnum,:], dj, ts
 
 
 def cross_power(XX, YY, win_factor, bidx=0):
@@ -144,6 +190,57 @@ def cross_phase(XX, YY, bidx=0):
     Axy = np.arctan2(Pxy.imag, Pxy.real).real
 
     return Axy
+
+
+def correlation(XX, YY, win_factor, bidx=0):
+    if type(bidx) is int:
+        bidx = np.arange(len(XX))
+
+    nfreq = XX.shape[1]
+    val = np.zeros((len(bidx),nfreq), dtype=np.complex_)
+
+    for i,b in enumerate(bidx):
+        X = XX[b,:]
+        Y = YY[b,:]
+
+        val[i,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
+        val[i,:] = np.fft.ifft(val[i,:], n=nfreq)*nfreq
+        val[i,:] = np.fft.fftshift(val[i,:])
+
+        val[i,:] = np.flip(val[i,:])
+
+    # average over bins; return real value
+    Cxy = np.mean(val, 0)
+    
+    return Cxy.real 
+
+
+def corr_coef(XX, YY, win_factor, bidx=0):
+    if type(bidx) is int:
+        bidx = np.arange(len(XX))
+
+    nfreq = XX.shape[1]
+    val = np.zeros((len(bidx),nfreq), dtype=np.complex_)
+
+    for i,b in enumerate(bidx):
+        X = XX[b,:]
+        Y = YY[b,:]
+
+        x = np.fft.ifft(np.fft.ifftshift(X), n=nfreq)*nfreq/np.sqrt(win_factor)
+        Rxx = np.mean(x**2)
+        y = np.fft.ifft(np.fft.ifftshift(Y), n=nfreq)*nfreq/np.sqrt(win_factor)
+        Ryy = np.mean(y**2)
+
+        val[i,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
+        val[i,:] = np.fft.ifft(val[i,:], n=nfreq)*nfreq
+        val[i,:] = np.fft.fftshift(val[i,:])
+
+        val[i,:] = np.flip(val[i,:])/np.sqrt(Rxx*Ryy)
+
+    # average over bins; return real value
+    cxy = np.mean(val, 0)
+    
+    return cxy.real 
 
 
 def xspec(XX, YY, win_factor):
@@ -473,3 +570,9 @@ def get_kidx(full):
         kidx.append(idx)
 
     return kidx
+
+
+def nextpow2(i):
+    n = 1
+    while n < i: n *= 2
+    return n

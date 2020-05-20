@@ -29,10 +29,10 @@ A.cross_phase(done=0,dtwo=1)
 # plot the results; dnum = data set number, cnl = channel number list to plot
 A.mplot(dnum=1,cnl=range(len(A.Dlist[1].clist)),type='val',ylimits=[-3.14,3.14])
 
-# calculate group velocity
+# calculate phase velocity
 A.cplot(dnum=1,snum=0,frange=[30,60],vlimits=[-10,10])
 
-# group velocity
+# phase velocity
 # print(A.Dlist[1].pdata)
 # distance between channels
 # print(A.Dlist[1].dist)
