@@ -144,7 +144,7 @@ class KstarMir(object):
             if len(fulltime) > MNUM:
                 break
 
-        fulltime = fulltime[0:(MNUM+1)]
+        fulltime = fulltime[0:MNUM]
 
         idx = np.where((fulltime >= trange[0])*(fulltime <= trange[1]))
         idx1 = int(idx[0][0])

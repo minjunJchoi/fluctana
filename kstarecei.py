@@ -186,7 +186,7 @@ class KstarEcei(object):
             if len(fulltime) > ENUM:
                 break
 
-        fulltime = fulltime[0:(ENUM+1)]
+        fulltime = fulltime[0:ENUM]
 
         idx = np.where((fulltime >= trange[0])*(fulltime <= trange[1]))
         idx1 = int(idx[0][0])
@@ -194,12 +194,11 @@ class KstarEcei(object):
 
         if toff < 0:
             oidx = np.where((fulltime >= toff)*(fulltime <= toff+0.01))
-            oidx1 = int(oidx[0][0])
-            oidx2 = int(oidx[0][-1]+1)
         else:
             print('#### offset from end in KstarEcei.time_base ####')
-            oidx1 = int(ENUM - 0.01*fs)
-            oidx2 = int(ENUM - 1)
+            oidx = (fulltime >= fulltime[-1]-0.01)*(fulltime <= fulltime[-1])
+        oidx1 = int(oidx[0][0])
+        oidx2 = int(oidx[0][-1]+1)
 
         return fulltime[idx1:idx2], idx1, idx2, oidx1, oidx2
 
