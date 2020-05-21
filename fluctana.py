@@ -97,7 +97,26 @@ class FluctAna(object):
     def __init__(self):
         self.Dlist = []
 
-    def add_data(self, D, trange, norm=1, atrange=[1.0, 1.01], res=0, verbose=1):
+    def add_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], trange=[6.8,7.0], norm=1, atrange=[1.0, 1.01], res=0, verbose=1, **kwargs):
+        # for an arbitrary data 
+        if 'data' in kwargs:
+            time = kwargs['time']
+            data = kwargs['data']
+            rpos = kwargs['rpos']
+            zpos = kwargs['zpos']
+            apos = kwargs['apos']
+            D = FluctData(shot, clist, time, data, rpos, zpos, apos)
+
+        # KSTAR diagnostics
+        if dev == 'KSTAR':
+            if 'ECEI' in clist[0]:
+                D = KstarEcei(shot=shot, clist=clist)
+            elif 'MIR' in clist[0]:
+                D = KstarMir(shot=shot, clist=clist)
+            elif 'CSS' in clist[0]:
+                D = KstarCss(shot=shot, clist=clist)
+            else:
+                D = KstarMds(shot=shot, clist=clist)
 
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
@@ -804,12 +823,12 @@ class FluctAna(object):
             print('TEST with MODEL DATA')
 
         # calculate transfer functions
-        if wit == 0:
+        if wit == 1:
+            print('Wit method')
+            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY, bidx)            
+        else:
             print('Ritz method')
             Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY)
-        else:
-            print('Wit method')
-            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY, bidx)
 
         # plot info
         pshot = self.Dlist[dtwo].shot
@@ -843,7 +862,7 @@ class FluctAna(object):
         if js == 1:
             gk, Tijk, sum_Tijk = sp.nonlinear_ratesJS(Lk, Aijk, Qijk, XX, delta)
         else:
-            gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, dt)
+            gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, delta)
 
         # Plot results
         fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,1,2]})
@@ -1068,8 +1087,14 @@ class FluctAna(object):
 
             # draw fbm, fgn locus
             c_fbm, h_fbm, c_fgn, h_fgn = st.fmb_fgn_locus(d)
-            plt.plot(h_fbm, c_fbm, 'y')
-            plt.plot(h_fgn, c_fgn, 'g')
+            # find c_cen line
+            h_cen = np.append(h_fbm, h_fgn)
+            c_cen = np.append(c_fbm, c_fgn)
+            odx = np.argsort(h_cen)
+            h_cen = h_cen[odx]
+            c_cen = c_cen[odx]
+
+            plt.plot(h_cen, c_cen, 'g')
 
             plt.xlabel('Entropy (H)')
             plt.ylabel('Complexity (C)')

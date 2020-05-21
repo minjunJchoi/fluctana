@@ -34,9 +34,9 @@ class KstarCss(Connection):
         if norm == 0:
             if verbose == 1: print('Data is not normalized {:s}'.format(self.clist[0]))
         elif norm == 1:
-            if verbose == 1: print('Data is normalized by trange average {:s}'.format(self.clist[0]))
-        elif norm == 2:
-            if verbose == 1: print('Data is normalized by atrange average {:s}'.format(self.clist[0]))
+            if verbose == 1: print('Data is normalized by trange std {:s}'.format(self.clist[0]))
+        # elif norm == 2:
+        #     if verbose == 1: print('Data is normalized by atrange std {:s}'.format(self.clist[0]))
 
         self.trange = trange
 

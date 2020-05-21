@@ -13,10 +13,10 @@ clist = sys.argv[3].split(',')
 A = FluctAna()
 
 # add data
-A.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=1)
 
 # list data
 A.list_data()
 
 # plot spectrogram of data set dnum; cnl = channel number list to plot
-A.spec(dnum=0,cnl=range(len(A.Dlist[0].clist)), nfft=2048)
+A.spec(dnum=0, cnl=range(len(A.Dlist[0].clist)), nfft=2048, flimits=[0,150])

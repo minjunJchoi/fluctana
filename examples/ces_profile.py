@@ -24,7 +24,7 @@ for i in range(int(npts/2)):
     print(M.rpos)
     print(M.clist)
 
-    A.add_data(M, trange=trange, norm=0)
+    A.add_data(dev='KSTAR', shot=shot, clist=M.clist, trange=trange, norm=0)
 
 ## compare multiple profiles
 fig = plt.figure(figsize=(7,7))

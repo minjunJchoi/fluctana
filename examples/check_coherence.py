@@ -14,18 +14,24 @@ clist2 = sys.argv[4].split(',')
 A = FluctAna()
 
 # add data
-A.add_data(KstarEcei(shot=shot, clist=clist1), trange=trange, norm=1)
-A.add_data(KstarEcei(shot=shot, clist=clist2), trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist1, trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist2, trange=trange, norm=1)
 
 # list data
 A.list_data()
 
 # do fft; full = 0 (0 ~ fN) or 1 (-fN ~ fN)
-A.fftbins(nfft=512,window='hann',overlap=0.5,detrend=0,full=0)
+A.fftbins(nfft=256,window='hann',overlap=0.5,detrend=0,full=0)
 
-# calculate coherence using data sets done and dtwo. results are saved in A.Dlist[dtwo].val
-A.coherence(done=0,dtwo=1)
+# do cwt; full = 0 (0 ~ fN) or 1 (-fN ~ fN)
+# A.cwt(df=5000,full=0,tavg=2000)
+
+# # calculate coherence using data sets done and dtwo. results are saved in A.Dlist[dtwo].val
+A.coherence(done=0,dtwo=2)
 
 # plot the results; dnum = data set number, cnl = channel number list to plot
-A.mplot(dnum=1,cnl=range(len(A.Dlist[1].clist)),type='val',ylimits=[0,1])
+A.mplot(dnum=2,cnl=range(len(A.Dlist[2].clist)),type='val')
+# A.mplot(dnum=1,cnl=[0],type='val',show=0)
+# A.mplot(dnum=1,cnl=[1],type='val',show=1)
 
+# A.cplot(dnum=1,snum=1,frange=[0,100],vlimits=[0,10])

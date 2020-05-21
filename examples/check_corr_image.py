@@ -12,8 +12,8 @@ def play(shot, trange, ref, clist, flimits=[0,20], vlimits=[-0.1,0.1]):
     A = FluctAna()
     
     # add data
-    A.add_data(KstarEcei(shot=shot, clist=[ref]), trange=trange, norm=1)
-    A.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=1)
+    A.add_data(dev='KSTAR', shot=shot, clist=[ref], trange=trange, norm=1)
+    A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=1)
 
     # band pass filter  # OK
     A.filt(0,'FIR_pass',flimits[0]*1000.0,0,0.01) # smaller b is sharper

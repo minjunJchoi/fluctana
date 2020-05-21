@@ -14,17 +14,17 @@ clist2 = sys.argv[4].split(',')
 A = FluctAna()
 
 # add data
-A.add_data(KstarEcei(shot=shot, clist=clist1), trange=trange, norm=1)
-A.add_data(KstarEcei(shot=shot, clist=clist2), trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist1, trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist2, trange=trange, norm=1)
 
 # list data
 A.list_data()
 
 # xspec parameters 
 # frequency resolution ~ sampling frequency / nfft
-nfft = 2048
+nfft = 8192
 # temporal resolution 
-overlap = 0.5 # finest overlap = (nfft-1.0)/nfft
+overlap = 0.8 # finest overlap = (nfft-1.0)/nfft
 # for full frequency range, full=1 (e.g. MIR). Else full=0.
 A.fftbins(nfft=nfft, window='kaiser', overlap=overlap, detrend=0, full=0)
 

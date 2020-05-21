@@ -14,14 +14,17 @@ clist2 = sys.argv[4].split(',')
 A = FluctAna()
 
 # add data
-A.add_data(KstarEcei(shot=shot, clist=clist1), trange=trange, norm=1)
-A.add_data(KstarEcei(shot=shot, clist=clist2), trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist1, trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist2, trange=trange, norm=1)
 
 # list data
 A.list_data()
 
 # do fft; full = 0 (0 ~ fN) or 1 (-fN ~ fN)
-A.fftbins(nfft=512,window='hann',overlap=0.5,detrend=0,full=0)
+A.fftbins(nfft=256,window='hann',overlap=0.5,detrend=0,full=0)
+
+# do cwt; full = 0 (0 ~ fN) or 1 (-fN ~ fN)
+# A.cwt(df=5000,full=1,tavg=1000)
 
 # calculate cross phase using data sets done and dtwo. results are saved in A.Dlist[dtwo].val
 A.cross_phase(done=0,dtwo=1)
@@ -30,7 +33,7 @@ A.cross_phase(done=0,dtwo=1)
 A.mplot(dnum=1,cnl=range(len(A.Dlist[1].clist)),type='val',ylimits=[-3.14,3.14])
 
 # calculate phase velocity
-A.cplot(dnum=1,snum=0,frange=[30,60],vlimits=[-10,10])
+A.cplot(dnum=1,snum=0,frange=[20,40],vlimits=[-10,10])
 
 # phase velocity
 # print(A.Dlist[1].pdata)

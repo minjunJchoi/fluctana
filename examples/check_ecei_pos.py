@@ -9,8 +9,14 @@ from fluctana import *
 # For data since 2018
 # ./python3 ecei_pos.py 22568 GT,GR,HT
 
-shot = int(sys.argv[1]) 
-dlist = sys.argv[2].split(',') 
+shot = int(sys.argv[1])
+if len(sys.argv) == 3:
+    dlist = sys.argv[2].split(',') 
+else:
+    if shot < 19391:
+        dlist = ['L','H','G']
+    else:
+        dlist = ['GT','GR','HT']
 
 # plot channels
 fig, (a1) = plt.subplots(1,1, figsize=(6,6))

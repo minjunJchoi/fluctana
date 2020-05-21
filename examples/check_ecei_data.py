@@ -19,7 +19,7 @@ A = FluctAna()
 # add data
 for i, dname in enumerate(dlist):
     clist = ['ECEI_{:s}1201-1208'.format(dname)]
-    A.add_data(KstarEcei(shot, clist), trange, norm=1)
+    A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=1)
     D = A.Dlist[i]
 
     fig = plt.figure(figsize=(10,18))

@@ -13,7 +13,7 @@ clist = sys.argv[3].split(',')
 A = FluctAna()
 
 # add data
-A.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=1)
 
 # list data
 A.list_data()

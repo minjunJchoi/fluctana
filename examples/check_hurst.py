@@ -13,16 +13,16 @@ clist = sys.argv[3].split(',')
 A = FluctAna()
 
 # add data
-A.add_data(KstarEcei(shot=shot, clist=clist), trange=trange, norm=1)
+A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=1)
 
 # list data
 A.list_data()
 
 # calculate H using data set dnum. results are saved in A.Dlist[dtwo].val; fitlims = fitting range of time lag in us.
-A.hurst(dnum=0, cnl=range(len(A.Dlist[0].clist)), bins=100, detrend=1, fitlims=[100,1000])
+A.hurst(dnum=0, cnl=range(len(A.Dlist[0].clist)), bins=200, detrend=1, fitlims=[100,1000])
 
 # plot the results; dnum = data set number, cnl = channel number list to plot
 A.mplot(dnum=0, cnl=range(len(A.Dlist[0].clist)), type='val')
 
 # plot over plane; 
-A.cplot(dnum=0, snum=0, vlimits=[0.5,1])
+# A.cplot(dnum=0, snum=0, vlimits=[0.5,1])
