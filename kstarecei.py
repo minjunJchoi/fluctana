@@ -148,6 +148,7 @@ class KstarEcei(object):
                     v = v/base - 1
 
                 data[i,:] = v
+                print(len(v))
 
             self.data = data
 
@@ -196,7 +197,7 @@ class KstarEcei(object):
             oidx = np.where((fulltime >= toff)*(fulltime <= toff+0.01))
         else:
             print('#### offset from end in KstarEcei.time_base ####')
-            oidx = (fulltime >= fulltime[-1]-0.01)*(fulltime <= fulltime[-1])
+            oidx = np.where((fulltime >= fulltime[-1]-0.01)*(fulltime <= fulltime[-1]))
         oidx1 = int(oidx[0][0])
         oidx2 = int(oidx[0][-1]+1)
 
