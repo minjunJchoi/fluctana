@@ -148,7 +148,6 @@ class KstarEcei(object):
                     v = v/base - 1
 
                 data[i,:] = v
-                print(len(v))
 
             self.data = data
 
