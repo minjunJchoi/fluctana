@@ -1339,7 +1339,7 @@ class FluctAna(object):
     def cplot(self, dnum, snum=0, frange=[0, 100], vlimits=[0, 1], **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
-        # calculate mean coherence image
+        # calculate summed coherence image
         # or cross power rms image
         # or group velocity image
 
@@ -1367,9 +1367,9 @@ class FluctAna(object):
         # data
         if vkind == 'cross_power':  # rms
             pdata = np.sqrt(np.sum(self.Dlist[dnum].val[:,idx1:idx2], 1))
-        elif vkind == 'coherence':  # mean coherence
+        elif vkind == 'coherence':  # summed coherence
             pdata = np.sum(self.Dlist[dnum].val[:,idx1:idx2], 1)
-        elif vkind == 'cross_phase':  # group velocity
+        elif vkind == 'cross_phase':  # phase velocity
             cnum = len(self.Dlist[dnum].val)
             base = self.Dlist[dnum].ax[idx1:idx2]  # [Hz]
             pdata = np.zeros(cnum)
@@ -1443,7 +1443,7 @@ class FluctAna(object):
         axs[1].set_xlabel('R [m]')
         axs[1].set_ylabel('z [m]')
         if vkind == 'cross_power':
-            axs[1].set_title('Cross power rms')
+            axs[1].set_title('RMS')
         elif vkind == 'coherence':
             axs[1].set_title('Coherence sum')
         elif vkind == 'cross_phase':
