@@ -79,11 +79,11 @@ def hurst(t, x, bins=30, detrend=1, fitrange=[10,1000], **kwargs):
 
     ptime = tax # time lag [us]
     pdata = mean_ers
-    plt.plot(ptime, pdata, '-x')
+    # plt.plot(ptime, pdata, '-x')
     fidx = (fitrange[0] <= ptime) * (ptime <= fitrange[1])
     fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
     fit_data = 10**(fit[1])*ptime**(fit[0])
-    plt.plot(ptime, fit_data, 'r')
+    # plt.plot(ptime, fit_data, 'r')
 
     # Hurst exponent
     hurst_exp = fit[0]
@@ -267,7 +267,7 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], 
     # x = signal.detrend(x, type='linear')
 
     if verbose == 1:
-        fig = plt.figure(facecolor='w', figsize=(5,10))
+        fig = plt.figure(facecolor='w', figsize=(8,12))
         plt.subplots_adjust(bottom = 0.05, top = 0.95, hspace = 0.5, wspace = 0.3)
         axes1 = plt.subplot(5,1,1)
         plt.plot(t, x)

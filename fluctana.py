@@ -747,7 +747,7 @@ class FluctAna(object):
 
             # Plot results
             fig, (a1,a2) = plt.subplots(1,2, figsize=(10,6), gridspec_kw = {'width_ratios':[1,1.5]})
-            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+            plt.subplots_adjust(left = 0.1, right = 0.95, hspace = 0.5, wspace = 0.3)
 
             pax1 = ax1/1000.0 # [kHz]
             pax2 = ax2/1000.0 # [kHz]
