@@ -19,6 +19,6 @@ A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=0)
 A.list_data()
 
 # calculate using data set dnum. results are saved in A.Dlist[dtwo].val; fitlims = fitting range of time lag in us.
-A.intermittency(dnum=0, cnl=[0], bins=50, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], verbose=1)
+A.intermittency(dnum=0, cnl=[0], bins=50, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], verbose=1)
 
 
