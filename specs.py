@@ -64,7 +64,7 @@ def fftbins(x, dt, nfft, window, overlap, detrend=0, full=0):
 
         if detrend == 0:
             sx = signal.detrend(sx, type='constant')  # subtract mean
-        if detrend == 1:
+        elif detrend == 1:
             sx = signal.detrend(sx, type='linear')
 
         sx = sx * win  # apply window function
@@ -83,7 +83,13 @@ def fftbins(x, dt, nfft, window, overlap, detrend=0, full=0):
     return ax, fftdata, win_factor
 
 
-def cwt(x, dt, df, full):
+def cwt(x, dt, df, detrend=0, full=1):
+    # detrend signal 
+    if detrend == 0:
+        x = signal.detrend(x, type='constant')  # subtract mean
+    elif detrend == 1:
+        x = signal.detrend(x, type='linear')
+
     # make a t-axis
     tnum = len(x)
     nfft = nextpow2(tnum) # power of 2

@@ -27,10 +27,10 @@ A.fftbins(nfft=256,window='hann',overlap=0.5,detrend=0,full=0)
 # A.cwt(df=5000,full=0,tavg=2000)
 
 # # calculate coherence using data sets done and dtwo. results are saved in A.Dlist[dtwo].val
-A.coherence(done=0,dtwo=2)
+A.coherence(done=0,dtwo=1)
 
 # plot the results; dnum = data set number, cnl = channel number list to plot
-A.mplot(dnum=2,cnl=range(len(A.Dlist[2].clist)),type='val')
+A.mplot(dnum=1,cnl=range(len(A.Dlist[1].clist)),type='val')
 # A.mplot(dnum=1,cnl=[0],type='val',show=0)
 # A.mplot(dnum=1,cnl=[1],type='val',show=1)
 

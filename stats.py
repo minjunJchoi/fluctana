@@ -34,7 +34,7 @@ def kurtosis(t, x, detrend=1):
     return kurt
 
 
-def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
+def hurst(t, x, bins=30, detrend=1, fitrange=[10,1000], **kwargs):
     # R/S method for fGm
     # (generalized hurst exponent for fBm)
     # axis
@@ -80,7 +80,7 @@ def hurst(t, x, bins=30, detrend=1, fitlims=[10,1000], **kwargs):
     ptime = tax # time lag [us]
     pdata = mean_ers
     plt.plot(ptime, pdata, '-x')
-    fidx = (fitlims[0] <= ptime) * (ptime <= fitlims[1])
+    fidx = (fitrange[0] <= ptime) * (ptime <= fitrange[1])
     fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
     fit_data = 10**(fit[1])*ptime**(fit[0])
     plt.plot(ptime, fit_data, 'r')
@@ -245,7 +245,7 @@ def fisher_measure(pi):
     return fim
 
 
-def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], verbose=1, **kwargs):
+def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], verbose=1, **kwargs):
     # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
     # this ranges from 0 (mono-fractal) to 1
     # add D fitting later
@@ -267,10 +267,11 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], v
     # x = signal.detrend(x, type='linear')
 
     if verbose == 1:
-        plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+        fig = plt.figure(facecolor='w', figsize=(5,10))
+        plt.subplots_adjust(bottom = 0.05, top = 0.95, hspace = 0.5, wspace = 0.3)
         axes1 = plt.subplot(5,1,1)
-
         plt.plot(t, x)
+        plt.xlabel('Time [s]')
 
     ndxe = (x - np.mean(x))**2 / np.mean((x - np.mean(x))**2) # Eq.(7)
 
@@ -296,8 +297,8 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitlims=[20.0,100.0], v
         if verbose == 1: plt.plot(nTax, eTq[:,k], 'o')
 
         # fit range
-        nT1 = fitlims[0]/N
-        nT2 = fitlims[1]/N
+        nT1 = fitrange[0]/N
+        nT2 = fitrange[1]/N
         idx = (nT1 < nTax) * (nTax < nT2)
 
         lx = np.log(nTax[idx])
