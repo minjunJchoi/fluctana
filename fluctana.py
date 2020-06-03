@@ -340,7 +340,7 @@ class FluctAna(object):
             D.bidx = np.where((np.mean(D.time) - tavg*1e-6/2 < D.time)*(D.time < np.mean(D.time) + tavg*1e-6/2))[0]
             D.bins = len(D.bidx)
 
-            print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}'.format(d, df))
+            print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}, tag {:g}'.format(d, df, tavg))
 
     def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
