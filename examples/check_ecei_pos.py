@@ -4,10 +4,10 @@ from fluctana import *
 
 ## HOW TO RUN
 # For data before 2018
-# ./python3 ecei_pos.py 10186 L,H,G
+# python3 check_ecei_pos.py 10186 L,H,G
 
 # For data since 2018
-# ./python3 ecei_pos.py 22568 GT,GR,HT
+# python3 check_ecei_pos.py 22568 GT,GR,HT
 
 shot = int(sys.argv[1])
 if len(sys.argv) == 3:

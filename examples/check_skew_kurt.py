@@ -3,7 +3,7 @@ sys.path.append(os.pardir)
 from fluctana import *
 
 # HOW TO RUN
-# ./python3 check_skew_kurt.py 10186 [15.9,16] ECEI_L1303-1305
+# python3 check_skew_kurt.py 10186 [15.9,16] ECEI_L1303-1305
 
 shot = int(sys.argv[1]) 
 trange = eval(sys.argv[2])

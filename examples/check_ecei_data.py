@@ -4,10 +4,10 @@ from fluctana import *
 
 ## HOW TO RUN
 # For data before 2018
-# ./python3 check_ecei_data.py 10186 [15,16] L,H,G time
+# python3 check_ecei_data.py 10186 [15,16] L,H,G time
 
 # For data since 2018
-# ./python3 check_ecei_data.py 22568 [8,9] GT,GR,HT spec
+# python3 check_ecei_data.py 22568 [8,9] GT,GR,HT spec
 
 shot = int(sys.argv[1]) 
 trange = eval(sys.argv[2])

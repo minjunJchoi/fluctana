@@ -3,7 +3,7 @@ sys.path.append(os.pardir)
 from fluctana import *
 
 # HOW TO RUN
-# ./python3 check_SKw.py 19158 [5.5,5.6] ECEI_G1003-1403 ECEI_G1103-1503
+# python3 check_SKw.py 19158 [5.5,5.6] ECEI_G1003-1403 ECEI_G1103-1503
 # 
 # This calculates the local S(K,w). K along the direction of pairs
 

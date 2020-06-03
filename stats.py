@@ -79,11 +79,9 @@ def hurst(t, x, bins=30, detrend=1, fitrange=[10,1000], **kwargs):
 
     ptime = tax # time lag [us]
     pdata = mean_ers
-    # plt.plot(ptime, pdata, '-x')
     fidx = (fitrange[0] <= ptime) * (ptime <= fitrange[1])
     fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
     fit_data = 10**(fit[1])*ptime**(fit[0])
-    # plt.plot(ptime, fit_data, 'r')
 
     # Hurst exponent
     hurst_exp = fit[0]

@@ -3,7 +3,7 @@ sys.path.append(os.pardir)
 from fluctana import *
 
 ## HOW TO RUN
-# ./python3
+# ipython3
 # > import check_ecei_image as ei
 # > ei.play(shot=22289,trange=[2.716,2.718],dname='GT',flimits=[5,9],vlimits=[-0.05,0.05])
 

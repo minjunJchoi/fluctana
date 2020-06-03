@@ -3,7 +3,7 @@ sys.path.append(os.pardir)
 from fluctana import *
 
 ## HOW TO RUN
-# ./python3
+# ipython3
 # > import check_corr_image as ci
 # > ci.play(shot=22289,trange=[2.716,2.718],ref='ECEI_GT1003',clist=['ECEI_GT0901-1208'],flimits=[5,9],vlimits=[-0.05,0.05])
 
@@ -25,4 +25,4 @@ def play(shot, trange, ref, clist, flimits=[0,20], vlimits=[-0.1,0.1]):
     A.iplot(dnum=1,snum=0,type='val',vlimits=vlimits,pmethod='contour')
 
 if __name__ == "__main__":
-    play(shot=22289,trange=[2.716,2.718],ref='ECEI_GT1003',clist=['ECEI_GT0901-1208'],flimits=[5,9],vlimits=[-0.05,0.05])
+    play(shot=22289,trange=[2.716,2.718],ref='ECEI_GT1003',clist=['ECEI_GT0901-1208'],flimits=[5,9],vlimits=[-0.15,0.15])

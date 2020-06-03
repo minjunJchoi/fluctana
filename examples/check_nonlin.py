@@ -3,7 +3,7 @@ sys.path.append(os.pardir)
 from fluctana import *
 
 # HOW TO RUN
-# ./python3 check_nonlin.py 10186 [15.85,16,5e-6] ECEI_L1403 ECEI_L1403
+# python3 check_nonlin.py 10186 [15.85,16,5e-6] ECEI_L1403 ECEI_L1403
 
 shot = int(sys.argv[1]) 
 trange = eval(sys.argv[2]) 

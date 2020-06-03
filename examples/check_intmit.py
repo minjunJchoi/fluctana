@@ -3,7 +3,7 @@ sys.path.append(os.pardir)
 from fluctana import *
 
 # HOW TO RUN
-# ./python3 check_intmit.py 10186 [15.1,15.17] ECEI_L1303
+# python3 check_intmit.py 10186 [15.1,15.17] ECEI_L1303
 
 shot = int(sys.argv[1]) 
 trange = eval(sys.argv[2])
