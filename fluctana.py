@@ -524,7 +524,7 @@ class FluctAna(object):
 
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.corr_coef(XX, YY, win_factor, self.Dlist[dtwo].bidx)
+            self.Dlist[dtwo].val[c,:] = sp.corr_coef(XX, YY, self.Dlist[dtwo].bidx)
 
     def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
         # number of cmp channels = number of ref channels

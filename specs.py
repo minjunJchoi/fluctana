@@ -213,7 +213,7 @@ def correlation(XX, YY, win_factor, bidx=0):
         val[i,:] = np.fft.ifft(val[i,:], n=nfreq)*nfreq
         val[i,:] = np.fft.fftshift(val[i,:])
 
-        val[i,:] = np.flip(val[i,:])
+        val[i,:] = np.flip(val[i,:], axis=0)
 
     # average over bins; return real value
     Cxy = np.mean(val, 0)
@@ -221,7 +221,7 @@ def correlation(XX, YY, win_factor, bidx=0):
     return Cxy.real 
 
 
-def corr_coef(XX, YY, win_factor, bidx=0):
+def corr_coef(XX, YY, bidx=0):
     if type(bidx) is int:
         bidx = np.arange(len(XX))
 
@@ -232,16 +232,16 @@ def corr_coef(XX, YY, win_factor, bidx=0):
         X = XX[b,:]
         Y = YY[b,:]
 
-        x = np.fft.ifft(np.fft.ifftshift(X), n=nfreq)*nfreq/np.sqrt(win_factor)
+        x = np.fft.ifft(np.fft.ifftshift(X), n=nfreq)*nfreq
         Rxx = np.mean(x**2)
-        y = np.fft.ifft(np.fft.ifftshift(Y), n=nfreq)*nfreq/np.sqrt(win_factor)
+        y = np.fft.ifft(np.fft.ifftshift(Y), n=nfreq)*nfreq
         Ryy = np.mean(y**2)
 
-        val[i,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
+        val[i,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y))
         val[i,:] = np.fft.ifft(val[i,:], n=nfreq)*nfreq
         val[i,:] = np.fft.fftshift(val[i,:])
 
-        val[i,:] = np.flip(val[i,:])/np.sqrt(Rxx*Ryy)
+        val[i,:] = np.flip(val[i,:], axis=0)/np.sqrt(Rxx*Ryy)
 
     # average over bins; return real value
     cxy = np.mean(val, 0)
