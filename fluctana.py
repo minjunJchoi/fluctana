@@ -764,6 +764,7 @@ class FluctAna(object):
             fig.colorbar(im, cax=cax, orientation='vertical')
 
             a2.plot(pax1, pdata2, 'k')
+            a2.axhline(y=1/self.Dlist[dtwo].bins, color='r')
             a2.set_xlim([0,pax2[-1]])
             a2.set_xlabel('f3 [kHz]')
             a2.set_ylabel('Summed bicoherence (avg)')
