@@ -756,16 +756,16 @@ class FluctAna(object):
             pdata2 = self.Dlist[dtwo].val2[c,:]
 
             im = a1.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
-            a1.set_xlabel('F1 [kHz]')
-            a1.set_ylabel('F2 [kHz]')
-            a1.set_title('The squared bicoherence')
+            a1.set_xlabel('f1 [kHz]')
+            a1.set_ylabel('f2 [kHz]')
+            a1.set_title('The squared bicoherence of f3')
             divider = make_axes_locatable(a1)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             fig.colorbar(im, cax=cax, orientation='vertical')
 
             a2.plot(pax1, pdata2, 'k')
             a2.set_xlim([0,pax2[-1]])
-            a2.set_xlabel('F3 [kHz]')
+            a2.set_xlabel('f3 [kHz]')
             a2.set_ylabel('Summed bicoherence (avg)')
             a2.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
