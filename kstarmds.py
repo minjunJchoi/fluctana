@@ -4,6 +4,7 @@
 #
 # Acknowledgement : Special thanks to Dr. Y.M. Jeon
 #
+import os
 
 from MDSplus import Connection
 # from MDSplus import DisconnectFromMds
@@ -239,7 +240,7 @@ class KstarMds(Connection):
             elif 'TS' == self.clist[0][0:2]:
                 ts_rpos = ts_pos.get_ts_pos(self.shot)
             elif 'EP' == self.clist[0][0:2]:
-                ep_rpos, ep_zpos = ep_pos.get_ep_pos()
+                ep_rpos, ep_zpos = ep_pos.get_ep_pos(os.path.dirname(ep_pos.__file__))
             elif 'MC1' == self.clist[0][0:3]:
                 mc1t_apos, mc1p_apos = mc_pos.get_mc_pos()
 

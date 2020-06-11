@@ -1,9 +1,10 @@
 #
 
-def get_ep_pos():
+def get_ep_pos(data_dir):
     ep_rpos = {}
     ep_zpos = {}
-    with open('../kstardata/ep_pos.dat', 'r') as flines:
+
+    with open('{:s}/ep_pos.dat'.format(data_dir), 'r') as flines:
         for f in flines:
             if f.strip().split()[0] == 'R(m)':
                 continue
