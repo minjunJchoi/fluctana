@@ -932,7 +932,7 @@ class FluctAna(object):
                 plt.annotate(D.clist[c], (D.skew[c], D.kurt[c]))
 
             sax = np.arange((D.skew[cnl]).min(), (D.skew[cnl]).max(), 0.001)
-            kax = 3*sax**2/2 # parabolic relationship for exponential pulse and exponentially distributed pulse amplitudes [Garcia NME 2017]
+            kax = 3 + 3*sax**2/2 # parabolic relationship for exponential pulse and exponentially distributed pulse amplitudes [Garcia NME 2017]
             plt.plot(sax, kax, 'k')
 
             plt.xlabel('Skewness')

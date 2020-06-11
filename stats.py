@@ -29,7 +29,7 @@ def kurtosis(t, x, detrend=1):
         x = signal.detrend(x, type='linear')
 
     nx = (x - np.mean(x)) / np.std(x - np.mean(x))
-    kurt = np.mean(nx**4) / np.mean(nx**2)**2 - 3
+    kurt = np.mean(nx**4) / np.mean(nx**2)**2 
 
     return kurt
 
