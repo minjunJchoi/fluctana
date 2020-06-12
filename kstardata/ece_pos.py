@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.pardir)
+sys.path.insert(0, os.pardir)
 import kstarmds
 import numpy as np
 

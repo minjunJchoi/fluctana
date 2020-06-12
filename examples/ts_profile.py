@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.pardir)
+sys.path.insert(0, os.pardir)
 from fluctana import *
 
 # python3 ts_profile.py 22531 [3.5,3.6] 22531 [5,5.1] NE

@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.pardir)
+sys.path.insert(0, os.pardir)
 from fluctana import *
 
 Rrange = [1.30,2.20] 

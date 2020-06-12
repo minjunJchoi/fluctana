@@ -3,6 +3,7 @@
 def get_ep_pos(data_dir):
     ep_rpos = {}
     ep_zpos = {}
+    print(data_dir)
 
     with open('{:s}/ep_pos.dat'.format(data_dir), 'r') as flines:
         for f in flines:
