@@ -1060,7 +1060,7 @@ class FluctAna(object):
             plt.plot(h_two, c_two, 'k')
 
             # draw fbm, fgn locus
-            c_fbm, h_fbm, c_fgn, h_fgn = st.fmb_fgn_locus(d)
+            c_fbm, h_fbm, c_fgn, h_fgn = st.fbm_fgn_locus(d, os.path.dirname(st.__file__))
             # find c_cen line
             h_cen = np.append(h_fbm, h_fgn)
             c_cen = np.append(c_fbm, c_fgn)
