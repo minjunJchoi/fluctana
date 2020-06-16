@@ -1187,7 +1187,9 @@ class FluctAna(object):
             if type == 'time':
                 axs[i].plot(pbase, pdata)  # plot
             elif type == 'val':
-                axs[i].plot(pbase, pdata, '-x')  # plot
+                axs[i].plot(pbase, pdata, '-x', label='{:s}-{:s}'.format(rname, pname))  # plot
+            if show:
+                axs[i].legend()
 
             # aux plot
             if type == 'val':
