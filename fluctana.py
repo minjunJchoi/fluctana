@@ -1189,7 +1189,7 @@ class FluctAna(object):
             elif type == 'val':
                 axs[i].plot(pbase, pdata, '-x', label='#{:d}, {:s}-{:s}, [{:g},{:g}]'.format(pshot, rname, pname, D.time[0]*1000, D.time[-1]*1000))  # plot
             if show:
-                axs[i].legend(fontsize='xx-small')
+                axs[i].legend(fontsize='x-small')
 
             # aux plot
             if type == 'val':
