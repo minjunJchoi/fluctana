@@ -221,7 +221,7 @@ def complexity_limits(d):
     return Hone, Cone, Htwo, Ctwo
 
 
-def fbm_fgn_locus(d, data_dir):
+def fbm_fgn_locus(d, data_dir='..'):
     try:
         with open('{:s}/chdata/ch_fbm_fgn_d{:d}.pkl'.format(data_dir, d), 'rb') as f:
             [c_fbm, h_fbm, c_fgn, h_fgn] = pickle.load(f)
