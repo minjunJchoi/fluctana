@@ -228,7 +228,7 @@ class KstarEcei(object):
         # get self.rpos, self.zpos, self.apos
         # NEED corrections using syndia
         
-        me = 9.1e-31        # electron mass
+        me = 9.109e-31        # electron mass
         e = 1.602e-19       # charge
         mu0 = 4*np.pi*1e-7  # permeability
         ttn = 56*16         # total TF coil turns
