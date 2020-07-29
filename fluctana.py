@@ -1189,7 +1189,7 @@ class FluctAna(object):
                     pbase = D.ax
 
             if type == 'time':
-                axs[i].plot(pbase, pdata)  # plot
+                axs[i].plot(pbase, pdata, label='#{:d}, {:s}, [{:g},{:g}]'.format(pshot, pname, D.time[0]*1000, D.time[-1]*1000))  # plot
             elif type == 'val':
                 axs[i].plot(pbase, pdata, '-x', label='#{:d}, {:s}-{:s}, [{:g},{:g}]'.format(pshot, rname, pname, D.time[0]*1000, D.time[-1]*1000))  # plot
             if show:
