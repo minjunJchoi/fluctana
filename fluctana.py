@@ -901,7 +901,7 @@ class FluctAna(object):
         plt.show()
 
         # save results
-        self.Dlist[dtwo].ax = pax1
+        self.Dlist[dtwo].ax = ax1/1000.0
         self.Dlist[dtwo].val = gk # linear growth rate
         self.Dlist[dtwo].val2 = sum_Tijk.real # nonlinear transfer rate
 
