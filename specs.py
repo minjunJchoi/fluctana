@@ -509,11 +509,11 @@ def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, delta):
             # XXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,k]) ) # same with Aijk[ij]
             sum_Tijk[k] += 2.0*(np.conjugate(Lk[k]) * Qijk[ij] * Aijk[ij] / delta).real
 
-        # fourth order terms
-        for n, ij in enumerate(idx):
-            for m, lm in enumerate(idx):
-                XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
-                sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX / delta
+        # # fourth order terms
+        # for n, ij in enumerate(idx):
+        #     for m, lm in enumerate(idx):
+        #         XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
+        #         sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX / delta
 
     Tijk = Qijk
 
