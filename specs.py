@@ -317,7 +317,7 @@ def bicoherence(XX, YY, bidx=0):
     return val, sum_val
 
 
-def ritz_nonlinear(XX, YY):
+def ritz_nonlinear(XX, YY): # need to change range(bins) -> bidx
     # calculate
     bins = len(XX)
     full = len(XX[0,:]) # full length
@@ -408,7 +408,6 @@ def wit_nonlinear(XX, YY, bidx=0):
         V = np.zeros(bins, dtype=np.complex_) # N x 1
 
         for i,b in enumerate(bidx):
-
             U[i,0] = XX[b,k]
             for n, ij in enumerate(idx):
                 U[i,n+1] = XX[b, ij[0]]*XX[b, ij[1]]
@@ -510,11 +509,11 @@ def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, delta):
             # XXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,k]) ) # same with Aijk[ij]
             sum_Tijk[k] += 2.0*(np.conjugate(Lk[k]) * Qijk[ij] * Aijk[ij] / delta).real
 
-        # # fourth order terms
-        # for n, ij in enumerate(idx):
-        #     for m, lm in enumerate(idx):
-        #         XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
-        #         sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX / delta
+        # fourth order terms
+        for n, ij in enumerate(idx):
+            for m, lm in enumerate(idx):
+                XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
+                sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX / delta
 
     Tijk = Qijk
 

@@ -105,6 +105,9 @@ class DiiidBes(object):
             fulltimeF = f['tFU'][:]/1000.0 # [ms] -> [s]
             fulltimeS = f['tSU'][:]/1000.0 # [ms] -> [s]
 
+            # get sampling frequency
+            self.fs = round(1/(fulltimeF[1] - fulltimeF[0])/1000)*1000.0
+
         idx = np.where((fulltimeF >= trange[0])*(fulltimeF <= trange[1]))
         idx1F = int(idx[0][0])
         idx2F = int(idx[0][-1]+1)

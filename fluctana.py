@@ -699,9 +699,12 @@ class FluctAna(object):
 
         plt.show()
 
-    def bicoherence(self, done=0, dtwo=1, cnl=[0], **kwargs):
+    def bicoherence(self, done=0, dtwo=1, cnl=[0], vlimits=[0,1], **kwargs):
         # fftbins full = 1
         # number of cmp channels = number of ref channels
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+
         self.Dlist[dtwo].vkind = 'bicoherence'
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
@@ -759,13 +762,19 @@ class FluctAna(object):
             pdata = self.Dlist[dtwo].val[c,:,:]
             pdata2 = self.Dlist[dtwo].val2[c,:]
 
-            im = a1.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            im = a1.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
             a1.set_xlabel('f1 [kHz]')
             a1.set_ylabel('f2 [kHz]')
             a1.set_title('The squared bicoherence of f3')
+            if 'xlimits' in kwargs:  # xlimits
+                a1.set_xlim([xlimits[0], xlimits[1]])
+            if 'ylimits' in kwargs:  # xlimits
+                a1.set_ylim([ylimits[0], ylimits[1]])
             divider = make_axes_locatable(a1)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             fig.colorbar(im, cax=cax, orientation='vertical')
+
+
 
             a2.plot(pax1, pdata2, 'k')
             a2.axhline(y=1/self.Dlist[dtwo].bins, color='r')
@@ -823,7 +832,7 @@ class FluctAna(object):
             Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY, bidx)            
         else:
             print('Ritz method')
-            Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY)
+            Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY) # need to use bidx
 
         # plot info
         pshot = self.Dlist[dtwo].shot
@@ -890,6 +899,11 @@ class FluctAna(object):
         fig.colorbar(im, cax=cax, orientation='vertical')
 
         plt.show()
+
+        # save results
+        self.Dlist[dtwo].ax = pax1
+        self.Dlist[dtwo].val = gk # linear growth rate
+        self.Dlist[dtwo].val2 = sum_Tijk.real # nonlinear transfer rate
 
 ############################# statistical methods ##############################
 
