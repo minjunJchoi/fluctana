@@ -594,7 +594,7 @@ class FluctAna(object):
             plt.colorbar()
 
             if 'flimits' in kwargs:  # flimits
-                plt.ylim([flimits[0]*1000, flimits[1]*1000])
+                plt.ylim([flimits[0], flimits[1]])
             if 'xlimits' in kwargs:  # xlimits
                 plt.xlim([xlimits[0], xlimits[1]])
             else:
@@ -699,7 +699,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def bicoherence(self, done=0, dtwo=1, cnl=[0], vlimits=[0,1], **kwargs):
+    def bicoherence(self, done=0, dtwo=1, cnl=[0], vlimits=[0,1], show=1, **kwargs):
         # fftbins full = 1
         # number of cmp channels = number of ref channels
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
@@ -748,44 +748,43 @@ class FluctAna(object):
             # calculate bicoherence
             self.Dlist[dtwo].val[c,:,:], self.Dlist[dtwo].val2[c,:] = sp.bicoherence(XX, YY, bidx)
 
-            # plot info
-            pshot = self.Dlist[dtwo].shot
-            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+            if show == 1:
+                # plot info
+                pshot = self.Dlist[dtwo].shot
+                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
 
-            # Plot results
-            fig, (a1,a2) = plt.subplots(1,2, figsize=(10,6), gridspec_kw = {'width_ratios':[1,1.5]})
-            plt.subplots_adjust(left = 0.1, right = 0.95, hspace = 0.5, wspace = 0.3)
+                # Plot results
+                fig, (a1,a2) = plt.subplots(1,2, figsize=(10,6), gridspec_kw = {'width_ratios':[1,1.5]})
+                plt.subplots_adjust(left = 0.1, right = 0.95, hspace = 0.5, wspace = 0.3)
 
-            pax1 = ax1/1000.0 # [kHz]
-            pax2 = ax2/1000.0 # [kHz]
+                pax1 = ax1/1000.0 # [kHz]
+                pax2 = ax2/1000.0 # [kHz]
 
-            pdata = self.Dlist[dtwo].val[c,:,:]
-            pdata2 = self.Dlist[dtwo].val2[c,:]
+                pdata = self.Dlist[dtwo].val[c,:,:]
+                pdata2 = self.Dlist[dtwo].val2[c,:]
 
-            im = a1.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
-            a1.set_xlabel('f1 [kHz]')
-            a1.set_ylabel('f2 [kHz]')
-            a1.set_title('The squared bicoherence of f3')
-            if 'xlimits' in kwargs:  # xlimits
-                a1.set_xlim([xlimits[0], xlimits[1]])
-            if 'ylimits' in kwargs:  # xlimits
-                a1.set_ylim([ylimits[0], ylimits[1]])
-            divider = make_axes_locatable(a1)
-            cax = divider.append_axes('right', size='5%', pad=0.05)
-            fig.colorbar(im, cax=cax, orientation='vertical')
+                im = a1.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                a1.set_xlabel('f1 [kHz]')
+                a1.set_ylabel('f2 [kHz]')
+                a1.set_title('The squared bicoherence of f3')
+                if 'xlimits' in kwargs:  # xlimits
+                    a1.set_xlim([xlimits[0], xlimits[1]])
+                if 'ylimits' in kwargs:  # xlimits
+                    a1.set_ylim([ylimits[0], ylimits[1]])
+                divider = make_axes_locatable(a1)
+                cax = divider.append_axes('right', size='5%', pad=0.05)
+                fig.colorbar(im, cax=cax, orientation='vertical')
 
+                a2.plot(pax1, pdata2, 'k')
+                a2.axhline(y=1/self.Dlist[dtwo].bins, color='r')
+                a2.set_xlim([0,pax2[-1]])
+                a2.set_xlabel('f3 [kHz]')
+                a2.set_ylabel('Summed bicoherence (avg)')
+                a2.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
+                plt.show()
 
-            a2.plot(pax1, pdata2, 'k')
-            a2.axhline(y=1/self.Dlist[dtwo].bins, color='r')
-            a2.set_xlim([0,pax2[-1]])
-            a2.set_xlabel('f3 [kHz]')
-            a2.set_ylabel('Summed bicoherence (avg)')
-            a2.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
-
-            plt.show()
-
-    def nonlin_evolution(self, done=0, dtwo=1, delta=1.0, wit=1, js=1, test=0, **kwargs):
+    def nonlin_evolution(self, done=0, dtwo=1, delta=1.0, wit=1, js=1, test=0, show=1, **kwargs):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         self.Dlist[dtwo].vkind = 'nonlin_rates'
@@ -834,33 +833,34 @@ class FluctAna(object):
             print('Ritz method')
             Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY) # need to use bidx
 
-        # plot info
-        pshot = self.Dlist[dtwo].shot
-        chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[0]*100, self.Dlist[dtwo].zpos[0]*100) # [cm]
+        if show == 1:
+            # plot info
+            pshot = self.Dlist[dtwo].shot
+            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[0]*100, self.Dlist[dtwo].zpos[0]*100) # [cm]
 
-        # Plot results
-        fig, (a1,a2) = plt.subplots(2,1, figsize=(6,8), gridspec_kw = {'height_ratios':[1,2]})
-        plt.subplots_adjust(hspace = 0.8, wspace = 0.3)
+            # Plot results
+            fig, (a1,a2) = plt.subplots(2,1, figsize=(6,8), gridspec_kw = {'height_ratios':[1,2]})
+            plt.subplots_adjust(hspace = 0.8, wspace = 0.3)
 
-        pax1 = ax1/1000.0 # [kHz]
-        pax2 = ax1/1000.0 # [kHz]
+            pax1 = ax1/1000.0 # [kHz]
+            pax2 = ax1/1000.0 # [kHz]
 
-        # linear transfer function
-        a1.plot(pax1, np.abs(Lk), 'k')
-        a1.set_xlabel('Frequency [kHz]')
-        a1.set_ylabel('Linear transfer function')
-        a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+            # linear transfer function
+            a1.plot(pax1, np.abs(Lk), 'k')
+            a1.set_xlabel('Frequency [kHz]')
+            a1.set_ylabel('Linear transfer function')
+            a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
-        # Nonlinear transfer function
-        im = a2.imshow(np.abs(Qijk), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
-        a2.set_xlabel('Frequency [kHz]')
-        a2.set_ylabel('Frequency [kHz]')
-        a2.set_title('Nonlinear transfer function')
-        divider = make_axes_locatable(a2)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        fig.colorbar(im, cax=cax, orientation='vertical')
+            # Nonlinear transfer function
+            im = a2.imshow(np.abs(Qijk), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            a2.set_xlabel('Frequency [kHz]')
+            a2.set_ylabel('Frequency [kHz]')
+            a2.set_title('Nonlinear transfer function')
+            divider = make_axes_locatable(a2)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
 
-        plt.show()
+            plt.show()
 
         # calculate rates
         if js == 1:
@@ -868,40 +868,40 @@ class FluctAna(object):
         else:
             gk, Tijk, sum_Tijk = sp.nonlinear_rates(Lk, Qijk, Bk, Aijk, delta)
 
-        # Plot results
-        fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,1,2]})
-        plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
+        if show == 1:
+            # Plot results
+            fig, (a1,a2,a3) = plt.subplots(3,1, figsize=(6,11), gridspec_kw = {'height_ratios':[1,1,2]})
+            plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
 
-        pax1 = ax1/1000.0 # [kHz]
-        pax2 = ax1/1000.0 # [kHz]
+            pax1 = ax1/1000.0 # [kHz]
+            pax2 = ax1/1000.0 # [kHz]
 
-        # linear growth rate
-        a1.plot(pax1, gk, 'k')
-        a1.set_xlabel('Frequency [kHz]')
-        a1.set_ylabel('Growth rate [a.b.]')
-        a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
-        a1.axhline(y=0, ls='--', color='k')
-        if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
+            # linear growth rate
+            a1.plot(pax1, gk, 'k')
+            a1.set_xlabel('Frequency [kHz]')
+            a1.set_ylabel('Growth rate [a.b.]')
+            a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
+            a1.axhline(y=0, ls='--', color='k')
+            if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
 
-        # Nonlinear transfer rate
-        a2.plot(pax1, sum_Tijk.real, 'k')
-        a2.set_xlabel('Frequency [kHz]')
-        a2.set_ylabel('Nonlinear transfer rate [a.b.]')
-        a2.axhline(y=0, ls='--', color='k')
-        if 'xlimits' in kwargs: a2.set_xlim([xlimits[0], xlimits[1]])
+            # Nonlinear transfer rate
+            a2.plot(pax1, sum_Tijk.real, 'k')
+            a2.set_xlabel('Frequency [kHz]')
+            a2.set_ylabel('Nonlinear transfer rate [a.b.]')
+            a2.axhline(y=0, ls='--', color='k')
+            if 'xlimits' in kwargs: a2.set_xlim([xlimits[0], xlimits[1]])
 
-        im = a3.imshow(Tijk.real, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
-        a3.set_xlabel('Frequency [kHz]')
-        a3.set_ylabel('Frequency [kHz]')
-        a3.set_title('Nonlinear transfer function')
-        divider = make_axes_locatable(a3)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        fig.colorbar(im, cax=cax, orientation='vertical')
+            im = a3.imshow(Tijk.real, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            a3.set_xlabel('Frequency [kHz]')
+            a3.set_ylabel('Frequency [kHz]')
+            a3.set_title('Nonlinear transfer function')
+            divider = make_axes_locatable(a3)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
 
-        plt.show()
+            plt.show()
 
         # save results
-        self.Dlist[dtwo].ax = ax1/1000.0
         self.Dlist[dtwo].val = gk # linear growth rate
         self.Dlist[dtwo].val2 = sum_Tijk.real # nonlinear transfer rate
 
@@ -1419,7 +1419,7 @@ class FluctAna(object):
             plt.colorbar(cax)
 
             if 'flimits' in kwargs:  # flimits
-                plt.ylim([flimits[0]*1000, flimits[1]*1000])
+                plt.ylim([flimits[0], flimits[1]])
             if 'xlimits' in kwargs:  # xlimits
                 plt.xlim([xlimits[0], xlimits[1]])
             else:
