@@ -879,7 +879,7 @@ class FluctAna(object):
             # linear growth rate
             a1.plot(pax1, gk, 'k')
             a1.set_xlabel('Frequency [kHz]')
-            a1.set_ylabel('Growth rate [a.b.]')
+            a1.set_ylabel('Growth rate [a.u.]')
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
             a1.axhline(y=0, ls='--', color='k')
             if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
@@ -887,7 +887,7 @@ class FluctAna(object):
             # Nonlinear transfer rate
             a2.plot(pax1, sum_Tijk.real, 'k')
             a2.set_xlabel('Frequency [kHz]')
-            a2.set_ylabel('Nonlinear transfer rate [a.b.]')
+            a2.set_ylabel('Nonlinear transfer rate [a.u.]')
             a2.axhline(y=0, ls='--', color='k')
             if 'xlimits' in kwargs: a2.set_xlim([xlimits[0], xlimits[1]])
 
