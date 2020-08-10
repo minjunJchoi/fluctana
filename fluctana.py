@@ -1419,7 +1419,7 @@ class FluctAna(object):
             plt.colorbar(cax)
 
             if 'flimits' in kwargs:  # flimits
-                plt.ylim([flimits[0], flimits[1]])
+                plt.ylim([flimits[0]*1000, flimits[1]*1000])
             if 'xlimits' in kwargs:  # xlimits
                 plt.xlim([xlimits[0], xlimits[1]])
             else:
