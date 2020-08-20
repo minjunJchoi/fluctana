@@ -109,8 +109,8 @@ def cwt(x, dt, df, detrend=0, full=1):
 
     # Morlet wavelet function (unnormalized)
     omega0 = 6.0 # nondimensional wavelet frequency
-    ts = np.sqrt(2)*sj # e-folding time for Morlet wavelet with omega0 = 6; significance level
     wf0 = lambda eta: np.pi**(-1.0/4) * np.exp(1.0j*omega0*eta) * np.exp(-1.0/2*eta**2)
+    ts = np.sqrt(2)*sj # e-folding time for Morlet wavelet with omega0 = 6; significance level
 
     # FFT of signal
     X = np.fft.fft(x, n=nfft)/nfft
@@ -301,7 +301,9 @@ def bicoherence(XX, YY, bidx=0):
         P3 = P3 + (np.abs(X3).real)**2 # real average
 
     # val = np.log10(np.abs(B)**2) # bispectrum
+    old_settings = np.seterr(invalid='ignore')
     val = (np.abs(B)**2) / P12 / P3 # bicoherence
+    np.seterr(**old_settings)
 
     # summation over pairs
     sum_val = np.zeros(full)
@@ -448,9 +450,8 @@ def wit_nonlinear(XX, YY, bidx=0):
     return Lk, Qijk, Bk, Aijk
 
 
-def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
+def nonlinear_rates(Lk, Qijk, Bk, Aijk, delta):
     ## Linear growth rate and nonlinear energy transfer rates
-    # dt = vd / dz
     full = len(Lk)
 
     kidx = get_kidx(full)
@@ -471,7 +472,7 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
 
     # Linear growth rate
     # gk = vd * Gk.real
-    gk = 1.0/dt * (Lk * Ek - 1.0).real
+    gk = 1.0/delta * (Lk * Ek - 1.0).real
 
     # Quadratic kernel
     # Mijk = Qijk * Ekk / dz
@@ -479,7 +480,7 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, dt):
 
     # Nonlinear energy transfer rate
     # Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
-    Tijk = 1.0/2.0 * 1.0/dt * (Qijk * Ekk * Aijk).real
+    Tijk = 1.0/2.0 * 1.0/delta * (Qijk * Ekk * Aijk).real
 
     # summed Tijk
     sum_Tijk = np.zeros(full)
@@ -499,7 +500,7 @@ def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, delta):
 
     kidx = get_kidx(full)
 
-    gk = (np.abs(Lk)**2 - 1)/delta # JSKim 96
+    gk = (np.abs(Lk)**2 - 1)/delta 
 
     sum_Tijk = np.zeros(full, dtype=np.complex_)
     for k in range(full):

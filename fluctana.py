@@ -343,8 +343,9 @@ class FluctAna(object):
             D.nfreq = ncwt
             D.bidx = np.where((np.mean(D.time) - tavg*1e-6/2 < D.time)*(D.time < np.mean(D.time) + tavg*1e-6/2))[0]
             D.bins = len(D.bidx)
+            # D.nens = len(D.bidx) / ( D.fs/(2*1.03*ax_half) ) # need corrections
 
-            print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}, tag {:g}'.format(d, df, tavg))
+            print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}, tavg {:g}'.format(d, df, tavg))
 
     def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -776,7 +777,7 @@ class FluctAna(object):
                 fig.colorbar(im, cax=cax, orientation='vertical')
 
                 a2.plot(pax1, pdata2, 'k')
-                a2.axhline(y=1/self.Dlist[dtwo].bins, color='r')
+                a2.axhline(y=1/self.Dlist[dtwo].bins, color='r') ## need correction
                 a2.set_xlim([0,pax2[-1]])
                 a2.set_xlabel('f3 [kHz]')
                 a2.set_ylabel('Summed bicoherence (avg)')
@@ -846,7 +847,7 @@ class FluctAna(object):
             pax2 = ax1/1000.0 # [kHz]
 
             # linear transfer function
-            a1.plot(pax1, np.abs(Lk), 'k')
+            a1.plot(pax1, Lk.real, 'k')
             a1.set_xlabel('Frequency [kHz]')
             a1.set_ylabel('Linear transfer function')
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
