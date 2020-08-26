@@ -516,7 +516,7 @@ def nonlinear_ratesJS(Lk, Aijk, Qijk, XX, delta):
         #         XXXX = np.mean( XX[:,ij[0]] * XX[:,ij[1]] * np.conjugate(XX[:,lm[0]]) * np.conjugate(XX[:,lm[1]]) )
         #         sum_Tijk[k] += Qijk[ij] * np.conjugate(Qijk[lm]) * XXXX / delta
 
-    Tijk = Qijk
+    Tijk = Qijk # dummy
 
     return gk, Tijk, sum_Tijk
 

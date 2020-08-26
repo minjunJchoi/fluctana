@@ -853,7 +853,7 @@ class FluctAna(object):
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             # Nonlinear transfer function
-            im = a2.imshow(np.abs(Qijk), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            im = a2.imshow(np.log(np.abs(Qijk)), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer function')
@@ -885,14 +885,14 @@ class FluctAna(object):
             a1.axhline(y=0, ls='--', color='k')
             if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
 
-            # Nonlinear transfer rate
+            # Nonlinear transfer rate          
             a2.plot(pax1, sum_Tijk.real, 'k')
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Nonlinear transfer rate [a.u.]')
             a2.axhline(y=0, ls='--', color='k')
             if 'xlimits' in kwargs: a2.set_xlim([xlimits[0], xlimits[1]])
 
-            im = a3.imshow(Tijk.real, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            im = a3.imshow(np.sign(Tijk.real)*np.log(np.abs(Tijk.real)), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a3.set_xlabel('Frequency [kHz]')
             a3.set_ylabel('Frequency [kHz]')
             a3.set_title('Nonlinear transfer function')
