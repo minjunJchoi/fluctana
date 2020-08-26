@@ -885,7 +885,7 @@ class FluctAna(object):
             a1.axhline(y=0, ls='--', color='k')
             if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
 
-            # Nonlinear transfer rate          
+            # Nonlinear transfer rate
             a2.plot(pax1, sum_Tijk.real, 'k')
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Nonlinear transfer rate [a.u.]')
