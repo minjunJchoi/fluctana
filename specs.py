@@ -457,7 +457,7 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, delta):
     kidx = get_kidx(full)
 
     # Cross phase related terms
-    Ek = (Bk / np.abs(Bk))**(-1.0) # Exp[-i(Tk)]
+    Ek = (Bk / np.abs(Bk))**(-1.0) # Exp[-i(dthk)]
     Tk = np.arctan2(Bk.imag, Bk.real).real
 
     Ekk = np.zeros((full, full), dtype=np.complex_)
@@ -468,7 +468,7 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, delta):
 
     # Linear kernel
     # Gk = (Lk * Ek - 1.0 + 1.0j*Tk) / dz
-    # Gk = ( Lk * Exp[-i(dth)] - 1 + i(dth) ) /  dz
+    # Gk = ( Lk * Exp[-i(dthk)] - 1 + i(dthk) ) /  dz
 
     # Linear growth rate
     # gk = vd * Gk.real
@@ -476,11 +476,11 @@ def nonlinear_rates(Lk, Qijk, Bk, Aijk, delta):
 
     # Quadratic kernel
     # Mijk = Qijk * Ekk / dz
-    # Mijk = Qijk * Exp[-i(dth)] / dz
+    # Mijk = Qijk * Exp[-i(dthk)] / dz
 
     # Nonlinear energy transfer rate
     # Tijk = 1.0/2.0 * vd * (Mijk * Aijk).real
-    Tijk = 1.0/2.0 * 1.0/delta * (Qijk * Ekk * Aijk).real
+    Tijk = 1.0/delta * (Qijk * Ekk * Aijk).real
 
     # summed Tijk
     sum_Tijk = np.zeros(full)

@@ -886,6 +886,18 @@ class FluctAna(object):
             if 'xlimits' in kwargs: a1.set_xlim([xlimits[0], xlimits[1]])
 
             # Nonlinear transfer rate
+            # # limited summed Tijk
+            # full = len(ax1)
+            # kidx = sp.get_kidx(full)
+            # sum_Tijk = np.zeros(full)
+            # for k in range(full):
+            #     f3 = ax1[k]
+            #     idx = kidx[k]
+            #     for n, ij in enumerate(idx):
+            #         f1 = ax1[ij[0]]
+            #         f2 = ax1[ij[1]]
+            #         if np.min([np.abs(f1), np.abs(f2), np.abs(f3)]) > 12000:
+            #             sum_Tijk[k] += Tijk[ij]
             a2.plot(pax1, sum_Tijk.real, 'k')
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Nonlinear transfer rate [a.u.]')
@@ -1272,7 +1284,7 @@ class FluctAna(object):
 
         return fig, axs
 
-    def cplot(self, dnum, snum=0, frange=[0, 100], vlimits=None, fig=None, axs=None, **kwargs):
+    def cplot(self, dnum, snum=0, frange=[0, 100], vlimits=None, fig=None, axs=None, show=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
         # calculate summed coherence image
@@ -1280,8 +1292,6 @@ class FluctAna(object):
         # or group velocity image
         
         D = self.Dlist[dnum]
-
-        fig, axs = make_axes(len(D.clist), ptype='cplot', fig=fig, axs=axs)
 
         vkind = D.vkind
 
@@ -1305,7 +1315,7 @@ class FluctAna(object):
             sbase = D.time
             sdata = D.data[snum,:]
 
-        # data
+        # calculate pdata
         if vkind == 'cross_power':  # rms
             pdata = np.sqrt(np.sum(D.val[:,idx1:idx2], 1))
         elif vkind == 'coherence':  # summed coherence
@@ -1334,68 +1344,73 @@ class FluctAna(object):
         pidx = np.isfinite(pdata)
         pdata[~pidx] = 0
 
-        # position
-        rpos = D.rpos[:]
-        zpos = D.zpos[:]
-
-        # sample plot
-        axs[0].plot(sbase, sdata)  # ax1.hold(True)
-        # if vkind == 'cross_phase':
-        #     axs[0].plot(fbase, fdata)
-        if vkind in ['cross_power','coherence','cross_phase']:
-            axs[0].axvline(x=sbase[idx1], color='g')
-            axs[0].axvline(x=sbase[idx2], color='g')
-
-        if vkind in ['hurst']:
-            axs[0].set_xscale('log')
-        if vkind in ['cross_power','hurst','jscom','nsent']:
-            axs[0].set_yscale('log')
-
-        if 'ylimits' in kwargs: # ylimits
-            axs[0].set_ylim([ylimits[0], ylimits[1]])
-        if 'xlimits' in kwargs: # xlimits
-            axs[0].set_xlim([xlimits[0], xlimits[1]])
-        else:
-            axs[0].set_xlim([sbase[0], sbase[-1]])
-
-        if vkind in ['cross_power','coherence','cross_phase','bicoherence']:
-            axs[0].set_xlabel('Frequency [kHz]')
-            axs[0].set_ylabel(vkind)
-        elif vkind == 'hurst':
-            axs[0].set_xlabel('Time lag [us]')
-            axs[0].set_ylabel('R/S')
-        elif vkind in ['jscom','nsent']:
-            axs[0].set_xlabel('order number')
-            axs[0].set_ylabel('BP probability')
-        else:
-            axs[0].set_xlabel('Time [s]')
-            axs[0].set_ylabel('Signal')
-
-        # pdata plot
-        if vlimits == None:
-            vlimits = [np.mean(pdata) - np.std(pdata), np.mean(pdata) + np.std(pdata)]
-        sc = axs[1].scatter(rpos, zpos, 250, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
-        axs[1].set_aspect('equal')
-        axs[1].margins(0.01)
-
-        # color bar
-        fig.colorbar(sc, cax=axs[2])
-
-        axs[1].set_xlabel('R [m]')
-        axs[1].set_ylabel('z [m]')
-        if vkind == 'cross_power':
-            axs[1].set_title('RMS')
-        elif vkind == 'coherence':
-            axs[1].set_title('Coherence sum')
-        elif vkind == 'cross_phase':
-            axs[1].set_title('Phase velocity [km/s]')
-        else:
-            axs[1].set_title(vkind)
-
+        # save results
         D.pdata = pdata
 
-        # fig.tight_layout(w_pad=0.3, h_pad=0.3) # not working properly in OMFIT. :(
-        plt.show()
+        if show == 1:
+            # make axes
+            fig, axs = make_axes(len(D.clist), ptype='cplot', fig=fig, axs=axs)
+
+            # get position to plot
+            rpos = D.rpos[:]
+            zpos = D.zpos[:]
+
+            # sample plot
+            axs[0].plot(sbase, sdata)  # ax1.hold(True)
+            # if vkind == 'cross_phase':
+            #     axs[0].plot(fbase, fdata)
+            if vkind in ['cross_power','coherence','cross_phase']:
+                axs[0].axvline(x=sbase[idx1], color='g')
+                axs[0].axvline(x=sbase[idx2], color='g')
+
+            if vkind in ['hurst']:
+                axs[0].set_xscale('log')
+            if vkind in ['cross_power','hurst','jscom','nsent']:
+                axs[0].set_yscale('log')
+
+            if 'ylimits' in kwargs: # ylimits
+                axs[0].set_ylim([ylimits[0], ylimits[1]])
+            if 'xlimits' in kwargs: # xlimits
+                axs[0].set_xlim([xlimits[0], xlimits[1]])
+            else:
+                axs[0].set_xlim([sbase[0], sbase[-1]])
+
+            if vkind in ['cross_power','coherence','cross_phase','bicoherence']:
+                axs[0].set_xlabel('Frequency [kHz]')
+                axs[0].set_ylabel(vkind)
+            elif vkind == 'hurst':
+                axs[0].set_xlabel('Time lag [us]')
+                axs[0].set_ylabel('R/S')
+            elif vkind in ['jscom','nsent']:
+                axs[0].set_xlabel('order number')
+                axs[0].set_ylabel('BP probability')
+            else:
+                axs[0].set_xlabel('Time [s]')
+                axs[0].set_ylabel('Signal')
+
+            # pdata plot
+            if vlimits == None:
+                vlimits = [np.mean(pdata) - np.std(pdata), np.mean(pdata) + np.std(pdata)]
+            sc = axs[1].scatter(rpos, zpos, 250, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+            axs[1].set_aspect('equal')
+            axs[1].margins(0.01)
+
+            # color bar
+            fig.colorbar(sc, cax=axs[2])
+
+            axs[1].set_xlabel('R [m]')
+            axs[1].set_ylabel('z [m]')
+            if vkind == 'cross_power':
+                axs[1].set_title('RMS')
+            elif vkind == 'coherence':
+                axs[1].set_title('Coherence sum')
+            elif vkind == 'cross_phase':
+                axs[1].set_title('Phase velocity [km/s]')
+            else:
+                axs[1].set_title(vkind)
+
+            # fig.tight_layout(w_pad=0.3, h_pad=0.3) # not working properly in OMFIT. :(
+            plt.show()
 
     def spec(self, dnum=0, cnl=[0], nfft=512, **kwargs):
         if 'flimits' in kwargs: flimits = kwargs['flimits']
