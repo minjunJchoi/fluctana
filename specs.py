@@ -134,86 +134,46 @@ def cwt(x, dt, df, detrend=0, full=1):
     return ax, cwtdata[0:tnum,:], dj, ts
 
 
-def cross_power(XX, YY, win_factor, bidx=0):
-    # calculate cross power
-    # IN : bins x faxis fftdata
-    if type(bidx) is int:
-        bidx = np.arange(len(XX))
-
-    val = np.zeros((len(bidx),XX.shape[1]), dtype=np.complex_)
-
-    for i,b in enumerate(bidx):
-        X = XX[b,:]
-        Y = YY[b,:]
-
-        val[i,:] = X*np.matrix.conjugate(Y) / win_factor
-
-    # average over bins
-    Pxy = np.mean(val, 0)
-    Pxy = np.abs(Pxy).real
+def cross_power(XX, YY, win_factor):
+    Pxy = np.mean(XX * np.conjugate(YY), 0) 
+    Pxy = np.abs(Pxy).real / win_factor
 
     return Pxy
 
 
-def coherence(XX, YY, bidx=0):
-    if type(bidx) is int:
-        bidx = np.arange(len(XX))
+def coherence(XX, YY):
+    Pxy = np.mean(XX * np.conjugate(YY), 0)
+    Pxx = np.mean(XX * np.conjugate(XX), 0).real
+    Pyy = np.mean(YY * np.conjugate(YY), 0).real
 
-    val = np.zeros((len(bidx),XX.shape[1]), dtype=np.complex_)
-
-    for i,b in enumerate(bidx):
-        X = XX[b,:]
-        Y = YY[b,:]
-
-        Pxx = X * np.matrix.conjugate(X)
-        Pyy = Y * np.matrix.conjugate(Y)
-
-        val[i,:] = X*np.matrix.conjugate(Y) / np.sqrt(Pxx*Pyy)
-        # saturated data gives zero Pxx!!
-
-    # average over bins
-    Gxy = np.mean(val, 0)
-    Gxy = np.abs(Gxy).real
+    Gxy = np.abs(Pxy).real / np.sqrt(Pxx * Pyy)
 
     return Gxy
 
 
-def cross_phase(XX, YY, bidx=0):
-    if type(bidx) is int:
-        bidx = np.arange(len(XX))
+def cross_phase(XX, YY):
+    Pxy = np.mean(XX * np.conjugate(YY), 0)
 
-    val = np.zeros((len(bidx),XX.shape[1]), dtype=np.complex_)
-
-    for i,b in enumerate(bidx):
-        X = XX[b,:]
-        Y = YY[b,:]
-
-        val[i,:] = X*np.matrix.conjugate(Y)
-
-    # average over bins
-    Pxy = np.mean(val, 0)
-    # result saved in val
     Axy = np.arctan2(Pxy.imag, Pxy.real).real
 
     return Axy
 
 
-def correlation(XX, YY, win_factor, bidx=0):
-    if type(bidx) is int:
-        bidx = np.arange(len(XX))
+def correlation(XX, YY, win_factor):
+    bins = XX.shape[0]
+    nfreq = XX.shape[1] 
 
-    nfreq = XX.shape[1]
-    val = np.zeros((len(bidx),nfreq), dtype=np.complex_)
+    val = np.zeros(XX.shape, dtype=np.complex_)
 
-    for i,b in enumerate(bidx):
+    for b in range(bins):
         X = XX[b,:]
         Y = YY[b,:]
 
-        val[i,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
-        val[i,:] = np.fft.ifft(val[i,:], n=nfreq)*nfreq
-        val[i,:] = np.fft.fftshift(val[i,:])
+        val[b,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y) / win_factor)
+        val[b,:] = np.fft.ifft(val[b,:], n=nfreq)*nfreq
+        val[b,:] = np.fft.fftshift(val[b,:])
 
-        val[i,:] = np.flip(val[i,:], axis=0)
+        val[b,:] = np.flip(val[b,:], axis=0)
 
     # average over bins; return real value
     Cxy = np.mean(val, 0)
@@ -221,14 +181,13 @@ def correlation(XX, YY, win_factor, bidx=0):
     return Cxy.real 
 
 
-def corr_coef(XX, YY, bidx=0):
-    if type(bidx) is int:
-        bidx = np.arange(len(XX))
+def corr_coef(XX, YY):
+    bins = XX.shape[0]
+    nfreq = XX.shape[1] 
 
-    nfreq = XX.shape[1]
-    val = np.zeros((len(bidx),nfreq), dtype=np.complex_)
+    val = np.zeros(XX.shape, dtype=np.complex_)
 
-    for i,b in enumerate(bidx):
+    for b in range(bins):
         X = XX[b,:]
         Y = YY[b,:]
 
@@ -237,11 +196,11 @@ def corr_coef(XX, YY, bidx=0):
         y = np.fft.ifft(np.fft.ifftshift(Y), n=nfreq)*nfreq
         Ryy = np.mean(y**2)
 
-        val[i,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y))
-        val[i,:] = np.fft.ifft(val[i,:], n=nfreq)*nfreq
-        val[i,:] = np.fft.fftshift(val[i,:])
+        val[b,:] = np.fft.ifftshift(X*np.matrix.conjugate(Y))
+        val[b,:] = np.fft.ifft(val[b,:], n=nfreq)*nfreq
+        val[b,:] = np.fft.fftshift(val[b,:])
 
-        val[i,:] = np.flip(val[i,:], axis=0)/np.sqrt(Rxx*Ryy)
+        val[b,:] = np.flip(val[b,:], axis=0)/np.sqrt(Rxx*Ryy)
 
     # average over bins; return real value
     cxy = np.mean(val, 0)
@@ -250,28 +209,17 @@ def corr_coef(XX, YY, bidx=0):
 
 
 def xspec(XX, YY, win_factor):
-    bins = len(XX)
-
-    val = np.zeros(XX.shape)
-
-    for b in range(bins):
-        X = XX[b,:]
-        Y = YY[b,:]
-
-        Pxy = X*np.matrix.conjugate(Y) / win_factor
-
-        val[b,:] = np.abs(Pxy).real
+    val = np.abs(XX * np.conjugate(YY)).real 
 
     return val
 
 
-def bicoherence(XX, YY, bidx=0):
+def bicoherence(XX, YY):
     # ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
     # ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
     # ax2 = ax2[0:int(nfft/2+1)] # half 0 ~ fN
-    if type(bidx) is int:
-        bidx = np.arange(len(XX))
-    full = len(XX[0,:]) # full length
+    bins = XX.shape[0]
+    full = XX.shape[1] 
     half = int(full/2+1) # half length
 
     # calculate bicoherence
@@ -280,7 +228,7 @@ def bicoherence(XX, YY, bidx=0):
     P3 = np.zeros((full, half))
     val = np.zeros((full, half))
 
-    for b in bidx:
+    for b in range(bins):
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
 
@@ -319,10 +267,9 @@ def bicoherence(XX, YY, bidx=0):
     return val, sum_val
 
 
-def ritz_nonlinear(XX, YY): # need to change range(bins) -> bidx
-    # calculate
-    bins = len(XX)
-    full = len(XX[0,:]) # full length
+def ritz_nonlinear(XX, YY): 
+    bins = XX.shape[0]
+    full = XX.shape[1] 
 
     kidx = get_kidx(full)
 
@@ -389,12 +336,9 @@ def ritz_nonlinear(XX, YY): # need to change range(bins) -> bidx
     return Lk, Qijk, Bk, Aijk
 
 
-def wit_nonlinear(XX, YY, bidx=0):
-    # calculate
-    if type(bidx) is int:
-        bidx = np.arange(len(XX))
-    bins = len(bidx)
-    full = len(XX[0,:]) # full length
+def wit_nonlinear(XX, YY):
+    bins = XX.shape[0]
+    full = XX.shape[1] 
 
     kidx = get_kidx(full)
 
@@ -409,12 +353,12 @@ def wit_nonlinear(XX, YY, bidx=0):
         U = np.zeros((bins, len(idx)+1), dtype=np.complex_)  # N (number of ensembles) x P (number of pairs + 1)
         V = np.zeros(bins, dtype=np.complex_) # N x 1
 
-        for i,b in enumerate(bidx):
-            U[i,0] = XX[b,k]
+        for b in range(bins):
+            U[b,0] = XX[b,k]
             for n, ij in enumerate(idx):
-                U[i,n+1] = XX[b, ij[0]]*XX[b, ij[1]]
+                U[b,n+1] = XX[b, ij[0]]*XX[b, ij[1]]
 
-            V[i] = YY[b,k]
+            V[b] = YY[b,k]
 
         # solution for each k
         H = np.matmul(np.linalg.pinv(U), V)
@@ -428,7 +372,7 @@ def wit_nonlinear(XX, YY, bidx=0):
     Bk = np.zeros(full, dtype=np.complex_) # Yo cXo
 
     # print('DO NOT CALCULATE RATES')
-    for b in bidx:
+    for b in range(bins):
         X = XX[b,:] # full -fN ~ fN
         Y = YY[b,:] # full -fN ~ fN
 
@@ -448,6 +392,72 @@ def wit_nonlinear(XX, YY, bidx=0):
         Bk = Bk + Y * np.matrix.conjugate(X) / bins
 
     return Lk, Qijk, Bk, Aijk
+
+
+def local_coherency(XX, YY, Lk, Qijk, Aijk):
+    bins = XX.shape[0]
+    full = XX.shape[1] 
+
+    # calculate Glin
+    Pxx = np.mean(XX * np.conjugate(XX), 0).real
+    Pyy = np.mean(YY * np.conjugate(YY), 0).real
+    Glin = np.abs(Lk)**2 * Pxx / Pyy
+
+    # calculate Aijij
+    kidx = get_kidx(full) # kidx 
+    Aijij = np.zeros((full, full))
+    for b in range(bins):
+        X = XX[b,:] # full -fN ~ fN
+        # make Xi and Xj
+        Xi = np.transpose(np.tile(X, (full, 1))) # columns of (-fN ~ fN)
+        Xj = np.tile(X, (full, 1)) # rows of (-fN ~ fN)
+        # do ensemble average
+        Aijij += np.abs(Xi * Xj)**2 / bins
+    # calculate Gquad
+    Gquad = np.zeros(full)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            Gquad[k] += np.abs(Qijk[ij])**2 * Aijij[ij]
+    Gquad = Gquad / Pyy
+
+    # calculate Glq
+    Glq = np.zeros(full)
+    for k in range(full):
+        idx = kidx[k]
+        for n, ij in enumerate(idx):
+            Glq[k] += (np.conjugate(Lk[k]) * Qijk[ij] * Aijk[ij]).real
+    Glq = Glq / Pyy
+
+    return Glin, Gquad, Glq
+
+
+def gof(XX, YY, Lk, Qijk):
+    bins = XX.shape[0]
+    full = XX.shape[1] 
+    kidx = get_kidx(full)
+
+    # get YY from U H = Y
+    for k in range(full):
+        idx = kidx[k]
+
+        # construct U for each k
+        U = np.zeros((bins, len(idx)+1), dtype=np.complex_)  # N (number of ensembles) x P (number of pairs + 1)
+        for b in range(bins):
+            U[b,0] = XX[b,k]
+            for n, ij in enumerate(idx):
+                U[b,n+1] = XX[b, ij[0]]*XX[b, ij[1]]
+
+        # construct H for each k
+        H = np.zeros(len(idx)+1, dtype=np.complex_) # N x 1
+        H[0] = Lk[k] 
+        for n, ij in enumerate(idx):
+            H[n+1] = Qijk[ij]
+
+        # model Y for each k
+        H = np.matmul(U, H)
+
+        
 
 
 def nonlinear_rates(Lk, Qijk, Bk, Aijk, delta):

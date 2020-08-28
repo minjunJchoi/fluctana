@@ -294,8 +294,6 @@ class FluctAna(object):
             D.overlap = overlap
             D.detrend = detrend
             D.bins = bins
-            D.tavg = 0
-            D.bidx = np.arange(bins)
 
             # make fft data
             cnum = len(D.data)
@@ -324,28 +322,29 @@ class FluctAna(object):
             # time step
             dt = D.time[1] - D.time[0]  
 
+            # bin index
+            bidx = np.where((np.mean(D.time) - tavg*1e-6/2 < D.time)*(D.time < np.mean(D.time) + tavg*1e-6/2))[0]
+
             # make a f-axis with constant df
             s0 = 2.0*dt # the smallest scale
             ax_half = np.arange(0.0, 1.0/(1.03*s0), df) # 1.03 for the Morlet wavelet function
 
             # value dimension
             cnum = len(D.data)  # number of cmp channels
-            tnum = len(D.time)
+            bins = len(bidx)
             snum = len(ax_half) 
             ncwt = (1+full)*snum-(1*full)
-            D.spdata = np.zeros((cnum, tnum, ncwt), dtype=np.complex_)
+            D.spdata = np.zeros((cnum, bins, ncwt), dtype=np.complex_)
             for c in range(cnum):
                 x = D.data[c,:]
-                D.ax, D.spdata[c,:,:], D.cwtdj, D.cwtts = sp.cwt(x, dt, df, detrend, full) 
+                D.ax, cwtdata, D.cwtdj, D.cwtts = sp.cwt(x, dt, df, detrend, full) 
+                D.spdata[c,:,:] = cwtdata[bidx,:]
 
             D.win_factor = 1.0 
-            D.tavg = tavg
             D.nfreq = ncwt
-            D.bidx = np.where((np.mean(D.time) - tavg*1e-6/2 < D.time)*(D.time < np.mean(D.time) + tavg*1e-6/2))[0]
-            D.bins = len(D.bidx)
             # D.nens = len(D.bidx) / ( D.fs/(2*1.03*ax_half) ) # need corrections
 
-            print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}, tavg {:g}'.format(d, df, tavg))
+            print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}, tavg {:g}, bins {:d}'.format(d, df, tavg, bins))
 
     def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -375,9 +374,9 @@ class FluctAna(object):
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
             if self.Dlist[dtwo].ax[1] < 0: # full range
-                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor, self.Dlist[dtwo].bidx)
+                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor)
             else: # half
-                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor, self.Dlist[dtwo].bidx)  # product 2 for half return
+                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor)  # product 2 for half return
 
     def coherence(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
@@ -406,7 +405,7 @@ class FluctAna(object):
 
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.coherence(XX, YY, self.Dlist[dtwo].bidx)
+            self.Dlist[dtwo].val[c,:] = sp.coherence(XX, YY)
 
     def cross_phase(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp)
@@ -443,7 +442,7 @@ class FluctAna(object):
 
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.cross_phase(XX, YY, self.Dlist[dtwo].bidx)
+            self.Dlist[dtwo].val[c,:] = sp.cross_phase(XX, YY)
 
     def correlation(self, done=0, dtwo=1):
         # reguire full FFT
@@ -486,7 +485,7 @@ class FluctAna(object):
 
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.correlation(XX, YY, win_factor, self.Dlist[dtwo].bidx)
+            self.Dlist[dtwo].val[c,:] = sp.correlation(XX, YY, win_factor)
 
     def corr_coef(self, done=0, dtwo=1):
         # reguire full FFT
@@ -529,7 +528,7 @@ class FluctAna(object):
 
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.corr_coef(XX, YY, self.Dlist[dtwo].bidx)
+            self.Dlist[dtwo].val[c,:] = sp.corr_coef(XX, YY)
 
     def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
         # number of cmp channels = number of ref channels
@@ -618,7 +617,6 @@ class FluctAna(object):
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
         bins = self.Dlist[dtwo].bins  # number of bins
-        bidx = self.Dlist[dtwo].bidx  # number of bins
         win_factor = self.Dlist[dtwo].win_factor  # window factors
 
         # reference channel names
@@ -655,19 +653,19 @@ class FluctAna(object):
             print('pair of {:s} and {:s}'.format(self.Dlist[dtwo].rname[c], self.Dlist[dtwo].clist[c]))
 
             # calculate auto power and cross phase (wavenumber)
-            for i,b in enumerate(bidx):
+            for b in range(bins):
                 X = self.Dlist[done].spdata[c,b,:]
                 Y = self.Dlist[dtwo].spdata[c,b,:]
 
-                Pxx[i,:] = X*np.matrix.conjugate(X) / win_factor
-                Pyy[i,:] = Y*np.matrix.conjugate(Y) / win_factor
+                Pxx[b,:] = X*np.matrix.conjugate(X) / win_factor
+                Pyy[b,:] = Y*np.matrix.conjugate(Y) / win_factor
                 Pxy = X*np.matrix.conjugate(Y)
-                Kxy[i,:] = np.arctan2(Pxy.imag, Pxy.real).real / (self.Dlist[dtwo].dist[c]*100) # [cm^-1]
+                Kxy[b,:] = np.arctan2(Pxy.imag, Pxy.real).real / (self.Dlist[dtwo].dist[c]*100) # [cm^-1]
 
                 # calculate SKw
                 for w in range(nfreq):
-                    idx = (Kxy[i,w] - kstep/2.0 < kax) * (kax < Kxy[i,w] + kstep/2.0)
-                    val[c,:,w] = val[c,:,w] + (1.0/bins*(Pxx[i,w] + Pyy[i,w])/2.0) * idx
+                    idx = (Kxy[b,w] - kstep/2.0 < kax) * (kax < Kxy[b,w] + kstep/2.0)
+                    val[c,:,w] = val[c,:,w] + (1.0/bins*(Pxx[b,w] + Pyy[b,w])/2.0) * idx
 
             # calculate moments
             sklw = val[c,:,:] / np.tile(np.sum(val[c,:,:], 0), (nkax, 1))
@@ -710,7 +708,6 @@ class FluctAna(object):
 
         rnum = len(self.Dlist[done].data)  # number of ref channels
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bidx = self.Dlist[dtwo].bidx  # number of bins
 
         # plot dimension
         if cnum < 4:
@@ -747,7 +744,7 @@ class FluctAna(object):
             YY = self.Dlist[dtwo].spdata[c,:,:]
 
             # calculate bicoherence
-            self.Dlist[dtwo].val[c,:,:], self.Dlist[dtwo].val2[c,:] = sp.bicoherence(XX, YY, bidx)
+            self.Dlist[dtwo].val[c,:,:], self.Dlist[dtwo].val2[c,:] = sp.bicoherence(XX, YY)
 
             if show == 1:
                 # plot info
@@ -777,7 +774,7 @@ class FluctAna(object):
                 fig.colorbar(im, cax=cax, orientation='vertical')
 
                 a2.plot(pax1, pdata2, 'k')
-                a2.axhline(y=1/self.Dlist[dtwo].bins, color='r') ## need correction
+                # a2.axhline(y=1/self.Dlist[dtwo].bins, color='r') ## need correction
                 a2.set_xlim([0,pax2[-1]])
                 a2.set_xlabel('f3 [kHz]')
                 a2.set_ylabel('Summed bicoherence (avg)')
@@ -785,14 +782,13 @@ class FluctAna(object):
 
                 plt.show()
 
-    def nonlin_evolution(self, done=0, dtwo=1, delta=1.0, wit=1, js=1, test=0, show=1, **kwargs):
+    def nonlin_evolution(self, done=0, dtwo=1, delta=1.0, wit=1, js=1, test=0, show=1, check=0, **kwargs):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         self.Dlist[dtwo].vkind = 'nonlin_rates'
 
         # rnum = cnum = 1
         cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bidx = self.Dlist[dtwo].bidx  # number of bins
 
         # reference channel names
         self.Dlist[dtwo].rname = []
@@ -817,10 +813,6 @@ class FluctAna(object):
         pname = self.Dlist[dtwo].clist[0]
         YY = self.Dlist[dtwo].spdata[0,:,:]
 
-        # # check bicoherence
-        # self.bicoherence(done, dtwo, cnl=[0])
-        # return 0
-
         # modeled data
         if test == 1:
             YY, _, _ = sp.nonlinear_test(ax1, XX)
@@ -829,10 +821,10 @@ class FluctAna(object):
         # calculate transfer functions
         if wit == 1:
             print('Wit method')
-            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY, bidx)            
+            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY)            
         else:
             print('Ritz method')
-            Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY) # need to use bidx
+            Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY) 
 
         if show == 1:
             # plot info
@@ -853,7 +845,7 @@ class FluctAna(object):
             a1.set_title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
 
             # Nonlinear transfer function
-            im = a2.imshow(np.log(np.abs(Qijk)), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
+            im = a2.imshow((np.abs(Qijk)), extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', cmap=CM)
             a2.set_xlabel('Frequency [kHz]')
             a2.set_ylabel('Frequency [kHz]')
             a2.set_title('Nonlinear transfer function')
@@ -912,6 +904,19 @@ class FluctAna(object):
             cax = divider.append_axes('right', size='5%', pad=0.05)
             fig.colorbar(im, cax=cax, orientation='vertical')
 
+            plt.show()
+
+        # check local coherency
+        if check == 1:
+            Glin, Gquad, Glq = sp.local_coherency(XX, YY, Lk, Qijk, Aijk)
+            pax1 = ax1/1000.0
+            plt.plot(pax1, Glin, color='b', label='Glin')
+            plt.plot(pax1, Gquad, color='r', label='Gquad')
+            plt.plot(pax1, Glq, color='g', label='Glq')
+            plt.plot(pax1, Glin + Gquad + Glq, color='k', label='total')
+            plt.axhline(y = 1, ls='--', color='k')
+            plt.xlim([0, pax1[-1]])
+            plt.legend()
             plt.show()
 
         # save results
