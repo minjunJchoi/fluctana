@@ -698,7 +698,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def bicoherence(self, done=0, dtwo=1, cnl=[0], vlimits=[0,1], show=1, **kwargs):
+    def bicoherence(self, done=0, dtwo=1, cnl=[0], vlimits=[0,0.3], show=1, **kwargs):
         # fftbins full = 1
         # number of cmp channels = number of ref channels
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
