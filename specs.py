@@ -432,10 +432,12 @@ def local_coherency(XX, YY, Lk, Qijk, Aijk):
     return Glin, Gquad, Glq
 
 
-def gof(XX, YY, Lk, Qijk):
+def nonlinear_gof(XX, YY, Lk, Qijk):
     bins = XX.shape[0]
     full = XX.shape[1] 
     kidx = get_kidx(full)
+
+    YY_model = np.zeros(XX.shape, dtype=np.complex_)
 
     # get YY from U H = Y
     for k in range(full):
@@ -455,9 +457,11 @@ def gof(XX, YY, Lk, Qijk):
             H[n+1] = Qijk[ij]
 
         # model Y for each k
-        H = np.matmul(U, H)
+        YY_model[:,k] = np.matmul(U, H)
 
-        
+    Gyy2 = (coherence(YY, YY_model))**2 # coherence square
+
+    return Gyy2       
 
 
 def nonlinear_rates(Lk, Qijk, Bk, Aijk, delta):

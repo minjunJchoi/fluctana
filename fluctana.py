@@ -906,7 +906,7 @@ class FluctAna(object):
 
             plt.show()
 
-        # check local coherency
+        # check local coherency and gof
         if check == 1:
             Glin, Gquad, Glq = sp.local_coherency(XX, YY, Lk, Qijk, Aijk)
             pax1 = ax1/1000.0
@@ -915,6 +915,13 @@ class FluctAna(object):
             plt.plot(pax1, Glq, color='g', label='Glq')
             plt.plot(pax1, Glin + Gquad + Glq, color='k', label='total')
             plt.axhline(y = 1, ls='--', color='k')
+            plt.xlim([0, pax1[-1]])
+            plt.legend()
+            plt.show()
+
+            # use another XX and YY from different ensemble (data set) if want to check the model keeps working  
+            Gyy2 = sp.nonlinear_gof(self.Dlist[done+2].spdata[0,:,:], self.Dlist[dtwo+2].spdata[0,:,:], Lk, Qijk)
+            plt.plot(pax1, Gyy2, color='k', label='goodness of fit')
             plt.xlim([0, pax1[-1]])
             plt.legend()
             plt.show()
