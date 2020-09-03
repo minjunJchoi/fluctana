@@ -342,6 +342,7 @@ class FluctAna(object):
 
             D.win_factor = 1.0 
             D.nfreq = ncwt
+            D.bins = len(bidx)
             # D.nens = len(D.bidx) / ( D.fs/(2*1.03*ax_half) ) # need corrections
 
             print('dnum {:d} cwt with Morlet omega0 = 6.0, df {:g}, tavg {:g}, bins {:d}'.format(d, df, tavg, bins))
