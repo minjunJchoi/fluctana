@@ -231,6 +231,47 @@ def fbm_fgn_locus(d, data_dir='..'):
     return c_fbm, h_fbm, c_fgn, h_fgn
 
 
+def ch_bdry(d):
+    # calculate complexity limits
+    h_one, c_one, h_two, c_two = complexity_limits(d)
+    # load fbm, fgn locus
+    c_fbm, h_fbm, c_fgn, h_fgn = fbm_fgn_locus(d)
+    # find c_max, c_min lines
+    if c_one[20] > c_two[20]:
+        h_max = h_one
+        c_max = c_one
+        h_min = h_two
+        c_min = c_two
+    else:
+        h_max = h_two
+        c_max = c_two
+        h_min = h_one
+        c_min = c_one
+    # find c_cen line
+    h_cen = np.append(h_fbm, h_fgn)
+    c_cen = np.append(c_fbm, c_fgn)
+    odx = np.argsort(h_cen)
+    h_cen = h_cen[odx]
+    c_cen = c_cen[odx]
+
+    return h_min, c_min, h_max, c_max, h_cen, c_cen
+
+
+def complexity_rescale(entp, comp, h_min, c_min, h_max, c_max, h_cen, c_cen):
+    # find c_cen values at given entropy values
+    c0 = np.interp(entp, h_cen, c_cen)
+    # use c_max values for norm. amplitude
+    norm = np.interp(entp, h_max, c_max)
+    # for complexity lower than c0, use c_min values 
+    ndx = comp - c0 < 0 
+    norm[ndx] = np.interp(entp[ndx], h_min, c_min)
+    norm = np.abs(norm - c0)
+    # rescaled complexity
+    rs_comp = (comp - c0)/norm
+
+    return rs_comp
+
+
 def fisher_measure(pi):
     # fisher information measure
     if ns_entropy(pi) == 0:

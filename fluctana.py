@@ -1036,7 +1036,7 @@ class FluctAna(object):
             self.Dlist[dnum].ax, self.Dlist[dnum].ers[c,:], self.Dlist[dnum].std[c,:], \
             self.Dlist[dnum].val[c], self.Dlist[dnum].fit[c,:] = st.hurst(t, x, bins, detrend, fitrange, **kwargs)
 
-    def chplane(self, dnum=0, cnl=[0], d=6, bins=1, verbose=1, fig=None, axs=None, **kwargs):
+    def chplane(self, dnum=0, cnl=[0], d=6, bins=1, rescale=0, verbose=1, fig=None, axs=None, **kwargs):
         # CH plane [Rosso PRL 2007]
         # chaotic : moderate C and H, above fBm
         # stochastic : low C and high H, below fBm
@@ -1094,28 +1094,24 @@ class FluctAna(object):
         if verbose == 1:
             fig = plt.figure(facecolor='w')
 
+            # get ch boundary lines (min, max, cen)
+            h_min, c_min, h_max, c_max, h_cen, c_cen = st.ch_bdry(d)
+
+            # rescale if necessary
+            if rescale == 1:
+                D.jscom[cnl] = st.complexity_rescale(D.nsent[cnl], D.jscom[cnl], h_min, c_min, h_max, c_max, h_cen, c_cen)
+                plt.axhline(y=0, ls='--', color='r')
+                plt.ylabel('Rescaled Complexity (C)')
+            else:
+                plt.plot(h_min, c_min, 'k')
+                plt.plot(h_max, c_max, 'k')
+                plt.plot(h_cen, c_cen, 'g')
+                plt.ylabel('Complexity (C)')
+            plt.xlabel('Entropy (H)')
+
             plt.plot(D.nsent[cnl], D.jscom[cnl], 'o')
             for i, c in enumerate(cnl):
                 plt.annotate(D.clist[c], (D.nsent[c], D.jscom[c]))
-
-            # complexity limits
-            h_one, c_one, h_two, c_two = st.complexity_limits(d)
-            plt.plot(h_one, c_one, 'k')
-            plt.plot(h_two, c_two, 'k')
-
-            # draw fbm, fgn locus
-            c_fbm, h_fbm, c_fgn, h_fgn = st.fbm_fgn_locus(d, os.path.dirname(st.__file__))
-            # find c_cen line
-            h_cen = np.append(h_fbm, h_fgn)
-            c_cen = np.append(c_fbm, c_fgn)
-            odx = np.argsort(h_cen)
-            h_cen = h_cen[odx]
-            c_cen = c_cen[odx]
-
-            plt.plot(h_cen, c_cen, 'g')
-
-            plt.xlabel('Entropy (H)')
-            plt.ylabel('Complexity (C)')
 
             plt.show()
 
