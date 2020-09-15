@@ -36,7 +36,7 @@ PCS_TREE = ['LMSR', 'LMSZ', 'PCITFMSRD', 'PCRMPTBULI', 'PCRMPTFULI', 'PCRMPTJULI
 CSS_TREE = ['CSS_I{:02d}:FOO'.format(i) for i in range(1,5)] + ['CSS_Q{:02d}:FOO'.format(i) for i in range(1,5)]
 
 # nodes in EFIT01 or EFIT02
-EFIT_TREE = ['VOLUME', 'KAPPA', 'BETAP', 'BETAN', 'q95', 'LI3', 'WMHD']
+EFIT_TREE = ['VOLUME', 'KAPPA', 'BETAP', 'BETAN', 'q95', 'LI3', 'WMHD', 'RVSOD', 'ZVSOD']
 
 # nodes need postprocessing
 POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_VAL_OUT:FOO':'/5',
