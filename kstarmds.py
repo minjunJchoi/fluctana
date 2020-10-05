@@ -154,8 +154,6 @@ class KstarMds(Connection):
                         print('Null data {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                         continue
 
-                print(v, v[idx1:idx2])
-
                 # resize data
                 v = v[idx1:idx2]
 
