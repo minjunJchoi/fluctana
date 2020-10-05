@@ -24,8 +24,12 @@ class KstarMir(object):
             self.data_path = '/eceidata2/exp_2016/'
         elif 17963 < shot and shot < 19392:
             self.data_path = '/eceidata2/exp_2017/'
-        elif 19391 < shot:
+        elif 19391 < shot and shot < 21779:
             self.data_path = '/eceidata2/exp_2018/'
+        elif 21778 < shot and shot < 24100:
+            self.data_path = '/eceidata2/exp_2019/'
+        elif 24100 < shot:
+            self.data_path = '/eceidata2/exp_2020/'
 
         self.clist = expand_clist(clist)
 
@@ -40,14 +44,14 @@ class KstarMir(object):
             self.toff = self.tt[0]+0.001
             self.fs = dset.attrs['SampleRate'][0]*1000.0  # in [Hz] same sampling rate
             self.bt = dset.attrs['TFcurrent']*0.0995556  # [kA] -> [T]
-            self.mfl = dset.attrs['MFL']
-            self.mirh = dset.attrs['MIRH']
-            self.mirf = dset.attrs['MIRF']
-            self.lo = dset.attrs['MLo']
-            self.rf1 = dset.attrs['MRF1']
-            self.rf2 = dset.attrs['MRF2']
-            self.rf3 = dset.attrs['MRF3']
-            self.rf4 = dset.attrs['MRF4']
+            # self.mfl = dset.attrs['MFL'] # can't find attribute 
+            # self.mirh = dset.attrs['MIRH']
+            # self.mirf = dset.attrs['MIRF']
+            # self.lo = dset.attrs['MLo']
+            # self.rf1 = dset.attrs['MRF1']
+            # self.rf2 = dset.attrs['MRF2']
+            # self.rf3 = dset.attrs['MRF3']
+            # self.rf4 = dset.attrs['MRF4']
 
             print('MIR file = {}'.format(self.fname))
         
@@ -127,7 +131,7 @@ class KstarMir(object):
             tt = [tt[0], pl, tt[1]]
 
         fulltime = []
-        for i in range(0, len(tt)/3):
+        for i in range(0, int(len(tt)/3)):
             t0 = tt[i*3]
             pl = tt[i*3+1]
             t1 = tt[i*3+2]
