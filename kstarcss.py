@@ -54,8 +54,8 @@ class KstarCss(Connection):
         for i, cname in enumerate(clist_temp):
 
             # get MDSplus node from channel name
-            inode = cname[0:4] + 'I{:02d}:FOO'.format(int(cname[5:7]))
-            qnode = cname[0:4] + 'Q{:02d}:FOO'.format(int(cname[5:7]))
+            inode = cname[0:4] + 'I{:02d}:FOO'.format(int(cname[4:6]))
+            qnode = cname[0:4] + 'Q{:02d}:FOO'.format(int(cname[4:6]))
 
             # resampling, time node
             if res != 0:
