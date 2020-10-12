@@ -142,11 +142,31 @@ def cross_power(XX, YY, win_factor):
 
 
 def coherence(XX, YY):
-    Pxy = np.mean(XX * np.conjugate(YY), 0)
-    Pxx = np.mean(XX * np.conjugate(XX), 0).real
-    Pyy = np.mean(YY * np.conjugate(YY), 0).real
+    # normalization outside loop 
+    
+    # Pxy = np.mean(XX * np.conjugate(YY), 0)
+    # Pxx = np.mean(XX * np.conjugate(XX), 0).real
+    # Pyy = np.mean(YY * np.conjugate(YY), 0).real
 
-    Gxy = np.abs(Pxy).real / np.sqrt(Pxx * Pyy)
+    # Gxy = np.abs(Pxy).real / np.sqrt(Pxx * Pyy)
+
+
+    # normalization inside loop
+    bins = XX.shape[0]
+
+    val = np.zeros(XX.shape, dtype=np.complex_)
+    for i in range(bins):
+        X = XX[i,:]
+        Y = YY[i,:]
+
+        Pxx = X * np.matrix.conjugate(X)
+        Pyy = Y * np.matrix.conjugate(Y)
+
+        val[i,:] = X*np.matrix.conjugate(Y) / np.sqrt(Pxx*Pyy)
+
+    # average over bins
+    Gxy = np.mean(val, 0)
+    Gxy = np.abs(Gxy).real
 
     return Gxy
 
