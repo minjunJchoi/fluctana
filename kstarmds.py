@@ -77,9 +77,9 @@ class KstarMds(Connection):
         tree = find_tree(self.clist[0])
         try:
             self.openTree(tree,self.shot)
-            if verbose == 1: print('Open MDS tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('OPEN MDS tree {:s} to get data {:s}'.format(tree, self.clist[0]))
         except:
-            if verbose == 1: print('Failed to open MDS tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('FAIL to open MDS tree {:s} to get data {:s}'.format(tree, self.clist[0]))
             return self.time, self.data
 
         # --- loop starts --- #
@@ -120,7 +120,7 @@ class KstarMds(Connection):
             try:
                 # load data
                 v = self.get(dnode).data()
-                if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
+                if verbose == 1: print('READ {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
 
                 # load time
                 if self.data is None:
@@ -151,7 +151,7 @@ class KstarMds(Connection):
                     if np.mean(v) == 0: # bad channel
                         self.clist.remove(cname)
                         self.rpos[i] = -1 
-                        print('Null data {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
+                        print('NULL data {:d} : {:s}. {:s} is removed'.format(self.shot, dnode, cname))
                         continue
 
                 # resize data
@@ -204,12 +204,12 @@ class KstarMds(Connection):
                 self.read_mds_rpos()
                 self.rpos = self.rpos/1000.0 # [mm] -> [m]
             except:
-                print('Failed to read rpos from MDS server')          
+                print('FAIL to read {:s} rpos from MDS server'.format(self.clist[0]))
         elif ('ECE' == self.clist[0][0:3]):
             try:
                 self.read_mds_rpos()
             except:
-                print('Failed to read rpos from MDS server')
+                print('FAIL to read {:s} rpos from MDS server'.format(self.clist[0]))
                 ece_rpos = ece_pos.get_ece_pos(self.shot)
                 for c in range(cnum):
                     self.rpos[c] = ece_rpos[self.clist[c]]
@@ -242,7 +242,7 @@ class KstarMds(Connection):
 
         # open tree
         self.openTree(tree, self.shot)
-        print('Open MDS tree {:s} to read rpos'.format(tree))
+        print('OPEN MDS tree {:s} to read rpos'.format(tree))
             
         # read rnode from MDSplus 
         cnum = len(self.clist)
