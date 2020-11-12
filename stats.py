@@ -8,7 +8,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 
-def skewness(t, x, detrend=1):
+def skewness(x, detrend=1):
     # normalize
     x = x / x[0]
         
@@ -21,7 +21,7 @@ def skewness(t, x, detrend=1):
     return skew
 
 
-def kurtosis(t, x, detrend=1):
+def kurtosis(x, detrend=1):
     # normalize
     x = x / x[0]
 

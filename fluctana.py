@@ -953,8 +953,8 @@ class FluctAna(object):
             t = D.time
             x = D.data[c,:]
 
-            D.skew[c] = st.skewness(t, x, detrend)
-            D.kurt[c] = st.kurtosis(t, x, detrend)
+            D.skew[c] = st.skewness(x, detrend)
+            D.kurt[c] = st.kurtosis(x, detrend)
 
             if verbose == 1:
                 # plot info
@@ -993,10 +993,9 @@ class FluctAna(object):
         self.Dlist[dnum].val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            t = self.Dlist[dnum].time
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].val[c] = st.skewness(t, x, detrend)
+            self.Dlist[dnum].val[c] = st.skewness(x, detrend)
 
     def kurtosis(self, dnum=0, cnl=[0], detrend=1, **kwargs):
         self.Dlist[dnum].vkind = 'kurtosis'
@@ -1007,10 +1006,9 @@ class FluctAna(object):
         self.Dlist[dnum].val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            t = self.Dlist[dnum].time
             x = self.Dlist[dnum].data[c,:]
 
-            self.Dlist[dnum].val[c] = st.kurtosis(t, x, detrend)
+            self.Dlist[dnum].val[c] = st.kurtosis(x, detrend)
 
     def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitrange=[10,1000], **kwargs):
         self.Dlist[dnum].vkind = 'hurst'
