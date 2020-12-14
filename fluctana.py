@@ -1433,7 +1433,7 @@ class FluctAna(object):
             pdata = self.Dlist[dnum].data[c,:]
 
             pxx, freq, time, cax = plt.specgram(pdata, NFFT=nfft, Fs=fs, noverlap=nov,
-                                                xextent=[pbase[0], pbase[-1]], cmap=CM)  # spectrum
+                                                xextent=[pbase[0], pbase[-1]], cmap=CM, detrend='mean')  # spectrum
 
             maxP = math.log(np.amax(pxx),10)*10
             minP = math.log(np.amin(pxx),10)*10
