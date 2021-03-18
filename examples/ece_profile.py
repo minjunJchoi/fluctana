@@ -1,8 +1,11 @@
 import sys, os
 sys.path.insert(0, os.pardir)
 from fluctana import *
+from util import ece_channel_selection
 
-Rrange = [1.30,2.20] 
+# python3 ece_profile.py shotnumber [t1, t2]
+
+Rrange = [1.9,2.25] 
 npts = len(sys.argv) - 1
 
 A = FluctAna()
@@ -11,16 +14,9 @@ for i in range(int(npts/2)):
     trange = eval(sys.argv[i*2+2])
 
     # select channels to read
-    clist_temp = ['ECE{:02d}'.format(i) for i in range(1,77)]
-    M = KstarMds(shot=shot, clist=clist_temp)
-    M.rpos[np.isnan(M.rpos)] = 0.0 # zero for nan channels
-    idx = np.where((M.rpos >= Rrange[0]) * (M.rpos <= Rrange[-1]))[0]
-    M.clist = ['{:s}'.format(clist_temp[i]) for i in idx]
-    M.rpos = M.rpos[idx]
-    print(M.rpos)
-    print(M.clist)
+    clist = ece_channel_selection(shot, Rrange)
 
-    A.add_data(dev='KSTAR', shot=shot, clist=M.clist, trange=trange, norm=0, res=0.0001)
+    A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=0, res=0.0001)
 
 A.list_data()
 

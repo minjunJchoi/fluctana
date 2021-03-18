@@ -5,7 +5,7 @@ from fluctana import *
 # python3 ces_profile.py 22531 [3.5,3.6] 22531 [5,5.1] TI
 
 TORV = sys.argv[-1] # TI or VT
-Rrange = [1.3,2.3] # [m]
+Rrange = [1.3,2.3] # [mm]
 npts = len(sys.argv) - 1
 
 A = FluctAna()
@@ -16,15 +16,10 @@ for i in range(int(npts/2)):
     # select channels to read
     clist_temp = ['CES_{:s}{:02d}'.format(TORV, i) for i in range(1,33)]
     M = KstarMds(shot=shot, clist=clist_temp)
-    print(M.rpos)
     M.rpos[np.isnan(M.rpos)] = 0.0 # zero for nan channels
     idx = np.where((M.rpos >= Rrange[0]) * (M.rpos <= Rrange[-1]))[0]
-    M.clist = ['{:s}'.format(clist_temp[i]) for i in idx]
-    M.rpos = M.rpos[idx]
-    print(M.rpos)
-    print(M.clist)
-
-    A.add_data(dev='KSTAR', shot=shot, clist=M.clist, trange=trange, norm=0)
+    clist = ['{:s}'.format(clist_temp[i]) for i in idx]
+    A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=0)
 
 ## compare multiple profiles
 fig = plt.figure(figsize=(7,7))

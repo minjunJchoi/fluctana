@@ -6,7 +6,7 @@ from fluctana import *
 
 NCORE = 14
 TORN = sys.argv[-1] # TE or NE
-Rrange = [1.3.,2.3] 
+Rrange = [1.8,2.25] 
 npts = len(sys.argv) - 1
 
 A = FluctAna()
@@ -22,14 +22,10 @@ for i in range(int(npts/2)):
     clist_temp = ['TS_CORE{:d}:CORE{:d}_{:s}'.format(i,i,TORN) for i in range(1,NCORE+1)]
     clist_temp += ['TS_EDGE{:d}:EDGE{:d}_{:s}'.format(i,i,TORN) for i in range(1,NEDGE+1)]
     M = KstarMds(shot=shot, clist=clist_temp)
-    M.rpos[np.isnan(M.rpos)] = 0.0 # zero for nan channels
     idx = np.where((M.rpos >= Rrange[0]) * (M.rpos <= Rrange[-1]))[0]
-    M.clist = ['{:s}'.format(clist_temp[i]) for i in idx]
-    M.rpos = M.rpos[idx]
-    print(M.rpos)
-    print(M.clist)
+    clist = ['{:s}'.format(clist_temp[i]) for i in idx]
 
-    A.add_data(dev='KSTAR', shot=shot, clist=M.clist, trange=trange, norm=0)
+    A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=0)
 
 A.list_data()
 
