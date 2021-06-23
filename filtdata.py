@@ -34,16 +34,16 @@ class FirFilter(object):
         if not N % 2: N += 1
         self.N = N
 
-        self.fir_coef = np.ones(N)
+        self.filt_coef = np.ones(N)
         if name == 'FIR_pass' and fL == 0:
-            self.fir_coef = self.fir_lowpass(float(fH/fs), N)
+            self.filt_coef = self.fir_lowpass(float(fH/fs), N)
         elif name == 'FIR_pass' and fH == 0:
-            self.fir_coef = self.fir_lowpass(float(fL/fs), N)
+            self.filt_coef = self.fir_lowpass(float(fL/fs), N)
         elif name == 'FIR_block':
-            self.fir_coef = self.fir_bandblock(fL/fs, fH/fs, N)
+            self.filt_coef = self.fir_bandblock(fL/fs, fH/fs, N)
 
     def apply(self, x):
-        xlp = np.convolve(x, self.fir_coef)
+        xlp = np.convolve(x, self.filt_coef)
         if self.name == 'FIR_pass' and self.fH == 0: # high pass filter
             x = x - xlp[int(self.N/2):int(self.N/2 + len(x))] # delay correction
         else:
@@ -82,6 +82,36 @@ class FirFilter(object):
         h = hlpf + hhpf
 
         return h
+
+
+class FftFilter(object):
+    def __init__(self, name, fs, fL, fH):
+        self.name = name
+        self.fs = fs
+        self.fL = fL
+        self.fH = fH
+
+    def apply(self, x):
+        nfft = len(x)
+        dt = 1.0/self.fs
+        
+        # frequency
+        ax = np.fft.fftfreq(nfft, d=dt)
+
+        # fft
+        X = np.fft.fft(x, n=nfft)
+
+        # apply filter (brick)
+        if self.name == 'FFT_pass':
+            self.filt_coef = (self.fL <= np.abs(ax)) & (np.abs(ax) <= self.fH)
+        elif self.name == 'FFT_block':
+            self.filt_coef = ~((self.fL <= np.abs(ax)) & (np.abs(ax) <= self.fH))
+        X = X * self.filt_coef
+
+        # ifft
+        x = np.fft.ifft(X, n=nfft)
+        
+        return x
 
 
 class SvdFilter(object):

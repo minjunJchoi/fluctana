@@ -222,6 +222,8 @@ class FluctAna(object):
         # select filter except svd
         if name[0:3] == 'FIR':
             freq_filter = ft.FirFilter(name, D.fs, fL, fH, b)
+        elif name[0:3] == 'FFT':
+            freq_filter = ft.FftFilter(name, D.fs, fL, fH)
 
         for c in range(len(D.clist)):
             x = np.copy(D.data[c,:])
