@@ -1640,8 +1640,8 @@ class FluctAna(object):
                     st = self.Dlist[dnum].time[idx1:idx2]
 
                     # test signal for bicoherence test
-                    fb = 54*1000
-                    fc = 94*1000
+                    fb = 50*1000
+                    fc = 90*1000
                     fd = fb + fc
 
                     pb = pbs[b]
@@ -1649,8 +1649,10 @@ class FluctAna(object):
                     pd = pds[b] # non-coherent case
                     # pd = pb + pc # coherent case
 
-                    sx = np.cos(2*np.pi*fb*st + pb) + np.cos(2*np.pi*fc*st + pc) + 1/2*np.cos(2*np.pi*fd*st + pd) + 1/2*np.random.randn(len(sx))
-                    sx = sx + np.cos(2*np.pi*fb*st + pb)*np.cos(2*np.pi*fc*st + pc) # +,- coupling
+                    sx = np.cos(2*np.pi*fb*st + pb) + np.cos(2*np.pi*fc*st + pc) + np.cos(2*np.pi*fd*st + pd) + 0.5*np.random.randn(len(sx))
+                    # sx = 3*np.random.randn(len(sx))
+                    # sx = np.cos(2*np.pi*fb*st + pb) + np.cos(2*np.pi*fc*st + pc) + 1/2*np.cos(2*np.pi*fd*st + pd) + 1/2*np.random.randn(len(sx))
+                    # sx = sx + np.cos(2*np.pi*fb*st + pb)*np.cos(2*np.pi*fc*st + pc) # +,- coupling
 
                     if detrend == 1:
                         sx = signal.detrend(sx, type='linear')
