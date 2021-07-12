@@ -95,7 +95,7 @@ class FftFilter(object):
         nfft = len(x)
         dt = 1.0/self.fs
         
-        # frequency
+        # frequency axis
         ax = np.fft.fftfreq(nfft, d=dt)
 
         # fft
