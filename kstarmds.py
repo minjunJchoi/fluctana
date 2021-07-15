@@ -97,16 +97,22 @@ class KstarMds(Connection):
                 snode = 'resample(\{:s},{:f},{:f},{:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
                 tnode = 'dim_of(resample(\{:s},{:f},{:f},{:f}))'.format(node,self.trange[0],self.trange[1],res)  # resampling                
 
-                if 'ECE' == self.clist[0][0:3]: 
+                if ('ECE' == self.clist[0][0:3]) & ('KSTAR' == tree): 
                     snode = 'setTimeContext(*,*,{:f}),\{:s}'.format(res,node)
                     tnode = 'setTimeContext(*,*,{:f}),dim_of(\{:s})'.format(res,node)                
+                elif 'RTECEI' == tree:
+                    snode = 'resample({:s},{:f},{:f},{:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
+                    tnode = 'dim_of(resample({:s},{:f},{:f},{:f}))'.format(node,self.trange[0],self.trange[1],res)  # resampling                
             else:
                 snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
                 tnode = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
 
-                if 'ECE' == self.clist[0][0:3]: # do not sub-sample for ECE (KSTAR MDSplus bug?)
+                if ('ECE' == self.clist[0][0:3]) & ('KSTAR' == tree): # do not sub-sample for ECE (KSTAR MDSplus bug?)
                     snode = 'setTimeContext(*,*,*),\{:s}'.format(node)
                     tnode = 'setTimeContext(*,*,*),dim_of(\{:s})'.format(node)
+                elif 'RTECEI' == tree:
+                    snode = 'setTimeContext({:f},{:f},*),{:s}'.format(self.trange[0],self.trange[1],node)
+                    tnode = 'setTimeContext({:f},{:f},*),dim_of({:s})'.format(self.trange[0],self.trange[1],node)
 
             # simple post processing for data
             if node in POST_NODE:
@@ -293,6 +299,8 @@ def find_tree(cname):
         tree = 'CSS'
     elif node in EFIT_TREE:
         tree = 'EFIT01'
+    elif 'KEITH' in node:
+        tree = 'RTECEI'
     else:
         tree = 'KSTAR'
 
