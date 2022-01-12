@@ -214,6 +214,44 @@ class FluctAna(object):
         D.fs = round(1/(D.time[1] - D.time[0]))
         print('down sample with q={:d}, fs={:g}'.format(q, D.fs))
 
+    def meansample(self, dnum, t1, t2, twin, tstep, verbose=0, fig=None, axs=None):
+        # return means of samples along time 
+        D = self.Dlist[dnum]
+
+        cnum = len(D.clist)
+
+        # make axes
+        if verbose == 1:
+            fig, axs = make_axes(cnum, ptype='mplot', fig=fig, axs=axs, type='time')
+
+        # reset time
+        raw_time = np.copy(D.time)
+        D.time =  np.arange(t1, t2+tstep, tstep)
+
+        # mean sample
+        raw_data = np.copy(D.data)
+        D.data = np.empty((cnum, len(D.time)))
+        for c in range(cnum):
+            for i, t in enumerate(D.time):
+                tidx = (t - twin/2 <= raw_time) & (raw_time <= t + twin/2)   
+                D.data[c,i] = np.mean(raw_data[c,tidx])
+
+            if verbose == 1:
+                # plot info
+                pshot = D.shot
+                pname = D.clist[c]
+
+                axs[c].plot(raw_time, raw_data[c,:])
+                axs[c].plot(D.time, D.data[c,:])
+
+                axs[c].set_title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
+
+        if verbose == 1: plt.show()
+
+        D.fs = round(1/(D.time[1] - D.time[0]))
+        print('mean sample with twin={:g}, tstep={:g}'.format(twin, tstep))
+
+
 ############################# data filtering functions #########################
 
     def filt(self, dnum=0, name='FIR_pass', fL=0, fH=10000, b=0.08, verbose=0):
