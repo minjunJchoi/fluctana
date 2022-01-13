@@ -233,7 +233,7 @@ class FluctAna(object):
         D.data = np.empty((cnum, len(D.time)))
         for c in range(cnum):
             for i, t in enumerate(D.time):
-                tidx = (t - twin/2 <= raw_time) & (raw_time <= t + twin/2)   
+                tidx = (t - twin/2 - tstep/1e6 <= raw_time) & (raw_time <= t + twin/2 + tstep/1e6)   
                 D.data[c,i] = np.mean(raw_data[c,tidx])
 
             if verbose == 1:
