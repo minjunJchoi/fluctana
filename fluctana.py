@@ -175,6 +175,39 @@ class FluctAna(object):
 
         self.list_data()
 
+    def ch_pos_correction(self, dnum=0, fname='none', verbose=0):
+        D = self.Dlist[dnum]
+
+        # plot original position
+        if verbose == 1:
+            plt.plot(D.rpos, D.zpos, 'bx')
+
+        # replace with corrected channel position saved in fname 
+        with open(fname, 'rb') as fin:
+            [_, D.rpos, D.zpos, _] = pickle.load(fin)
+
+        if verbose == 1: 
+            plt.plot(D.rpos, D.zpos, 'ro')
+            plt.gca().set_aspect('equal')
+            plt.xlabel('R [m]'); plt.ylabel('z [m]')
+            plt.show()
+
+        print('channel position corrected with {:s}'.format(fname))
+
+    def calibration(self, dnum=0, fname='none'):
+        D = self.Dlist[dnum]
+
+        # load calibration factors 
+        with open(fname, 'rb') as fin:
+            [calib_factor] = pickle.load(fin)
+
+        if hasattr(D, 'good_channels'):
+            D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0))
+
+        D.data = D.data * calib_factor
+
+        print('calibrated with {:s}'.format(fname))
+
 ############################# down sampling #############################
 
     def downsample(self, dnum, q, verbose=0, fig=None, axs=None):
@@ -214,45 +247,60 @@ class FluctAna(object):
         D.fs = round(1/(D.time[1] - D.time[0]))
         print('down sample with q={:d}, fs={:g}'.format(q, D.fs))
 
-    def meansample(self, dnum, t1, t2, twin, tstep, verbose=0, fig=None, axs=None):
-        # return means of samples along time 
+    def subsample(self, dnum, twin, tstep):
+        # return sub samples along time 
         D = self.Dlist[dnum]
 
         cnum = len(D.clist)
 
-        # make axes
-        if verbose == 1:
-            fig, axs = make_axes(cnum, ptype='mplot', fig=fig, axs=axs, type='time')
+        raw_data = np.copy(D.data)        
 
-        # reset time
-        raw_time = np.copy(D.time)
-        D.time =  np.arange(t1, t2+tstep, tstep)
-
-        # mean sample
-        raw_data = np.copy(D.data)
+        # subsample tidx list
+        tidx_win = int(D.fs*twin) # buffer window
+        tidx_step = int(D.fs*tstep)
+        tidx_list = range(int(tidx_win/2), len(D.time)-int(tidx_win/2), tidx_step)
+        
+        D.time = D.time[tidx_list]
         D.data = np.empty((cnum, len(D.time)))
         for c in range(cnum):
-            for i, t in enumerate(D.time):
-                tidx = (t - twin/2 - tstep/1e6 <= raw_time) & (raw_time <= t + twin/2 + tstep/1e6)   
-                D.data[c,i] = np.mean(raw_data[c,tidx])
-
-            if verbose == 1:
-                # plot info
-                pshot = D.shot
-                pname = D.clist[c]
-
-                axs[c].plot(raw_time, raw_data[c,:])
-                axs[c].plot(D.time, D.data[c,:])
-
-                axs[c].set_title('#{:d}, {:s}'.format(pshot, pname), fontsize=10)
-
-        if verbose == 1: plt.show()
+            D.data[c,:] = raw_data[c,tidx_list]
 
         D.fs = round(1/(D.time[1] - D.time[0]))
-        print('mean sample with twin={:g}, tstep={:g}'.format(twin, tstep))
-
+        print('sub sample with twin={:g} us, tstep={:g} us'.format(twin*1e6, tstep*1e6))
 
 ############################# data filtering functions #########################
+
+    def ma_filt(self, dnum=0, twin=300e-6, window='rectwin', demean=0): # twin window size in [s]
+        # moving average 
+        D = self.Dlist[dnum]
+
+        cnum = len(D.clist)
+
+        win_size = int(D.fs*twin) # window size in [idx]
+
+        # window function
+        if window == 'rectwin':  # overlap = 0.5
+            win = np.ones(win_size)
+        elif window == 'hann':  # overlap = 0.5
+            win = np.hanning(win_size)
+        elif window == 'hamm':  # overlap = 0.5
+            win = np.hamming(win_size)
+        elif window == 'kaiser':  # overlap = 0.62
+            win = np.kaiser(win_size, beta=30)
+        elif window == 'HFT248D':  # overlap = 0.84
+            z = 2*np.pi/win_size*np.arange(0,win_size)
+            win = 1 - 1.985844164102*np.cos(z) + 1.791176438506*np.cos(2*z) - 1.282075284005*np.cos(3*z) + \
+                0.667777530266*np.cos(4*z) - 0.240160796576*np.cos(5*z) + 0.056656381764*np.cos(6*z) - \
+                0.008134974479*np.cos(7*z) + 0.000624544650*np.cos(8*z) - 0.000019808998*np.cos(9*z) + \
+                0.000000132974*np.cos(10*z)
+
+        for c in range(cnum):
+            if demean == 1:
+                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / win_size - np.mean(D.data[c,:])
+            else:
+                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / win_size
+
+        print('dnum {:d} moving average filter with window {:s} size {:g} [us] demean {:d}'.format(dnum, window, twin*1e6, demean))
 
     def filt(self, dnum=0, name='FIR_pass', fL=0, fH=10000, b=0.08, verbose=0):
         D = self.Dlist[dnum]
@@ -1507,7 +1555,7 @@ class FluctAna(object):
         CM = plt.cm.get_cmap('RdYlBu_r')
 
         if c == None:
-            c = int(input('automatic, or manual [0,1]: '))
+            c = int(input('automatic, mouse input, text input [0, 1, 2]: '))
         tidx1 = 0  # starting index
         if c == 0:
             # make axes
@@ -1565,9 +1613,10 @@ class FluctAna(object):
             plt.ioff()
             plt.close()
 
-        elif c == 1:
+        elif c > 0:
             tidx = tidx1
-            print('Select a point in the top axes to plot the image')
+            if c == 1:
+                print('Select a point in the top axes to plot the image')
 
             # make axes
             fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
@@ -1619,10 +1668,15 @@ class FluctAna(object):
 
                 plt.show()
 
-                ## mouse input
-                g = plt.ginput(1)[0][0]
+                # mouse or text input 
+                if c == 1:
+                    g = plt.ginput(1)[0][0]
+                elif c == 2:
+                    g = float(input('X value to plot: '))        
+                    plt.draw()
+                    
                 if g >= pbase[0] and g <= pbase[-1]:
-                    tidx = np.where(pbase > g)[0][0]
+                    tidx = np.where(pbase + 1e-10 >= g)[0][0]
                 else:
                     print('Out of the time range')
                     plt.ioff()
