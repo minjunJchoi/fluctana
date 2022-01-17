@@ -296,9 +296,9 @@ class FluctAna(object):
 
         for c in range(cnum):
             if demean == 1:
-                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / win_size - np.mean(D.data[c,:])
+                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / np.sum(win) - np.mean(D.data[c,:])
             else:
-                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / win_size
+                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / np.sum(win)
 
         print('dnum {:d} moving average filter with window {:s} size {:g} [us] demean {:d}'.format(dnum, window, twin*1e6, demean))
 
