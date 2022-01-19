@@ -1284,6 +1284,8 @@ class FluctAna(object):
 
         D = self.Dlist[dnum]
         
+        cnum = len(D.data)  # number of cmp channels
+        
         D.val = np.zeros(cnum)
 
         h_min, c_min, h_max, c_max, h_cen, c_cen = st.ch_bdry(d)
