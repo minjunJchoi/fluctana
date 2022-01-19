@@ -274,8 +274,8 @@ class FluctAna(object):
 
 ############################# data filtering functions #########################
 
-    def ma_filt(self, dnum=0, twin=300e-6, window='rectwin', demean=0): # twin window size in [s]
-        # moving average 
+    def ma_filt(self, dnum=0, twin=300e-6, window='rectwin', type='time', demean=0): # twin window size in [s]
+        # moving average #### add option data or val 
         D = self.Dlist[dnum]
 
         cnum = len(D.clist)
@@ -299,10 +299,15 @@ class FluctAna(object):
                 0.000000132974*np.cos(10*z)
 
         for c in range(cnum):
+            if type == 'time':
+                x = D.data[c,:]
+            elif type == 'val':
+                x = D.val[c,:]
+
             if demean == 1:
-                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / np.sum(win) - np.mean(D.data[c,:])
+                x = np.convolve(x, win, 'same') / np.sum(win) - np.mean(x)
             else:
-                D.data[c,:] = np.convolve(D.data[c,:], win, 'same') / np.sum(win)
+                x = np.convolve(x, win, 'same') / np.sum(win)
 
         print('dnum {:d} moving average filter with window {:s} size {:g} [us] demean {:d}'.format(dnum, window, twin*1e6, demean))
 
