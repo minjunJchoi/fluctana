@@ -1375,7 +1375,7 @@ class FluctAna(object):
                     _, pi, _ = st.bp_prob(dy, d=vpara['d'], bins=vpara['bins'])
                     Done.jscom[c,j], Done.nsent[c,j] = st.ch_measure(pi) # jscom and nsent
 
-                print('tcal ch num {:d} taxis {:d}/{:d}'.format(c, j+1, len(tidx_list)))
+                print('tcal channel {:d}/{:d} time {:d}/{:d}'.format(c, len(cnl), j+1, len(tidx_list)))
 
             # post-processing for fast speed
             if vkind == 'rescaled_complexity':
