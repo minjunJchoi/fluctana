@@ -806,7 +806,7 @@ class FluctAna(object):
 
         plt.show()
 
-    def bicoherence(self, done=0, dtwo=1, cnl=[0], vlimits=[0,0.3], show=1, **kwargs):
+    def bicoherence(self, done=0, dtwo=1, cnl='all', vlimits=[0,0.3], show=1, **kwargs):
         # fftbins full = 1
         # number of cmp channels = number of ref channels
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
@@ -819,6 +819,8 @@ class FluctAna(object):
 
         rnum = len(Done.data)  # number of ref channels
         cnum = len(Dtwo.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
 
         # plot dimension
         if cnum < 4:
@@ -1046,7 +1048,7 @@ class FluctAna(object):
 
 ############################# statistical methods ##############################
 
-    def skplane(self, dnum=0, cnl=[0], detrend=1, verbose=1, fig=None, axs=None, **kwargs):
+    def skplane(self, dnum=0, cnl='all', detrend=1, verbose=1, fig=None, axs=None, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
@@ -1058,6 +1060,8 @@ class FluctAna(object):
         D.vkind = 'skplane'
 
         cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
 
         # data dimension
         D.skew = np.zeros(cnum)
@@ -1098,12 +1102,14 @@ class FluctAna(object):
 
             plt.show()
 
-    def skewness(self, dnum=0, cnl=[0], detrend=1, **kwargs):
+    def skewness(self, dnum=0, cnl='all', detrend=1, **kwargs):
         D = self.Dlist[dnum]
 
         D.vkind = 'skewness'
 
         cnum = len(D.data)  # number of cmp channels
+        
+        if cnl == 'all': cnl = range(cnum)
 
         # data dimension
         D.val = np.zeros(cnum)
@@ -1113,12 +1119,14 @@ class FluctAna(object):
 
             D.val[c] = st.skewness(x, detrend)
 
-    def kurtosis(self, dnum=0, cnl=[0], detrend=1, **kwargs):
+    def kurtosis(self, dnum=0, cnl='all', detrend=1, **kwargs):
         D = self.Dlist[dnum]
 
         D.vkind = 'kurtosis'
 
         cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
 
         # data dimension
         D.val = np.zeros(cnum)
@@ -1128,13 +1136,15 @@ class FluctAna(object):
 
             D.val[c] = st.kurtosis(x, detrend)
 
-    def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitrange=[10,1000], **kwargs):
+    def hurst(self, dnum=0, cnl='all', bins=30, detrend=1, fitrange=[10,1000], **kwargs):
         D = self.Dlist[dnum]
 
         D.vkind = 'hurst'
 
         pshot = D.shot
         cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
 
         # axis
         bsize = int(1.0*len(D.time)/bins)
@@ -1154,7 +1164,7 @@ class FluctAna(object):
             D.ax, D.ers[c,:], D.std[c,:], \
             D.val[c], D.fit[c,:] = st.hurst(t, x, bins, detrend, fitrange, **kwargs)
 
-    def chplane(self, dnum=0, cnl=[0], d=6, bins=1, rescale=0, verbose=1, fig=None, axs=None, **kwargs):
+    def chplane(self, dnum=0, cnl='all', d=6, bins=1, rescale=0, verbose=1, fig=None, axs=None, **kwargs):
         # CH plane [Rosso PRL 2007]
         # chaotic : moderate C and H, above fBm
         # stochastic : low C and high H, below fBm
@@ -1168,6 +1178,8 @@ class FluctAna(object):
         pshot = D.shot
 
         cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
 
         nst = math.factorial(d) # number of possible states
 
@@ -1233,12 +1245,14 @@ class FluctAna(object):
 
             plt.show()
 
-    def js_complexity(self, dnum=0, cnl=[0], d=5, bins=1, **kwargs):
+    def js_complexity(self, dnum=0, cnl='all', d=5, bins=1, **kwargs):
         D = self.Dlist[dnum]
 
         D.vkind = 'jscom'
 
         cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
         
         nst = math.factorial(d) # number of possible states
 
@@ -1256,12 +1270,14 @@ class FluctAna(object):
             D.ax, D.pi[c,:], D.std[c,:] = st.bp_prob(x, d, bins)
             D.val[c] = st.js_complexity(D.pi[c,:])
 
-    def ns_entropy(self, dnum=0, cnl=[0], d=5, bins=1, **kwargs):
+    def ns_entropy(self, dnum=0, cnl='all', d=5, bins=1, **kwargs):
         D = self.Dlist[dnum]
 
         D.vkind = 'nsent'
 
         cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
 
         nst = math.factorial(d) # number of possible states
 
@@ -1279,19 +1295,21 @@ class FluctAna(object):
             D.ax, D.pi[c,:], D.std[c,:] = st.bp_prob(x, d, bins)
             D.val[c] = st.ns_entropy(D.pi[c,:])
 
-    def rescaled_complexity(self, dnum=0, cnl=[0], d=5, bins=1, **kwargs):
+    def rescaled_complexity(self, dnum=0, cnl='all', d=5, bins=1, **kwargs):
         self.chplane(dnum=dnum, cnl=cnl, d=d, bins=bins, verbose=0)
 
         D = self.Dlist[dnum]
         
         cnum = len(D.data)  # number of cmp channels
-        
+
+        if cnl == 'all': cnl = range(cnum)
+
         D.val = np.zeros(cnum)
 
         h_min, c_min, h_max, c_max, h_cen, c_cen = st.ch_bdry(d)
         D.val[cnl] = st.complexity_rescale(D.nsent[cnl], D.jscom[cnl], h_min, c_min, h_max, c_max, h_cen, c_cen)
 
-    def intermittency(self, dnum=0, cnl=[0], bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], verbose=1, **kwargs):
+    def intermittency(self, dnum=0, cnl='all', bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], verbose=1, **kwargs):
         # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
         # this ranges from 0 (mono-fractal) to 1
         # add D fitting later
@@ -1305,6 +1323,8 @@ class FluctAna(object):
         pshot = D.shot
         cnum = len(D.data)  # number of cmp channels
 
+        if cnl == 'all': cnl = range(len(D.clist))
+
         D.intmit = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
@@ -1313,7 +1333,59 @@ class FluctAna(object):
 
             D.intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitrange, verbose, **kwargs)
 
-############################# default plot functions ###########################
+############################# calculation along time ###########################
+
+    def tcal(self, done=0, dtwo=None, cnl='all', twin=0.005, tstep=0.001, vkind='rescaled_complexity', vpara=None, **kwargs):
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
+        Done = self.Dlist[done]
+        if dtwo != None:
+            Dtwo = self.Dlist[dtwo]
+
+        # tidx list for ax
+        tidx_win = int(Done.fs*twin) # buffer window
+        tidx_step = int(Done.fs*tstep)
+        tidx_list = np.arange(int(tidx_win/2), len(Done.time)-int(tidx_win/2), tidx_step, dtype='int64')
+        Done.ax = Done.time[tidx_list]
+
+        cnum = len(Done.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
+
+        if vkind == 'rescaled_complexity':
+            Done.nsent = np.zeros((cnum, len(Done.ax)))
+            Done.jscom = np.zeros((cnum, len(Done.ax)))
+
+        Done.val  = np.zeros((cnum, len(Done.ax)))
+        for i, c in enumerate(cnl):
+            for j, tidx in enumerate(tidx_list):
+                t1idx = tidx - int(tidx_win/2)
+                t2idx = tidx + int(tidx_win/2)
+
+                dy = Done.data[c,t1idx:t2idx]
+
+                # calculation here
+                if vkind == 'rescaled_complexity': 
+                    _, pi, _ = st.bp_prob(dy, d=vpara['d'], bins=vpara['bins'])
+                    Done.jscom[c,j], Done.nsent[c,j] = st.ch_measure(pi) # jscom and nsent
+
+                print('tcal ch num {:d} taxis {:d}/{:d}'.format(c, j+1, len(tidx_list)))
+
+            # post-processing for fast speed
+            if vkind == 'rescaled_complexity':
+                Done.val[c,:] = st.complexity_rescale(Done.nsent[c,:], Done.jscom[c,:], \
+                    vpara['h_min'], vpara['c_min'], vpara['h_max'], vpara['c_max'], vpara['h_cen'], vpara['c_cen'])
+
+        # print(tidx_win, tidx_step)
+
+        # print(tidx_list)
+        # print(tidx_list - int(tidx_win/2))
+        # print(tidx_list + int(tidx_win/2))
+        
+        # print(Done.ax)
+        # print(Done.time[tidx_list - int(tidx_win/2)])
+        # print(Done.time[tidx_list + int(tidx_win/2)])
 
 ############################# default plot functions ###########################
 
