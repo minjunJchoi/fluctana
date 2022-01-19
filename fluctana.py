@@ -141,37 +141,41 @@ class FluctAna(object):
             # print '     # %d size : %s' % (i, self.Dlist[i].data.shape)
 
     def add_channel(self, dnum, clist):  # re-do fftbins after add channels
-        old_clist = self.Dlist[dnum].clist
+        D = self.Dlist[dnum]
+
+        old_clist = D.clist
 
         # add channels (no duplicates)
         clist = expand_clist(clist)
-        clist = [c for c in clist if c not in self.Dlist[dnum].clist]
+        clist = [c for c in clist if c not in D.clist]
 
         # add data
-        time, data = self.Dlist[dnum].get_data(self.Dlist[dnum].trange, norm=norm, atrange=atrange, res=res)
-        self.Dlist[dnum].data = np.concatenate((self.Dlist[dnum].data, data), axis=0)
+        time, data = D.get_data(D.trange, norm=norm, atrange=atrange, res=res)
+        D.data = np.concatenate((D.data, data), axis=0)
 
         # update clist
-        self.Dlist[dnum].clist = old_clist + clist
+        D.clist = old_clist + clist
 
         self.list_data()
 
     def del_channel(self, dnum, clist):
+        D = self.Dlist[dnum]
+
         clist = expand_clist(clist)
 
         for i in range(len(clist)):
             # find index to be deleted
-            del_idx = [j for j, s in enumerate(self.Dlist[dnum].clist) if clist[i] in s]
+            del_idx = [j for j, s in enumerate(D.clist) if clist[i] in s]
 
             # delete data
-            self.Dlist[dnum].data = np.delete(self.Dlist[dnum].data, del_idx, 0)
+            D.data = np.delete(D.data, del_idx, 0)
 
             # delete fftdata if it has
-            if hasattr(self.Dlist[dnum], 'fftdata'):
-                self.Dlist[dnum].fftdata = np.delete(self.Dlist[dnum].fftdata, del_idx, 0)
+            if hasattr(D, 'fftdata'):
+                D.fftdata = np.delete(D.fftdata, del_idx, 0)
 
             # update clist
-            self.Dlist[dnum].clist = [self.Dlist[dnum].clist[k] for k in range(len(self.Dlist[dnum].clist)) if k not in del_idx]
+            D.clist = [D.clist[k] for k in range(len(D.clist)) if k not in del_idx]
 
         self.list_data()
 
@@ -364,7 +368,6 @@ class FluctAna(object):
             plt.plot(D.time, self.ilev, 'b')
             plt.show()
 
-
 ############################# spectral methods #############################
 
     def fftbins(self, nfft, window, overlap, detrend=0, full=0):
@@ -438,198 +441,212 @@ class FluctAna(object):
     def cross_power(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        self.Dlist[dtwo].vkind = 'cross_power'
+        Dtwo.vkind = 'cross_power'
 
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        rnum = len(Done.data)  # number of ref channels
+        cnum = len(Dtwo.data)  # number of cmp channels
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # value dimension
-        self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
+        Dtwo.val = np.zeros((cnum, len(Dtwo.ax)))
 
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number
             if rnum == 1:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-                XX = self.Dlist[done].spdata[0,:,:]
+                Dtwo.rname.append(Done.clist[0])
+                XX = Done.spdata[0,:,:]
             else:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-                XX = self.Dlist[done].spdata[c,:,:]
+                Dtwo.rname.append(Done.clist[c])
+                XX = Done.spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].spdata[c,:,:]
+            YY = Dtwo.spdata[c,:,:]
 
-            if self.Dlist[dtwo].ax[1] < 0: # full range
-                self.Dlist[dtwo].val[c,:] = sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor)
+            if Dtwo.ax[1] < 0: # full range
+                Dtwo.val[c,:] = sp.cross_power(XX, YY, Dtwo.win_factor)
             else: # half
-                self.Dlist[dtwo].val[c,:] = 2*sp.cross_power(XX, YY, self.Dlist[dtwo].win_factor)  # product 2 for half return
+                Dtwo.val[c,:] = 2*sp.cross_power(XX, YY, Dtwo.win_factor)  # product 2 for half return
 
     def coherence(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        self.Dlist[dtwo].vkind = 'coherence'
+        Dtwo.vkind = 'coherence'
 
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        rnum = len(Done.data)  # number of ref channels
+        cnum = len(Dtwo.data)  # number of cmp channels
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # value dimension
-        self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
+        Dtwo.val = np.zeros((cnum, len(Dtwo.ax)))
 
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel names
             if rnum == 1:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-                XX = self.Dlist[done].spdata[0,:,:]
+                Dtwo.rname.append(Done.clist[0])
+                XX = Done.spdata[0,:,:]
             else:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-                XX = self.Dlist[done].spdata[c,:,:]
+                Dtwo.rname.append(Done.clist[c])
+                XX = Done.spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].spdata[c,:,:]
+            YY = Dtwo.spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.coherence(XX, YY)
+            Dtwo.val[c,:] = sp.coherence(XX, YY)
 
     def cross_phase(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp)
         # OUT : x-axis (ax), y-axis (val)
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        self.Dlist[dtwo].vkind = 'cross_phase'
+        Dtwo.vkind = 'cross_phase'
 
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        # bins = self.Dlist[dtwo].bins  # number of bins
+        rnum = len(Done.data)  # number of ref channels
+        cnum = len(Dtwo.data)  # number of cmp channels
+        # bins = Dtwo.bins  # number of bins
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # distance
-        self.Dlist[dtwo].dist = np.zeros(cnum)
+        Dtwo.dist = np.zeros(cnum)
 
         # value dimension
-        self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
+        Dtwo.val = np.zeros((cnum, len(Dtwo.ax)))
 
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number and distance between ref and cmp channels
             if rnum == 1:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
-                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
-                XX = self.Dlist[done].spdata[0,:,:]
+                Dtwo.rname.append(Done.clist[0])
+                Dtwo.dist[c] = np.sqrt((Dtwo.rpos[c] - Done.rpos[0])**2 + \
+                (Dtwo.zpos[c] - Done.zpos[0])**2)
+                XX = Done.spdata[0,:,:]
             else:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
-                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
-                XX = self.Dlist[done].spdata[c,:,:]
+                Dtwo.rname.append(Done.clist[c])
+                Dtwo.dist[c] = np.sqrt((Dtwo.rpos[c] - Done.rpos[c])**2 + \
+                (Dtwo.zpos[c] - Done.zpos[c])**2)
+                XX = Done.spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].spdata[c,:,:]
+            YY = Dtwo.spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.cross_phase(XX, YY)
+            Dtwo.val[c,:] = sp.cross_phase(XX, YY)
 
     def correlation(self, done=0, dtwo=1):
         # reguire full FFT
         # positive time lag = ref -> cmp
-        self.Dlist[dtwo].vkind = 'correlation'
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bins = self.Dlist[dtwo].bins  # number of bins
-        nfreq = self.Dlist[dtwo].nfreq
-        win_factor = self.Dlist[dtwo].win_factor  # window factors
+        Dtwo.vkind = 'correlation'
+
+        rnum = len(Done.data)  # number of ref channels
+        cnum = len(Dtwo.data)  # number of cmp channels
+        bins = Dtwo.bins  # number of bins
+        nfreq = Dtwo.nfreq
+        win_factor = Dtwo.win_factor  # window factors
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # axes
-        fs = self.Dlist[dtwo].fs
-        self.Dlist[dtwo].ax = int(nfreq/2)*1.0/fs*np.linspace(-1,1,nfreq)
+        fs = Dtwo.fs
+        Dtwo.ax = int(nfreq/2)*1.0/fs*np.linspace(-1,1,nfreq)
 
         # distance
-        self.Dlist[dtwo].dist = np.zeros(cnum)
+        Dtwo.dist = np.zeros(cnum)
 
         # value dimension
-        val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
-        self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
+        val = np.zeros((bins, len(Dtwo.ax)), dtype=np.complex_)
+        Dtwo.val = np.zeros((cnum, len(Dtwo.ax)))
 
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number
             if rnum == 1:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
-                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
-                XX = self.Dlist[done].spdata[0,:,:]
+                Dtwo.rname.append(Done.clist[0])
+                Dtwo.dist[c] = np.sqrt((Dtwo.rpos[c] - Done.rpos[0])**2 + \
+                (Dtwo.zpos[c] - Done.zpos[0])**2)
+                XX = Done.spdata[0,:,:]
             else:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
-                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
-                XX = self.Dlist[done].spdata[c,:,:]
+                Dtwo.rname.append(Done.clist[c])
+                Dtwo.dist[c] = np.sqrt((Dtwo.rpos[c] - Done.rpos[c])**2 + \
+                (Dtwo.zpos[c] - Done.zpos[c])**2)
+                XX = Done.spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].spdata[c,:,:]
+            YY = Dtwo.spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.correlation(XX, YY, win_factor)
+            Dtwo.val[c,:] = sp.correlation(XX, YY, win_factor)
 
     def corr_coef(self, done=0, dtwo=1):
         # reguire full FFT
         # positive time lag = ref -> cmp
-        self.Dlist[dtwo].vkind = 'corr_coef'
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bins = self.Dlist[dtwo].bins  # number of bins
-        nfreq = self.Dlist[dtwo].nfreq
-        win_factor = self.Dlist[dtwo].win_factor  # window factors
+        Dtwo.vkind = 'corr_coef'
+
+        rnum = len(Done.data)  # number of ref channels
+        cnum = len(Dtwo.data)  # number of cmp channels
+        bins = Dtwo.bins  # number of bins
+        nfreq = Dtwo.nfreq
+        win_factor = Dtwo.win_factor  # window factors
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # axes
-        fs = self.Dlist[dtwo].fs
-        self.Dlist[dtwo].ax = int(nfreq/2)*1.0/fs*np.linspace(-1,1,nfreq)
+        fs = Dtwo.fs
+        Dtwo.ax = int(nfreq/2)*1.0/fs*np.linspace(-1,1,nfreq)
 
         # distance
-        self.Dlist[dtwo].dist = np.zeros(cnum)
+        Dtwo.dist = np.zeros(cnum)
 
         # value dimension
-        val = np.zeros((bins, len(self.Dlist[dtwo].ax)), dtype=np.complex_)
-        self.Dlist[dtwo].val = np.zeros((cnum, len(self.Dlist[dtwo].ax)))
+        val = np.zeros((bins, len(Dtwo.ax)), dtype=np.complex_)
+        Dtwo.val = np.zeros((cnum, len(Dtwo.ax)))
 
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel number
             if rnum == 1:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[0])
-                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[0])**2 + \
-                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[0])**2)
-                XX = self.Dlist[done].spdata[0,:,:]
+                Dtwo.rname.append(Done.clist[0])
+                Dtwo.dist[c] = np.sqrt((Dtwo.rpos[c] - Done.rpos[0])**2 + \
+                (Dtwo.zpos[c] - Done.zpos[0])**2)
+                XX = Done.spdata[0,:,:]
             else:
-                self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-                self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
-                (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
-                XX = self.Dlist[done].spdata[c,:,:]
+                Dtwo.rname.append(Done.clist[c])
+                Dtwo.dist[c] = np.sqrt((Dtwo.rpos[c] - Done.rpos[c])**2 + \
+                (Dtwo.zpos[c] - Done.zpos[c])**2)
+                XX = Done.spdata[c,:,:]
 
-            YY = self.Dlist[dtwo].spdata[c,:,:]
+            YY = Dtwo.spdata[c,:,:]
 
-            self.Dlist[dtwo].val[c,:] = sp.corr_coef(XX, YY)
+            Dtwo.val[c,:] = sp.corr_coef(XX, YY)
 
     def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
         # number of cmp channels = number of ref channels
         # add x- and y- cut plot with a given mouse input
         if 'flimits' in kwargs: flimits = kwargs['flimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        self.Dlist[dtwo].vkind = 'xspec'
+        Dtwo.vkind = 'xspec'
 
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bins = self.Dlist[dtwo].bins  # number of bins
-        win_factor = self.Dlist[dtwo].win_factor  # window factors
+        cnum = len(Dtwo.data)  # number of cmp channels
+        bins = Dtwo.bins  # number of bins
+        win_factor = Dtwo.win_factor  # window factors
 
         # plot dimension
         if cnum < 4:
@@ -639,11 +656,11 @@ class FluctAna(object):
         col = math.ceil(cnum/row)
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
-        pshot = self.Dlist[dtwo].shot
-        ptime = self.Dlist[dtwo].time
-        pfreq = self.Dlist[dtwo].ax/1000
+        pshot = Dtwo.shot
+        ptime = Dtwo.time
+        pfreq = Dtwo.ax/1000
 
         for c in range(cnum):
             # set axes
@@ -655,16 +672,16 @@ class FluctAna(object):
                 plt.subplot(row,col,c+1, **axprops)
 
             # reference channel
-            rname = self.Dlist[done].clist[c]
-            self.Dlist[dtwo].rname.append(rname)
+            rname = Done.clist[c]
+            Dtwo.rname.append(rname)
             # cmp channel
-            pname = self.Dlist[dtwo].clist[c]
+            pname = Dtwo.clist[c]
             # pdata
-            pdata = np.zeros((bins, len(self.Dlist[dtwo].ax)))  # (full length for calculation)
+            pdata = np.zeros((bins, len(Dtwo.ax)))  # (full length for calculation)
 
             # calculate cross power for each channel and each bins
-            XX = self.Dlist[done].spdata[c,:,:]
-            YY = self.Dlist[dtwo].spdata[c,:,:]
+            XX = Done.spdata[c,:,:]
+            YY = Dtwo.spdata[c,:,:]
 
             pdata = sp.xspec(XX, YY, win_factor)
 
@@ -689,7 +706,7 @@ class FluctAna(object):
             else:
                 plt.xlim([ptime[0], ptime[-1]])
 
-            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+            chpos = '({:.1f}, {:.1f})'.format(Dtwo.rpos[c]*100, Dtwo.zpos[c]*100) # [cm]
             plt.title('#{:d}, {:s}-{:s} {:s}'.format(pshot, rname, pname, chpos), fontsize=10)
             plt.xlabel('Time [s]')
             plt.ylabel('Frequency [kHz]')
@@ -700,37 +717,39 @@ class FluctAna(object):
         # calculate for each pair of done and dtwo and average
         # number of cmp channels = number of ref channels
         # kstep [cm^-1]
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        self.Dlist[dtwo].vkind = 'local_SKw'
+        Dtwo.vkind = 'local_SKw'
 
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
-        bins = self.Dlist[dtwo].bins  # number of bins
-        win_factor = self.Dlist[dtwo].win_factor  # window factors
+        rnum = len(Done.data)  # number of ref channels
+        cnum = len(Dtwo.data)  # number of cmp channels
+        bins = Dtwo.bins  # number of bins
+        win_factor = Dtwo.win_factor  # window factors
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # distance
-        self.Dlist[dtwo].dist = np.zeros(cnum)
+        Dtwo.dist = np.zeros(cnum)
         for c in range(cnum):
-            self.Dlist[dtwo].dist[c] = np.sqrt((self.Dlist[dtwo].rpos[c] - self.Dlist[done].rpos[c])**2 + \
-            (self.Dlist[dtwo].zpos[c] - self.Dlist[done].zpos[c])**2)
+            Dtwo.dist[c] = np.sqrt((Dtwo.rpos[c] - Done.rpos[c])**2 + \
+            (Dtwo.zpos[c] - Done.zpos[c])**2)
 
         # k-axes
-        dmin = self.Dlist[dtwo].dist.min()*100 # [cm]
+        dmin = Dtwo.dist.min()*100 # [cm]
         kax = np.arange(-np.pi/dmin, np.pi/dmin, kstep) # [cm^-1]
-        self.Dlist[dtwo].kax = kax
+        Dtwo.kax = kax
 
         nkax = len(kax)
-        nfreq = len(self.Dlist[dtwo].ax)
+        nfreq = len(Dtwo.ax)
 
         # value dimension
         Pxx = np.zeros((bins, nfreq), dtype=np.complex_)
         Pyy = np.zeros((bins, nfreq), dtype=np.complex_)
         Kxy = np.zeros((bins, nfreq), dtype=np.complex_)
         val = np.zeros((cnum, nkax, nfreq), dtype=np.complex_)
-        self.Dlist[dtwo].val = np.zeros((nkax, nfreq))
+        Dtwo.val = np.zeros((nkax, nfreq))
         sklw = np.zeros((nkax, nfreq), dtype=np.complex_)
         K = np.zeros((cnum, nfreq), dtype=np.complex_)
         sigK = np.zeros((cnum, nfreq), dtype=np.complex_)
@@ -738,18 +757,18 @@ class FluctAna(object):
         # calculation loop for multi channels
         for c in range(cnum):
             # reference channel name
-            self.Dlist[dtwo].rname.append(self.Dlist[done].clist[c])
-            print('pair of {:s} and {:s}'.format(self.Dlist[dtwo].rname[c], self.Dlist[dtwo].clist[c]))
+            Dtwo.rname.append(Done.clist[c])
+            print('pair of {:s} and {:s}'.format(Dtwo.rname[c], Dtwo.clist[c]))
 
             # calculate auto power and cross phase (wavenumber)
             for b in range(bins):
-                X = self.Dlist[done].spdata[c,b,:]
-                Y = self.Dlist[dtwo].spdata[c,b,:]
+                X = Done.spdata[c,b,:]
+                Y = Dtwo.spdata[c,b,:]
 
                 Pxx[b,:] = X*np.matrix.conjugate(X) / win_factor
                 Pyy[b,:] = Y*np.matrix.conjugate(Y) / win_factor
                 Pxy = X*np.matrix.conjugate(Y)
-                Kxy[b,:] = np.arctan2(Pxy.imag, Pxy.real).real / (self.Dlist[dtwo].dist[c]*100) # [cm^-1]
+                Kxy[b,:] = np.arctan2(Pxy.imag, Pxy.real).real / (Dtwo.dist[c]*100) # [cm^-1]
 
                 # calculate SKw
                 for w in range(nfreq):
@@ -762,13 +781,13 @@ class FluctAna(object):
             for w in range(nfreq):
                 sigK[c,w] = np.sqrt(np.sum( (kax - K[c,w])**2 * sklw[:,w] ))
 
-        self.Dlist[dtwo].val[:,:] = np.mean(val, 0).real
-        self.Dlist[dtwo].K = np.mean(K, 0)
-        self.Dlist[dtwo].sigK = np.mean(sigK, 0)
+        Dtwo.val[:,:] = np.mean(val, 0).real
+        Dtwo.K = np.mean(K, 0)
+        Dtwo.sigK = np.mean(sigK, 0)
 
-        pshot = self.Dlist[dtwo].shot
-        pfreq = self.Dlist[dtwo].ax/1000
-        pdata = self.Dlist[dtwo].val + 1e-10
+        pshot = Dtwo.shot
+        pfreq = Dtwo.ax/1000
+        pdata = Dtwo.val + 1e-10
 
         pdata = np.log10(pdata)
 
@@ -776,14 +795,14 @@ class FluctAna(object):
 
         plt.colorbar()
 
-        chpos = '({:.1f}, {:.1f})'.format(np.mean(self.Dlist[dtwo].rpos*100), np.mean(self.Dlist[dtwo].zpos*100)) # [cm]
+        chpos = '({:.1f}, {:.1f})'.format(np.mean(Dtwo.rpos*100), np.mean(Dtwo.zpos*100)) # [cm]
         plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
         plt.xlabel('Frequency [kHz]')
         plt.ylabel('Local wavenumber [rad/cm]')
 
-        # plt.plot(pfreq, self.Dlist[dtwo].K, 'k')
-        # plt.plot(pfreq, self.Dlist[dtwo].K + self.Dlist[dtwo].sigK, 'r')
-        # plt.plot(pfreq, self.Dlist[dtwo].K - self.Dlist[dtwo].sigK, 'r')
+        # plt.plot(pfreq, Dtwo.K, 'k')
+        # plt.plot(pfreq, Dtwo.K + Dtwo.sigK, 'r')
+        # plt.plot(pfreq, Dtwo.K - Dtwo.sigK, 'r')
 
         plt.show()
 
@@ -793,10 +812,13 @@ class FluctAna(object):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
 
-        self.Dlist[dtwo].vkind = 'bicoherence'
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
 
-        rnum = len(self.Dlist[done].data)  # number of ref channels
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        Dtwo.vkind = 'bicoherence'
+
+        rnum = len(Done.data)  # number of ref channels
+        cnum = len(Dtwo.data)  # number of cmp channels
 
         # plot dimension
         if cnum < 4:
@@ -806,39 +828,39 @@ class FluctAna(object):
         col = math.ceil(cnum/row)
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # axes
-        ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
-        ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
+        ax1 = Dtwo.ax # full -fN ~ fN
+        ax2 = np.fft.ifftshift(Dtwo.ax) # full 0 ~ fN, -fN ~ -f1
         ax2 = ax2[0:int(len(ax1)/2+1)] # half 0 ~ fN
 
         # value dimension
-        self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
-        self.Dlist[dtwo].val2 = np.zeros((cnum, len(ax1)))
+        Dtwo.val = np.zeros((cnum, len(ax1), len(ax2)))
+        Dtwo.val2 = np.zeros((cnum, len(ax1)))
 
         # calculation loop for multi channels
         for i, c in enumerate(cnl):
             # reference channel
             if rnum == 1:
-                rname = self.Dlist[done].clist[0]
-                XX = self.Dlist[done].spdata[0,:,:]
+                rname = Done.clist[0]
+                XX = Done.spdata[0,:,:]
             else:
-                rname = self.Dlist[done].clist[c]
-                XX = self.Dlist[done].spdata[c,:,:]
-            self.Dlist[dtwo].rname.append(rname)
+                rname = Done.clist[c]
+                XX = Done.spdata[c,:,:]
+            Dtwo.rname.append(rname)
 
             # cmp channel
-            pname = self.Dlist[dtwo].clist[c]
-            YY = self.Dlist[dtwo].spdata[c,:,:]
+            pname = Dtwo.clist[c]
+            YY = Dtwo.spdata[c,:,:]
 
             # calculate bicoherence
-            self.Dlist[dtwo].val[c,:,:], self.Dlist[dtwo].val2[c,:] = sp.bicoherence(XX, YY)
+            Dtwo.val[c,:,:], Dtwo.val2[c,:] = sp.bicoherence(XX, YY)
 
             if show == 1:
                 # plot info
-                pshot = self.Dlist[dtwo].shot
-                chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[c]*100, self.Dlist[dtwo].zpos[c]*100) # [cm]
+                pshot = Dtwo.shot
+                chpos = '({:.1f}, {:.1f})'.format(Dtwo.rpos[c]*100, Dtwo.zpos[c]*100) # [cm]
 
                 # Plot results
                 fig, (a1,a2) = plt.subplots(1,2, figsize=(10,6), gridspec_kw = {'width_ratios':[1,1.5]})
@@ -847,8 +869,8 @@ class FluctAna(object):
                 pax1 = ax1/1000.0 # [kHz]
                 pax2 = ax2/1000.0 # [kHz]
 
-                pdata = self.Dlist[dtwo].val[c,:,:]
-                pdata2 = self.Dlist[dtwo].val2[c,:]
+                pdata = Dtwo.val[c,:,:]
+                pdata2 = Dtwo.val2[c,:]
 
                 im = a1.imshow(pdata, extent=(pax2.min(), pax2.max(), pax1.min(), pax1.max()), interpolation='none', aspect='equal', origin='lower', vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 a1.set_xlabel('f1 [kHz]')
@@ -863,7 +885,7 @@ class FluctAna(object):
                 fig.colorbar(im, cax=cax, orientation='vertical')
 
                 a2.plot(pax1, pdata2, 'k')
-                # a2.axhline(y=1/self.Dlist[dtwo].bins, color='r') ## need correction
+                # a2.axhline(y=1/Dtwo.bins, color='r') ## need correction
                 a2.set_xlim([0,pax2[-1]])
                 a2.set_xlabel('f3 [kHz]')
                 a2.set_ylabel('Summed bicoherence (avg)')
@@ -874,33 +896,36 @@ class FluctAna(object):
     def nonlin_evolution(self, done=0, dtwo=1, delta=1.0, wit=1, js=1, test=0, show=1, check=0, **kwargs):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
-        self.Dlist[dtwo].vkind = 'nonlin_rates'
+        Done = self.Dlist[done]
+        Dtwo = self.Dlist[dtwo]
+
+        Dtwo.vkind = 'nonlin_rates'
 
         # rnum = cnum = 1
-        cnum = len(self.Dlist[dtwo].data)  # number of cmp channels
+        cnum = len(Dtwo.data)  # number of cmp channels
 
         # reference channel names
-        self.Dlist[dtwo].rname = []
+        Dtwo.rname = []
 
         # distance
-        self.Dlist[dtwo].dist = np.zeros(cnum)
+        Dtwo.dist = np.zeros(cnum)
 
         # axes
-        ax1 = self.Dlist[dtwo].ax # full -fN ~ fN
-        ax2 = np.fft.ifftshift(self.Dlist[dtwo].ax) # full 0 ~ fN, -fN ~ -f1
+        ax1 = Dtwo.ax # full -fN ~ fN
+        ax2 = np.fft.ifftshift(Dtwo.ax) # full 0 ~ fN, -fN ~ -f1
         ax2 = ax2[0:int(len(ax1)/2+1)] # half 0 ~ fN
 
         # value dimension
-        self.Dlist[dtwo].val = np.zeros((cnum, len(ax1), len(ax2)))
+        Dtwo.val = np.zeros((cnum, len(ax1), len(ax2)))
 
         # obtain XX and YY
         # reference channel
-        rname = self.Dlist[done].clist[0]
-        XX = self.Dlist[done].spdata[0,:,:]
-        self.Dlist[dtwo].rname.append(rname)
+        rname = Done.clist[0]
+        XX = Done.spdata[0,:,:]
+        Dtwo.rname.append(rname)
         # cmp channel
-        pname = self.Dlist[dtwo].clist[0]
-        YY = self.Dlist[dtwo].spdata[0,:,:]
+        pname = Dtwo.clist[0]
+        YY = Dtwo.spdata[0,:,:]
 
         # modeled data
         if test == 1:
@@ -917,8 +942,8 @@ class FluctAna(object):
 
         if show == 1:
             # plot info
-            pshot = self.Dlist[dtwo].shot
-            chpos = '({:.1f}, {:.1f})'.format(self.Dlist[dtwo].rpos[0]*100, self.Dlist[dtwo].zpos[0]*100) # [cm]
+            pshot = Dtwo.shot
+            chpos = '({:.1f}, {:.1f})'.format(Dtwo.rpos[0]*100, Dtwo.zpos[0]*100) # [cm]
 
             # Plot results
             fig, (a1,a2) = plt.subplots(2,1, figsize=(6,8), gridspec_kw = {'height_ratios':[1,2]})
@@ -1016,14 +1041,15 @@ class FluctAna(object):
             plt.show()
 
         # save results
-        self.Dlist[dtwo].val = gk # linear growth rate
-        self.Dlist[dtwo].val2 = sum_Tijk.real # nonlinear transfer rate
+        Dtwo.val = gk # linear growth rate
+        Dtwo.val2 = sum_Tijk.real # nonlinear transfer rate
 
 ############################# statistical methods ##############################
 
     def skplane(self, dnum=0, cnl=[0], detrend=1, verbose=1, fig=None, axs=None, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+
         D = self.Dlist[dnum]
 
         if verbose == 1:    
@@ -1073,54 +1099,60 @@ class FluctAna(object):
             plt.show()
 
     def skewness(self, dnum=0, cnl=[0], detrend=1, **kwargs):
-        self.Dlist[dnum].vkind = 'skewness'
+        D = self.Dlist[dnum]
 
-        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+        D.vkind = 'skewness'
+
+        cnum = len(D.data)  # number of cmp channels
 
         # data dimension
-        self.Dlist[dnum].val = np.zeros(cnum)
+        D.val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            x = self.Dlist[dnum].data[c,:]
+            x = D.data[c,:]
 
-            self.Dlist[dnum].val[c] = st.skewness(x, detrend)
+            D.val[c] = st.skewness(x, detrend)
 
     def kurtosis(self, dnum=0, cnl=[0], detrend=1, **kwargs):
-        self.Dlist[dnum].vkind = 'kurtosis'
+        D = self.Dlist[dnum]
 
-        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+        D.vkind = 'kurtosis'
+
+        cnum = len(D.data)  # number of cmp channels
 
         # data dimension
-        self.Dlist[dnum].val = np.zeros(cnum)
+        D.val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            x = self.Dlist[dnum].data[c,:]
+            x = D.data[c,:]
 
-            self.Dlist[dnum].val[c] = st.kurtosis(x, detrend)
+            D.val[c] = st.kurtosis(x, detrend)
 
     def hurst(self, dnum=0, cnl=[0], bins=30, detrend=1, fitrange=[10,1000], **kwargs):
-        self.Dlist[dnum].vkind = 'hurst'
+        D = self.Dlist[dnum]
 
-        pshot = self.Dlist[dnum].shot
-        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+        D.vkind = 'hurst'
+
+        pshot = D.shot
+        cnum = len(D.data)  # number of cmp channels
 
         # axis
-        bsize = int(1.0*len(self.Dlist[dnum].time)/bins)
+        bsize = int(1.0*len(D.time)/bins)
         ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
 
         # data dimension
-        self.Dlist[dnum].ers = np.zeros((cnum, len(ax)))
-        self.Dlist[dnum].std = np.zeros((cnum, len(ax)))
-        self.Dlist[dnum].fit = np.zeros((cnum, len(ax)))
-        self.Dlist[dnum].val = np.zeros(cnum)
+        D.ers = np.zeros((cnum, len(ax)))
+        D.std = np.zeros((cnum, len(ax)))
+        D.fit = np.zeros((cnum, len(ax)))
+        D.val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            pname = self.Dlist[dnum].clist[c]
-            t = self.Dlist[dnum].time
-            x = self.Dlist[dnum].data[c,:]
+            pname = D.clist[c]
+            t = D.time
+            x = D.data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].ers[c,:], self.Dlist[dnum].std[c,:], \
-            self.Dlist[dnum].val[c], self.Dlist[dnum].fit[c,:] = st.hurst(t, x, bins, detrend, fitrange, **kwargs)
+            D.ax, D.ers[c,:], D.std[c,:], \
+            D.val[c], D.fit[c,:] = st.hurst(t, x, bins, detrend, fitrange, **kwargs)
 
     def chplane(self, dnum=0, cnl=[0], d=6, bins=1, rescale=0, verbose=1, fig=None, axs=None, **kwargs):
         # CH plane [Rosso PRL 2007]
@@ -1143,7 +1175,7 @@ class FluctAna(object):
         print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
 
         # make axes
-        fig, axs = make_axes(cnum, ptype='mplot', fig=fig, axs=axs, type='val')
+        if verbose == 1: fig, axs = make_axes(cnum, ptype='mplot', fig=fig, axs=axs, type='val')
 
         # data dimension
         D.pi = np.zeros((cnum, nst))
@@ -1201,47 +1233,61 @@ class FluctAna(object):
 
             plt.show()
 
-    def js_complexity(self, dnum=0, cnl=[0], d=6, bins=1, **kwargs):
-        self.Dlist[dnum].vkind = 'jscom'
+    def js_complexity(self, dnum=0, cnl=[0], d=5, bins=1, **kwargs):
+        D = self.Dlist[dnum]
 
-        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+        D.vkind = 'jscom'
 
+        cnum = len(D.data)  # number of cmp channels
+        
         nst = math.factorial(d) # number of possible states
 
-        bsize = int(1.0*len(self.Dlist[dnum].data[0,:])/bins)
+        bsize = int(1.0*len(D.data[0,:])/bins)
         print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
 
         # data dimension
-        self.Dlist[dnum].pi = np.zeros((cnum, nst))
-        self.Dlist[dnum].std = np.zeros((cnum, nst))
-        self.Dlist[dnum].val = np.zeros(cnum)
+        D.pi = np.zeros((cnum, nst))
+        D.std = np.zeros((cnum, nst))
+        D.val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            x = self.Dlist[dnum].data[c,:]
+            x = D.data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].pi[c,:], self.Dlist[dnum].std[c,:] = st.bp_prob(x, d, bins)
-            self.Dlist[dnum].val[c] = st.js_complexity(self.Dlist[dnum].pi[c,:])
+            D.ax, D.pi[c,:], D.std[c,:] = st.bp_prob(x, d, bins)
+            D.val[c] = st.js_complexity(D.pi[c,:])
 
-    def ns_entropy(self, dnum=0, cnl=[0], d=6, bins=1, **kwargs):
-        self.Dlist[dnum].vkind = 'nsent'
+    def ns_entropy(self, dnum=0, cnl=[0], d=5, bins=1, **kwargs):
+        D = self.Dlist[dnum]
 
-        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+        D.vkind = 'nsent'
+
+        cnum = len(D.data)  # number of cmp channels
 
         nst = math.factorial(d) # number of possible states
 
-        bsize = int(1.0*len(self.Dlist[dnum].data[0,:])/bins)
+        bsize = int(1.0*len(D.data[0,:])/bins)
         print('For an accurate estimation of the probability, bsize {:g} should be considerably larger than nst {:g}'.format(bsize, nst))
 
         # data dimension
-        self.Dlist[dnum].pi = np.zeros((cnum, nst))
-        self.Dlist[dnum].std = np.zeros((cnum, nst))
-        self.Dlist[dnum].val = np.zeros(cnum)
+        D.pi = np.zeros((cnum, nst))
+        D.std = np.zeros((cnum, nst))
+        D.val = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            x = self.Dlist[dnum].data[c,:]
+            x = D.data[c,:]
 
-            self.Dlist[dnum].ax, self.Dlist[dnum].pi[c,:], self.Dlist[dnum].std[c,:] = st.bp_prob(x, d, bins)
-            self.Dlist[dnum].val[c] = st.ns_entropy(self.Dlist[dnum].pi[c,:])
+            D.ax, D.pi[c,:], D.std[c,:] = st.bp_prob(x, d, bins)
+            D.val[c] = st.ns_entropy(D.pi[c,:])
+
+    def rescaled_complexity(self, dnum=0, cnl=[0], d=5, bins=1, **kwargs):
+        self.chplane(dnum=dnum, cnl=cnl, d=d, bins=bins, verbose=0)
+
+        D = self.Dlist[dnum]
+        
+        D.val = np.zeros(cnum)
+
+        h_min, c_min, h_max, c_max, h_cen, c_cen = st.ch_bdry(d)
+        D.val[cnl] = st.complexity_rescale(D.nsent[cnl], D.jscom[cnl], h_min, c_min, h_max, c_max, h_cen, c_cen)
 
     def intermittency(self, dnum=0, cnl=[0], bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], verbose=1, **kwargs):
         # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
@@ -1250,18 +1296,22 @@ class FluctAna(object):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
-        self.Dlist[dnum].vkind = 'intermittency'
+        D = self.Dlist[dnum]
 
-        pshot = self.Dlist[dnum].shot
-        cnum = len(self.Dlist[dnum].data)  # number of cmp channels
+        D.vkind = 'intermittency'
 
-        self.Dlist[dnum].intmit = np.zeros(cnum)
+        pshot = D.shot
+        cnum = len(D.data)  # number of cmp channels
+
+        D.intmit = np.zeros(cnum)
 
         for i, c in enumerate(cnl):
-            t = self.Dlist[dnum].time
-            x = self.Dlist[dnum].data[c,:]
+            t = D.time
+            x = D.data[c,:]
 
-            self.Dlist[dnum].intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitrange, verbose, **kwargs)
+            D.intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitrange, verbose, **kwargs)
+
+############################# default plot functions ###########################
 
 ############################# default plot functions ###########################
 
