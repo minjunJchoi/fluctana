@@ -179,7 +179,7 @@ class FluctAna(object):
 
         self.list_data()
 
-    def ch_pos_correction(self, dnum=0, fname='none', verbose=0):
+    def ch_pos_correction(self, dnum=0, fname=None, verbose=0):
         D = self.Dlist[dnum]
 
         # plot original position
@@ -198,20 +198,34 @@ class FluctAna(object):
 
         print('channel position corrected with {:s}'.format(fname))
 
-    def calibration(self, dnum=0, fname='none'):
+    def calibration(self, dnum=0, new=0, calib_factor_fname=None, abs_fname=None):
         D = self.Dlist[dnum]
 
-        # load calibration factors 
-        with open(fname, 'rb') as fin:
-            [calib_factor] = pickle.load(fin)
+        if new == 0: # use calibration factors saved file
+            with open(calib_factor_fname, 'rb') as fin:
+                [calib_factor] = pickle.load(fin)
+
+            D.data = D.data * calib_factor           
+
+            print('data calibrated with {:s}'.format(calib_factor_fname))
+        elif new == 1: # use absolute data saved file (e.g., ecei_pos*.pkl (syndia))
+            with open(abs_fname, 'rb') as fin:
+                [_, _, _, abs_data]= pickle.load(fin)
+
+            raw_data = np.mean(D.data, axis=1)
+
+            calib_factor = np.expand_dims(abs_data/raw_data, axis=1)
+            
+            D.data = D.data * calib_factor
+
+            with open(calib_factor_fname, 'wb') as fout:
+                pickle.dump([calib_factor], fout)
+
+            print('data calibrated with {:s}'.format(abs_fname))
+            print('calibration factors are saved in {:s}'.format(calib_factor_fname))
 
         if hasattr(D, 'good_channels'):
-            D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0))
-
-        D.data = D.data * calib_factor
-
-        print('calibrated with {:s}'.format(fname))
-
+            D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0))       
 ############################# down sampling #############################
 
     def downsample(self, dnum, q, verbose=0, fig=None, axs=None):
@@ -309,6 +323,11 @@ class FluctAna(object):
             else:
                 x = np.convolve(x, win, 'same') / np.sum(win)
 
+            if type == 'time':
+                D.data[c,:] = x
+            elif type == 'val':
+                D.val[c,:] = x
+
         print('dnum {:d} moving average filter with window {:s} size {:g} [us] demean {:d}'.format(dnum, window, twin*1e6, demean))
 
     def filt(self, dnum=0, name='FIR_pass', fL=0, fH=10000, b=0.08, verbose=0):
@@ -347,8 +366,8 @@ class FluctAna(object):
         zpos = D.zpos[:]
         
         tnum = len(D.time)
-        self.clev = np.zeros(tnum)
-        self.ilev = np.zeros(tnum)
+        D.clev = np.zeros(tnum)
+        D.ilev = np.zeros(tnum)
 
         for i in range(tnum):
             data1d = D.data[:,i]
@@ -361,7 +380,7 @@ class FluctAna(object):
             data2d = data1d.reshape((row,column))
 
             # apply filter
-            data2d, self.clev[i], self.ilev[i] = wave2d_filter.apply(data2d)
+            data2d, D.clev[i], D.ilev[i] = wave2d_filter.apply(data2d)
 
             # make it 1D
             D.data[:,i] = data2d.reshape(data1d.shape)
@@ -369,8 +388,8 @@ class FluctAna(object):
             if verbose == 1 and i%100 ==0: print('wave2d filter: {:d}/{:d} done'.format(i, tnum))
         
         if verbose == 1:
-            plt.plot(D.time, self.clev, 'r')
-            plt.plot(D.time, self.ilev, 'b')
+            plt.plot(D.time, D.clev, 'r')
+            plt.plot(D.time, D.ilev, 'b')
             plt.show()
 
 ############################# spectral methods #############################
@@ -1671,7 +1690,7 @@ class FluctAna(object):
 
             plt.show()
 
-    def iplot(self, dnum, snum=0, c=None, type='time', vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', bcut=0.03, pmethod='contour', fig=None, axs=None, **kwargs):
+    def iplot(self, dnum, snum=0, c=None, type='time', vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', bcut=0.03, pmethod='contour', cline=False, fig=None, axs=None, **kwargs):
         # keyboard interactive image plot
         D = self.Dlist[dnum]
 
@@ -1721,6 +1740,7 @@ class FluctAna(object):
                     if pmethod == 'scatter':
                         im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
                     elif pmethod == 'contour':
+                        if cline: axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=0.5, linestyles=cline, colors='k')
                         im = axs[1].contourf(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 else:
                     im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
@@ -1780,6 +1800,7 @@ class FluctAna(object):
                     if pmethod == 'scatter':
                         im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
                     elif pmethod == 'contour':
+                        if cline: axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=0.5, linestyles=cline, colors='k')
                         im = axs[1].contourf(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 else:
                     im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
