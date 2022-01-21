@@ -658,7 +658,7 @@ class FluctAna(object):
 
             Dtwo.val[c,:] = sp.corr_coef(XX, YY)
 
-    def xspec(self, done=0, dtwo=1, thres=0, **kwargs):
+    def xspec(self, done=0, dtwo=1, cnl='all', thres=0, fig=None, axs=None, show=1, cbar=1, **kwargs):
         # number of cmp channels = number of ref channels
         # add x- and y- cut plot with a given mouse input
         if 'flimits' in kwargs: flimits = kwargs['flimits']
@@ -672,12 +672,7 @@ class FluctAna(object):
         bins = Dtwo.bins  # number of bins
         win_factor = Dtwo.win_factor  # window factors
 
-        # plot dimension
-        if cnum < 4:
-            row = cnum
-        else:
-            row = 4
-        col = math.ceil(cnum/row)
+        if cnl == 'all': cnl = range(cnum)
 
         # reference channel names
         Dtwo.rname = []
@@ -686,14 +681,10 @@ class FluctAna(object):
         ptime = Dtwo.time
         pfreq = Dtwo.ax/1000
 
-        for c in range(cnum):
-            # set axes
-            if c == 0:
-                plt.subplots_adjust(hspace = 0.5, wspace = 0.3)
-                axes1 = plt.subplot(row,col,c+1)
-                axprops = dict(sharex = axes1, sharey = axes1)
-            else:
-                plt.subplot(row,col,c+1, **axprops)
+        fig, axs = make_axes(len(cnl), ptype='mplot', maxcol=4, type='val', fig=fig, axs=axs)
+
+        for i, c in enumerate(cnl):
+            plt.sca(axs[i])
 
             # reference channel
             rname = Done.clist[c]
@@ -721,7 +712,8 @@ class FluctAna(object):
             plt.imshow(pdata, extent=(ptime.min(), ptime.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
 
             plt.clim([minP+dP*0.30, maxP])
-            plt.colorbar()
+
+            if cbar == 1: plt.colorbar()
 
             if 'flimits' in kwargs:  # flimits
                 plt.ylim([flimits[0], flimits[1]])
@@ -735,7 +727,9 @@ class FluctAna(object):
             plt.xlabel('Time [s]')
             plt.ylabel('Frequency [kHz]')
 
-        plt.show()
+        if show == 1: plt.show()
+
+        return fig, axs
 
     def skw(self, done=0, dtwo=1, kstep=0.01, **kwargs):
         # calculate for each pair of done and dtwo and average
@@ -1964,18 +1958,18 @@ def nextpow2(i):
     return n
 
 
-def make_axes(cnum, ptype='mplot', fig=None, axs=None, type='time'):
+def make_axes(cnum, ptype='mplot', maxcol=8, fig=None, axs=None, type='time'):
     # plot dimension 
-    if cnum < 8:
+    if cnum < maxcol:
         col = cnum
     else:
-        col = 8
+        col = maxcol
     row = math.ceil(cnum/col)
 
     if ptype == 'mplot':
         if fig == None:
             fig = plt.figure(facecolor='w', figsize=(4+col*2,row*3))
-            
+
         if axs == None:
             axs = ['']*cnum
             for i in range(cnum):
