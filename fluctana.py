@@ -1384,7 +1384,7 @@ class FluctAna(object):
                 dy = Done.data[c,t1idx:t2idx]
 
                 # pre-processing here
-                if vkind in ['cross_power']:
+                if vkind in ['cross_power', 'coherence']:
                     dx = Dtwo.data[c,t1idx:t2idx]
 
                     if vpara['norm'] == 1:
@@ -1402,6 +1402,10 @@ class FluctAna(object):
                     fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
                     val = 2*sp.cross_power(XX, YY, win_factor)
                     Done.val[c,j] = np.sqrt(np.sum(val[fidx]))
+                elif vkind == 'coherence':
+                    fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
+                    val = sp.coherence(XX, YY)
+                    Done.val[c,j] = np.sum(val[fidx])
 
                 print('tcal channel {:d}/{:d} time {:d}/{:d}'.format(c, len(cnl), j+1, len(tidx_list)))
 
