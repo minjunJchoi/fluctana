@@ -1383,17 +1383,36 @@ class FluctAna(object):
 
                 dy = Done.data[c,t1idx:t2idx]
 
+                # pre-processing here
+                if vkind in ['cross_power']:
+                    dx = Dtwo.data[c,t1idx:t2idx]
+
+                    if vpara['norm'] == 1:
+                        dy = dy/np.mean(dy) - 1.0
+                        dx = dx/np.mean(dx) - 1.0
+
+                    fax, YY, win_factor = sp.fftbins(dy, 1.0/Done.fs, nfft=vpara['nfft'], window=vpara['window'], overlap=vpara['overlap'], detrend=vpara['detrend'], full=vpara['full'])
+                    _, XX, _ = sp.fftbins(dx, 1.0/Done.fs, nfft=vpara['nfft'], window=vpara['window'], overlap=vpara['overlap'], detrend=vpara['detrend'], full=vpara['full'])
+
                 # calculation here
                 if vkind == 'rescaled_complexity': 
                     _, pi, _ = st.bp_prob(dy, d=vpara['d'], bins=vpara['bins'])
                     Done.jscom[c,j], Done.nsent[c,j] = st.ch_measure(pi) # jscom and nsent
+                elif vkind == 'cross_power':
+                    fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
+                    val = 2*sp.cross_power(XX, YY, win_factor)
+                    Done.val[c,j] = np.sqrt(np.sum(val[fidx]))
 
                 print('tcal channel {:d}/{:d} time {:d}/{:d}'.format(c, len(cnl), j+1, len(tidx_list)))
 
-            # post-processing for fast speed
+            # post-processing here
             if vkind == 'rescaled_complexity':
                 Done.val[c,:] = st.complexity_rescale(Done.nsent[c,:], Done.jscom[c,:], \
                     vpara['h_min'], vpara['c_min'], vpara['h_max'], vpara['c_max'], vpara['h_cen'], vpara['c_cen'])
+
+        if dtwo != None:
+            Dtwo.ax = Done.ax
+            Dtwo.val = Done.val
 
         # print(tidx_win, tidx_step)
 
