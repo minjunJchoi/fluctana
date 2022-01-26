@@ -188,7 +188,9 @@ class FluctAna(object):
 
         # replace with corrected channel position saved in fname 
         with open(fname, 'rb') as fin:
-            [_, D.rpos, D.zpos, _] = pickle.load(fin)
+            fdata = pickle.load(fin)
+            D.rpos = fdata[1]
+            D.zpos = fdata[2]
 
         if verbose == 1: 
             plt.plot(D.rpos, D.zpos, 'ro')
