@@ -212,7 +212,8 @@ class FluctAna(object):
             print('data calibrated with {:s}'.format(calib_factor_fname))
         elif new == 1: # use absolute data saved file (e.g., ecei_pos*.pkl (syndia))
             with open(abs_fname, 'rb') as fin:
-                [_, _, _, abs_data]= pickle.load(fin)
+                fdata = pickle.load(fin)
+                abs_data = fdata[-1]
 
             raw_data = np.mean(D.data, axis=1)
 
