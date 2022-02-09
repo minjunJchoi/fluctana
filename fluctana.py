@@ -228,7 +228,8 @@ class FluctAna(object):
             print('calibration factors are saved in {:s}'.format(calib_factor_fname))
 
         if hasattr(D, 'good_channels'):
-            D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0))       
+            D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0)) 
+                  
 ############################# down sampling #############################
 
     def downsample(self, dnum, q, verbose=0, fig=None, axs=None):
