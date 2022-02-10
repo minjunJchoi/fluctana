@@ -35,7 +35,7 @@ CM = plt.cm.get_cmap('RdYlBu_r')
 
 
 class FluctData(object):
-    def __init__(self, shot, clist, time, data, rpos, zpos, apos):
+    def __init__(self, shot=None, clist=None, time=None, data=None, rpos=None, zpos=None, apos=None):
         self.shot = shot
         self.clist = clist
         self.time = time # 1xN [time]
@@ -107,7 +107,7 @@ class FluctAna(object):
             rpos = kwargs['rpos']
             zpos = kwargs['zpos']
             apos = kwargs['apos']
-            D = FluctData(shot, clist, time, data, rpos, zpos, apos)
+            D = FluctData(shot=shot, clist=clist, time=time, data=data, rpos=rpos, zpos=zpos, apos=apos)
 
         # KSTAR diagnostics
         if dev == 'KSTAR':
