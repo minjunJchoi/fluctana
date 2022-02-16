@@ -292,7 +292,7 @@ class FluctAna(object):
 
 ############################# data filtering functions #########################
 
-    def ma_filt(self, dnum=0, twin=300e-6, window='rectwin', type='time', demean=0): # twin window size in [s]
+    def ma_filt(self, dnum=0, twin=300e-6, window='rectwin', type='time', demean=0, cut_edge=False): # twin window size in [s]
         # moving average #### add option data or val 
         D = self.Dlist[dnum]
 
@@ -331,6 +331,13 @@ class FluctAna(object):
                 D.data[c,:] = x
             elif type == 'val':
                 D.val[c,:] = x
+
+        if cut_edge == True:
+            D.time = D.time[int(win_size/2):-int(win_size/2)]
+            if type == 'time':
+                D.data = D.data[:,int(win_size/2):-int(win_size/2)]
+            elif type == 'val':
+                D.val = D.val[:,int(win_size/2):-int(win_size/2)]
 
         print('dnum {:d} moving average filter with window {:s} size {:g} [us] demean {:d}'.format(dnum, window, twin*1e6, demean))
 
@@ -1355,6 +1362,39 @@ class FluctAna(object):
 
             D.intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitrange, verbose, **kwargs)
 
+    def peak_stat(self, dnum=0, cnl='all', height_min=10, width_max=1e5, prom_min=10, verbose=0, **kwargs):
+        # find peaks in data
+
+        D = self.Dlist[dnum]
+
+        D.vkind = 'peak_stat'
+
+        cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(len(D.clist))
+
+        D.npeak = np.zeros(cnum)
+        D.mprom = np.zeros(cnum)
+        D.sprom = np.zeros(cnum)
+
+        for i, c in enumerate(cnl):
+            t = D.time
+            x = D.data[c,:]
+
+            if verbose == 1: plt.plot(t, x) 
+
+            pidx, pp = signal.find_peaks(x, height=(height_min,None), width=(None,width_max), prominence=(prom_min,None))  
+            if len(pidx) > 0:
+                D.npeak[c] = len(pidx)
+                D.mprom[c] = np.mean(pp["prominences"])
+                D.sprom[c] = np.std(pp["prominences"])
+
+                if verbose == 1: 
+                    plt.plot(t[pidx], pp["peak_heights"], 'o')
+                    plt.title('npeak {:g} mean prom {:g}'.format(D.npeak[c], D.mprom[c]))
+
+            if verbose == 1: plt.show()
+
 ############################# calculation along time ###########################
 
     def tcal(self, done=0, dtwo=None, cnl='all', twin=0.005, tstep=0.001, vkind='rescaled_complexity', vpara=None, **kwargs):
@@ -1378,6 +1418,9 @@ class FluctAna(object):
         if vkind == 'rescaled_complexity':
             Done.nsent = np.zeros((cnum, len(Done.ax)))
             Done.jscom = np.zeros((cnum, len(Done.ax)))
+        elif vkind == 'peak_stat':
+            Done.npeak = np.zeros((cnum, len(Done.ax)))
+            Done.mprom = np.zeros((cnum, len(Done.ax)))
 
         Done.val  = np.zeros((cnum, len(Done.ax)))
         for i, c in enumerate(cnl):
@@ -1410,6 +1453,11 @@ class FluctAna(object):
                     fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
                     val = sp.coherence(XX, YY)
                     Done.val[c,j] = np.sum(val[fidx])
+                elif vkind == 'peak_stat':
+                    pidx, pp = signal.find_peaks(dy, height=(vpara['height_min'],None), width=(None,vpara['width_max']), prominence=(vpara['prom_min'],None))  
+                    if len(pidx) > 0:
+                        Done.npeak[c,j] = len(pidx)
+                        Done.mprom[c,j] = np.mean(pp["prominences"])
 
                 print('tcal channel {:d}/{:d} time {:d}/{:d}'.format(c, len(cnl), j+1, len(tidx_list)))
 
@@ -1434,11 +1482,15 @@ class FluctAna(object):
 
 ############################# default plot functions ###########################
 
-    def mplot(self, dnum=1, cnl=[0], type='time', fig=None, axs=None, show=1, **kwargs):
+    def mplot(self, dnum=1, cnl='all', type='time', fig=None, axs=None, show=1, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         D = self.Dlist[dnum]
+
+        cnum = len(D.data)  # number of cmp channels
+
+        if cnl == 'all': cnl = range(cnum)
 
         fig, axs = make_axes(len(cnl), ptype='mplot', fig=fig, axs=axs, type=type)
 
