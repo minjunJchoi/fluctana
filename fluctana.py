@@ -1362,39 +1362,6 @@ class FluctAna(object):
 
             D.intmit[c] = st.intermittency(t, x, bins, overlap, qstep, fitrange, verbose, **kwargs)
 
-    def peak_stat(self, dnum=0, cnl='all', height_min=10, width_max=1e5, prom_min=10, verbose=0, **kwargs):
-        # find peaks in data
-
-        D = self.Dlist[dnum]
-
-        D.vkind = 'peak_stat'
-
-        cnum = len(D.data)  # number of cmp channels
-
-        if cnl == 'all': cnl = range(len(D.clist))
-
-        D.npeak = np.zeros(cnum)
-        D.mprom = np.zeros(cnum)
-        D.sprom = np.zeros(cnum)
-
-        for i, c in enumerate(cnl):
-            t = D.time
-            x = D.data[c,:]
-
-            if verbose == 1: plt.plot(t, x) 
-
-            pidx, pp = signal.find_peaks(x, height=(height_min,None), width=(None,width_max), prominence=(prom_min,None))  
-            if len(pidx) > 0:
-                D.npeak[c] = len(pidx)
-                D.mprom[c] = np.mean(pp["prominences"])
-                D.sprom[c] = np.std(pp["prominences"])
-
-                if verbose == 1: 
-                    plt.plot(t[pidx], pp["peak_heights"], 'o')
-                    plt.title('npeak {:g} mean prom {:g}'.format(D.npeak[c], D.mprom[c]))
-
-            if verbose == 1: plt.show()
-
 ############################# calculation along time ###########################
 
     def tcal(self, done=0, dtwo=None, cnl='all', twin=0.005, tstep=0.001, vkind='rescaled_complexity', vpara=None, **kwargs):
