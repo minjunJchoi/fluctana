@@ -147,8 +147,8 @@ class KstarEcei(object):
                     av = f[node][aidx1:aidx2]/10000.0
                     v = v/(np.mean(av) - self.offlev[i]) - 1
                 elif norm == 3:
-                    fir_filter = ft.FirFilter('FIR_pass', self.fs, 0, 10, b=0.08)
-                    base = fir_filter.apply(v)
+                    base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
+                    base = base_filter.apply(v).real
                     v = v/base - 1
 
                 data[i,:] = v
