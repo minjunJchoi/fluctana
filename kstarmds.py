@@ -40,7 +40,7 @@ EFIT_TREE = ['VOLUME', 'KAPPA', 'BETAP', 'BETAN', 'q95', 'LI3', 'WMHD', 'RVSOD',
 
 # nodes need postprocessing
 POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_VAL_OUT:FOO':'/5',
-            'RC03':'*(-1)/1000', 'NE_INTER01':'/1.9', 'VOLUME':'/10', 'KAPPA':'-1',
+            'RC03':'*(-1)/1000', 'NE_INTER01':'/1.9', 'VOLUME':'/10',
             'NE_INTER02':'/2.7'}
 
 # nodes NOT support segment reading in 2018
@@ -137,7 +137,7 @@ class KstarMds(Connection):
                         self.time = self.time*0.001
 
                     # get fs
-                    self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
+                    self.fs = round(1/(self.time[-1] - self.time[-2])/10)*10.0
 
                     # find index for trange
                     idx = np.where((self.time >= trange[0])*(self.time <= trange[1]))
