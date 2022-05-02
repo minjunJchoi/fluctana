@@ -47,7 +47,7 @@ class KstarEcei(object):
         elif 27400 < shot:
             self.data_path = '/eceidata2/exp_2021/'
 
-        self.clist = expand_clist(clist)
+        self.clist = self.expand_clist(clist)
 
         if shot < 19392:
             self.cnidx1 = 6
@@ -405,34 +405,33 @@ class KstarEcei(object):
 
         return abcd
 
+    def expand_clist(self, clist):
+        # IN : List of channel names (e.g. 'ECEI_G1201-1208' or 'ECEI_GT1201-1208').
+        # OUT : Expanded list (e.g. 'ECEI_G1201', ..., 'ECEI_G1208')
 
-def expand_clist(clist):
-    # IN : List of channel names (e.g. 'ECEI_G1201-1208' or 'ECEI_GT1201-1208').
-    # OUT : Expanded list (e.g. 'ECEI_G1201', ..., 'ECEI_G1208')
+        # KSTAR ECEI
+        exp_clist = []
+        for c in range(len(clist)):
+            if len(clist[c]) < 15:
+                exp_clist.append(clist[c])
+                continue
+            elif 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
+                vi = int(clist[c][6:8])
+                fi = int(clist[c][8:10])
+                vf = int(clist[c][11:13])
+                ff = int(clist[c][13:15])
+                ip = 6
+            elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
+                vi = int(clist[c][7:9])
+                fi = int(clist[c][9:11])
+                vf = int(clist[c][12:14])
+                ff = int(clist[c][14:16])
+                ip = 7
+            
+            for v in range(vi, vf+1):
+                for f in range(fi, ff+1):
+                    exp_clist.append(clist[c][0:ip] + '{:02d}{:02d}'.format(v, f))
 
-    # KSTAR ECEI
-    exp_clist = []
-    for c in range(len(clist)):
-        if len(clist[c]) < 15:
-            exp_clist.append(clist[c])
-            continue
-        elif 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
-            vi = int(clist[c][6:8])
-            fi = int(clist[c][8:10])
-            vf = int(clist[c][11:13])
-            ff = int(clist[c][13:15])
-            ip = 6
-        elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
-            vi = int(clist[c][7:9])
-            fi = int(clist[c][9:11])
-            vf = int(clist[c][12:14])
-            ff = int(clist[c][14:16])
-            ip = 7
-        
-        for v in range(vi, vf+1):
-            for f in range(fi, ff+1):
-                exp_clist.append(clist[c][0:ip] + '{:02d}{:02d}'.format(v, f))
+        clist = exp_clist
 
-    clist = exp_clist
-
-    return clist
+        return clist

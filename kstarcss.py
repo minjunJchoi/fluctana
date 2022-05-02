@@ -23,7 +23,7 @@ class KstarCss(Connection):
         # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot
         
-        self.clist = expand_clist(clist)
+        self.clist = self.expand_clist(clist)
 
         self.channel_position()
 
@@ -132,25 +132,24 @@ class KstarCss(Connection):
         #     print('Failed to read the channel position from MDSplus {:s}'.format(self.clist[0]))
         #     print('Try to get the position from kstardata {:s}'.format(self.clist[0]))
 
+    def expand_clist(self, clist):
+        # IN : List of channel names (e.g. 'CSS_01-04')
+        # OUT : Expanded list (e.g. 'CSS_01', 'CSS_02', 'CSS_03', 'CSS_04')
 
-def expand_clist(clist):
-    # IN : List of channel names (e.g. 'CSS_01-04')
-    # OUT : Expanded list (e.g. 'CSS_01', 'CSS_02', 'CSS_03', 'CSS_04')
+        # KSTAR CSS
+        exp_clist = []
+        for c in range(len(clist)):
+            if 'CSS' in clist[c] and len(clist[c]) == 9:
+                vi = int(clist[c][4:6])
+                vf = int(clist[c][7:9])
 
-    # KSTAR CSS
-    exp_clist = []
-    for c in range(len(clist)):
-        if 'CSS' in clist[c] and len(clist[c]) == 9:
-            vi = int(clist[c][4:6])
-            vf = int(clist[c][7:9])
+                for v in range(vi, vf+1):
+                    exp_clist.append(clist[c][0:4] + '{:02d}'.format(v))
+            else:
+                exp_clist.append(clist[c])
+        clist = exp_clist
 
-            for v in range(vi, vf+1):
-                exp_clist.append(clist[c][0:4] + '{:02d}'.format(v))
-        else:
-            exp_clist.append(clist[c])
-    clist = exp_clist
-
-    return clist
+        return clist
 
 
 class NoPosMdsError(Exception):

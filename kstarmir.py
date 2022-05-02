@@ -31,7 +31,7 @@ class KstarMir(object):
         elif 24100 < shot:
             self.data_path = '/eceidata2/exp_2020/'
 
-        self.clist = expand_clist(clist)
+        self.clist = self.expand_clist(clist)
 
         # file name
         self.fname = "{:s}{:06d}/MIR.{:06d}.h5".format(self.data_path, shot, shot)
@@ -172,25 +172,24 @@ class KstarMir(object):
             self.rpos[c] = 0
             self.zpos[c], self.apos[c] = 0, 0
 
+    def expand_clist(self, clist):
+        # IN : List of channel names (e.g. 'MIR_0101-1604')
+        # OUT : Expanded list (e.g. 'MIR_0101', ..., 'MIR_1604')
 
-def expand_clist(clist):
-    # IN : List of channel names (e.g. 'MIR_0101-1604')
-    # OUT : Expanded list (e.g. 'MIR_0101', ..., 'MIR_1604')
+        # KSTAR MIR
+        exp_clist = []
+        for c in range(len(clist)):
+            if 'MIR' in clist[c] and len(clist[c]) == 13:
+                vi = int(clist[c][4:6])
+                fi = int(clist[c][6:8])
+                vf = int(clist[c][9:11])
+                ff = int(clist[c][11:13])
 
-    # KSTAR MIR
-    exp_clist = []
-    for c in range(len(clist)):
-        if 'MIR' in clist[c] and len(clist[c]) == 13:
-            vi = int(clist[c][4:6])
-            fi = int(clist[c][6:8])
-            vf = int(clist[c][9:11])
-            ff = int(clist[c][11:13])
+                for v in range(vi, vf+1):
+                    for f in range(fi, ff+1):
+                        exp_clist.append(clist[c][0:4] + '{:02d}{:02d}'.format(v, f))
+            else:
+                exp_clist.append(clist[c])
+        clist = exp_clist
 
-            for v in range(vi, vf+1):
-                for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:4] + '{:02d}{:02d}'.format(v, f))
-        else:
-            exp_clist.append(clist[c])
-    clist = exp_clist
-
-    return clist
+        return clist

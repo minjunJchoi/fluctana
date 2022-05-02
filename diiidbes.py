@@ -20,7 +20,7 @@ class DiiidBes(object):
 
         self.data_path = '/home/mjchoi/DIIID/besdata/'
 
-        self.clist = expand_clist(clist)
+        self.clist = self.expand_clist(clist)
 
         # file name
         self.fname = "{:s}{:06d}/BES.{:06d}.h5".format(self.data_path, shot, shot)
@@ -134,22 +134,21 @@ class DiiidBes(object):
         #     self.rpos[c] = 0
         #     self.zpos[c], self.apos[c] = 0, 0
 
+    def expand_clist(self, clist):
+        # IN : List of channel names (e.g. 'BES10-14')
+        # OUT : Expanded list (e.g. 'BES10', ..., 'BES14')
 
-def expand_clist(clist):
-    # IN : List of channel names (e.g. 'BES10-14')
-    # OUT : Expanded list (e.g. 'BES10', ..., 'BES14')
+        # DIIID BES
+        exp_clist = []
+        for c in range(len(clist)):
+            if 'BES' in clist[c] and len(clist[c]) == 8:
+                ni = int(clist[c][3:5])
+                nf = int(clist[c][6:8])
 
-    # DIIID BES
-    exp_clist = []
-    for c in range(len(clist)):
-        if 'BES' in clist[c] and len(clist[c]) == 8:
-            ni = int(clist[c][3:5])
-            nf = int(clist[c][6:8])
+                for n in range(ni, nf+1):
+                    exp_clist.append(clist[c][0:3] + '{:02d}'.format(n))
+            else:
+                exp_clist.append(clist[c])
+        clist = exp_clist
 
-            for n in range(ni, nf+1):
-                exp_clist.append(clist[c][0:3] + '{:02d}'.format(n))
-        else:
-            exp_clist.append(clist[c])
-    clist = exp_clist
-
-    return clist
+        return clist

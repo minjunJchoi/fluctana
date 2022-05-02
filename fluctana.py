@@ -146,7 +146,7 @@ class FluctAna(object):
         old_clist = D.clist
 
         # add channels (no duplicates)
-        clist = expand_clist(clist)
+        clist = D.expand_clist(clist)
         clist = [c for c in clist if c not in D.clist]
 
         # add data
@@ -161,7 +161,7 @@ class FluctAna(object):
     def del_channel(self, dnum, clist):
         D = self.Dlist[dnum]
 
-        clist = expand_clist(clist)
+        clist = D.expand_clist(clist)
 
         for i in range(len(clist)):
             # find index to be deleted
@@ -189,8 +189,18 @@ class FluctAna(object):
         # replace with corrected channel position saved in fname 
         with open(fname, 'rb') as fin:
             fdata = pickle.load(fin)
-            D.rpos = fdata[1]
-            D.zpos = fdata[2]
+
+            clist_full = fdata[0]
+            rpos_full = fdata[1]
+            zpos_full = fdata[2]
+
+            if len(rpos_full) == len(D.rpos):
+                D.rpos = rpos_full
+                D.zpos = zpos_full
+            else:
+                clist_full = D.expand_clist(clist_full)
+                D.rpos = np.array([rpos_full[clist_full.index(i)] for i in D.clist])
+                D.zpos = np.array([zpos_full[clist_full.index(i)] for i in D.clist])
 
         if verbose == 1: 
             plt.plot(D.rpos, D.zpos, 'ro')
@@ -1966,36 +1976,36 @@ class FluctAna(object):
 
             print('TEST :: dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(dnum, bins, window, nfft, overlap, detrend, full))
 
-def expand_clist(clist):
-    # IN : List of channel names (e.g. 'ECEI_G1201-1208' or 'ECEI_GT1201-1208').
-    # OUT : Expanded list (e.g. 'ECEI_G1201', ..., 'ECEI_G1208')
+# def expand_clist(clist):
+#     # IN : List of channel names (e.g. 'ECEI_G1201-1208' or 'ECEI_GT1201-1208').
+#     # OUT : Expanded list (e.g. 'ECEI_G1201', ..., 'ECEI_G1208')
 
-    # KSTAR ECEI
-    exp_clist = []
-    for c in range(len(clist)):
-        if 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
-            vi = int(clist[c][6:8])
-            fi = int(clist[c][8:10])
-            vf = int(clist[c][11:13])
-            ff = int(clist[c][13:15])
+#     # KSTAR ECEI
+#     exp_clist = []
+#     for c in range(len(clist)):
+#         if 'ECEI' in clist[c] and len(clist[c]) == 15: # before 2018
+#             vi = int(clist[c][6:8])
+#             fi = int(clist[c][8:10])
+#             vf = int(clist[c][11:13])
+#             ff = int(clist[c][13:15])
 
-            for v in range(vi, vf+1):
-                for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:6] + '{:02d}{:02d}'.format(v, f))
-        elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
-            vi = int(clist[c][7:9])
-            fi = int(clist[c][9:11])
-            vf = int(clist[c][12:14])
-            ff = int(clist[c][14:16])
+#             for v in range(vi, vf+1):
+#                 for f in range(fi, ff+1):
+#                     exp_clist.append(clist[c][0:6] + '{:02d}{:02d}'.format(v, f))
+#         elif 'ECEI' in clist[c] and len(clist[c]) == 16: # since 2018
+#             vi = int(clist[c][7:9])
+#             fi = int(clist[c][9:11])
+#             vf = int(clist[c][12:14])
+#             ff = int(clist[c][14:16])
 
-            for v in range(vi, vf+1):
-                for f in range(fi, ff+1):
-                    exp_clist.append(clist[c][0:7] + '{:02d}{:02d}'.format(v, f))
-        else:
-            exp_clist.append(clist[c])
-    clist = exp_clist
+#             for v in range(vi, vf+1):
+#                 for f in range(fi, ff+1):
+#                     exp_clist.append(clist[c][0:7] + '{:02d}{:02d}'.format(v, f))
+#         else:
+#             exp_clist.append(clist[c])
+#     clist = exp_clist
 
-    return clist
+#     return clist
 
 
 def nextpow2(i):
