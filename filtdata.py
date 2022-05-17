@@ -4,7 +4,7 @@
 #
 # Description : Filter data
 #
-# Acknowledgement : TomRoelandts.com
+# Acknowledgement : TomRoelandts.com (FirFilter), C. Bowman (ThresholdFftFilter)
 #
 # Last updated
 #  2018.12.15 : version 0.10;
