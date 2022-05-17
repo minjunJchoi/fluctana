@@ -351,7 +351,7 @@ class FluctAna(object):
 
         print('dnum {:d} moving average filter with window {:s} size {:g} [us] demean {:d}'.format(dnum, window, twin*1e6, demean))
 
-    def filt(self, dnum=0, name='FIR_pass', fL=0, fH=10000, b=0.08, verbose=0):
+    def filt(self, dnum=0, name='FIR_pass', fL=0, fH=10000, b=0.08, nbins=100, verbose=0):
         D = self.Dlist[dnum]
 
         # select filter except svd
@@ -359,6 +359,8 @@ class FluctAna(object):
             freq_filter = ft.FirFilter(name, D.fs, fL, fH, b)
         elif name[0:3] == 'FFT':
             freq_filter = ft.FftFilter(name, D.fs, fL, fH)
+        elif name == 'Threshold_FFT':
+            freq_filter = ft.ThresholdFftFilter(D.fs, fL, fH, b=b, nbins=nbins)
 
         for c in range(len(D.clist)):
             x = np.copy(D.data[c,:])

@@ -114,6 +114,52 @@ class FftFilter(object):
         return x
 
 
+class ThresholdFftFilter(object):
+    def __init__(self, fs, fL, fH, b=3.0, nbins=100):
+        self.fs = fs
+        self.fL = fL # white noise range
+        self.fH = fH # white noise range
+        self.b = b # scale factor 
+        self.nbins = nbins
+
+    def apply(self, x):
+        nfft = len(x)
+        dt = 1.0/self.fs
+        
+        # frequency axis
+        ax = np.fft.fftfreq(nfft, d=dt)
+
+        # fft
+        X = np.fft.fft(x, n=nfft)
+
+        # get white noise 
+        nidx = (self.fL <= np.abs(ax)) & (np.abs(ax) <= self.fH)
+        white_noise = np.abs(X[nidx])
+
+        if np.isnan(white_noise).any():
+            return np.zeros(x.shape)
+
+        # get noise characteristics 
+        counts, bins = np.histogram(white_noise, bins = self.nbins)
+        pdf = counts/np.sum(counts)
+        bins_center = (bins[1:] + bins[:-1])/2
+        mu = np.sum(bins_center*pdf) 
+        threshold = mu*np.sqrt(2/np.pi)
+
+        # determine filter coefficient 
+        self.filt_coef = np.zeros(X.shape)
+        sidx = np.abs(X) > self.b * threshold 
+        self.filt_coef[sidx] = 1 - self.b*threshold / (2*np.abs(X[sidx])) * (np.tanh(12*(self.b*threshold/np.abs(X[sidx]) - 1/2)) + 1)
+
+        # apply filter
+        X = X * self.filt_coef
+
+        # ifft
+        x = np.fft.ifft(X, n=nfft)
+        
+        return x
+
+
 class SvdFilter(object):
     def __init__(self, cutoff=0.9):
         self.cutoff = cutoff
