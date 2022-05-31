@@ -121,14 +121,14 @@ class KstarBes(Connection):
         for c in range(cnum):
             # set r,z node
             rnode = '\{:s}:RPOS'.format(self.clist[c]) 
-            znode = '\{:s}:ZPOS'.format(self.clist[c]) 
-                
+            znode = '\{:s}:VPOS'.format(self.clist[c]) 
+
             # read r,z node
             self.rpos[c] = self.get(rnode) / 1000 # [mm] -> [m]
             self.zpos[c] = self.get(znode) / 1000 # [mm] -> [m]
         
         # close tree
-        self.closeTree(tree, self.shot)
+        self.closeTree(BES_TREE, self.shot)
 
 
     def expand_clist(self, clist):
