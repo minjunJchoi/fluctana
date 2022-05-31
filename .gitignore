@@ -3,3 +3,4 @@ analysis/*
 examples/.ipynb_checkpoints/
 .DS_Store
 *.pyc
+.ftpconfig
