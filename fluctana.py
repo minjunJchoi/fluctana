@@ -129,6 +129,26 @@ class FluctAna(object):
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
 
+    def add_multi_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], time_points=[6.8,6.9], twin=1e-3, norm=1, res=0, verbose=1, **kwargs):
+        # KSTAR diagnostics
+        if dev == 'KSTAR':
+            if 'ECEI' in clist[0]:
+                D = KstarEcei(shot=shot, clist=clist)
+            elif 'MIR' in clist[0]:
+                D = KstarMir(shot=shot, clist=clist)
+            elif 'CSS' in clist[0]:
+                D = KstarCss(shot=shot, clist=clist)
+            elif 'BES' in clist[0]:
+                D = KstarBes(shot=shot, clist=clist)
+            else:
+                D = KstarMds(shot=shot, clist=clist)
+        elif dev == 'DIIID':
+            if 'BES' in clist[0]:
+                D = DiiidBes(shot=shot, clist=clist)
+
+        D.get_multi_data( time_points=time_points, twin=twin, norm=norm, res=res, verbose=verbose)
+        self.Dlist.append(D)
+
     def del_data(self, dnum):
         del self.Dlist[dnum]
 
@@ -458,6 +478,52 @@ class FluctAna(object):
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
+
+    def fftmulti(self, window, detrend=0, full=0):
+        # IN : self, multi data window name, detrend or not
+        # OUT : multi x N FFT of time series data; frequency axis
+        # self.list_data()
+
+        for d, D in enumerate(self.Dlist):
+            # get window function
+            tnum = len(D.multi_time[0,:])
+            nfft = tnum
+            overlap = 0 
+            _, win = sp.fft_window(tnum, nfft, window, overlap)
+            dt = D.multi_time[0,1] - D.multi_time[0,0]  # time step
+
+            D.window = window
+            D.detrend = detrend
+
+            # make fft data
+            bins = len(D.multi_time)
+            cnum = len(D.multi_data)
+            if full == 1: # full shift to -fN ~ 0 ~ fN
+                if np.mod(nfft, 2) == 0:  # even nfft
+                    D.spdata = np.zeros((cnum, bins, nfft+1), dtype=np.complex_)
+                else:  # odd nfft
+                    D.spdata = np.zeros((cnum, bins, nfft), dtype=np.complex_)
+            else: # half 0 ~ fN
+                D.spdata = np.zeros((cnum, bins, int(nfft/2+1)), dtype=np.complex_)
+
+            for c in range(cnum):
+                for t in range(bins):
+                    x = D.multi_data[c,t,:]
+                    D.ax, D.spdata[c,t,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
+
+            print(D.multi_time.shape)
+            print(D.multi_data.shape)
+            print(D.ax.shape)
+            print(D.spdata.shape)
+
+            # update attributes
+            if np.mod(nfft, 2) == 0:
+                D.nfreq = nfft + 1
+            else:
+                D.nfreq = nfft
+
+            print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
+
     def cwt(self, df, tavg=0, detrend=0, full=0):
         for d, D in enumerate(self.Dlist):
             # time step
@@ -496,8 +562,8 @@ class FluctAna(object):
 
         Dtwo.vkind = 'cross_power'
 
-        rnum = len(Done.data)  # number of ref channels
-        cnum = len(Dtwo.data)  # number of cmp channels
+        rnum = len(Done.clist)  # number of ref channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
 
         # reference channel names
         Dtwo.rname = []
@@ -530,8 +596,8 @@ class FluctAna(object):
 
         Dtwo.vkind = 'coherence'
 
-        rnum = len(Done.data)  # number of ref channels
-        cnum = len(Dtwo.data)  # number of cmp channels
+        rnum = len(Done.clist)  # number of ref channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
 
         # reference channel names
         Dtwo.rname = []
@@ -561,8 +627,8 @@ class FluctAna(object):
 
         Dtwo.vkind = 'cross_phase'
 
-        rnum = len(Done.data)  # number of ref channels
-        cnum = len(Dtwo.data)  # number of cmp channels
+        rnum = len(Done.clist)  # number of ref channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
         # bins = Dtwo.bins  # number of bins
 
         # reference channel names
@@ -600,8 +666,8 @@ class FluctAna(object):
 
         Dtwo.vkind = 'correlation'
 
-        rnum = len(Done.data)  # number of ref channels
-        cnum = len(Dtwo.data)  # number of cmp channels
+        rnum = len(Done.clist)  # number of ref channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
         bins = Dtwo.bins  # number of bins
         nfreq = Dtwo.nfreq
         win_factor = Dtwo.win_factor  # window factors
@@ -646,8 +712,8 @@ class FluctAna(object):
 
         Dtwo.vkind = 'corr_coef'
 
-        rnum = len(Done.data)  # number of ref channels
-        cnum = len(Dtwo.data)  # number of cmp channels
+        rnum = len(Done.clist)  # number of ref channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
         bins = Dtwo.bins  # number of bins
         nfreq = Dtwo.nfreq
         win_factor = Dtwo.win_factor  # window factors
@@ -694,7 +760,7 @@ class FluctAna(object):
 
         Dtwo.vkind = 'xspec'
 
-        cnum = len(Dtwo.data)  # number of cmp channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
         bins = Dtwo.bins  # number of bins
         win_factor = Dtwo.win_factor  # window factors
 
@@ -766,8 +832,8 @@ class FluctAna(object):
 
         Dtwo.vkind = 'local_SKw'
 
-        rnum = len(Done.data)  # number of ref channels
-        cnum = len(Dtwo.data)  # number of cmp channels
+        rnum = len(Done.clist)  # number of ref channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
         bins = Dtwo.bins  # number of bins
         win_factor = Dtwo.win_factor  # window factors
 
@@ -861,8 +927,8 @@ class FluctAna(object):
 
         Dtwo.vkind = 'bicoherence'
 
-        rnum = len(Done.data)  # number of ref channels
-        cnum = len(Dtwo.data)  # number of cmp channels
+        rnum = len(Done.clist)  # number of ref channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -948,7 +1014,7 @@ class FluctAna(object):
         Dtwo.vkind = 'nonlin_rates'
 
         # rnum = cnum = 1
-        cnum = len(Dtwo.data)  # number of cmp channels
+        cnum = len(Dtwo.clist)  # number of cmp channels
 
         # reference channel names
         Dtwo.rname = []
@@ -1103,7 +1169,7 @@ class FluctAna(object):
 
         D.vkind = 'skplane'
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1151,7 +1217,7 @@ class FluctAna(object):
 
         D.vkind = 'skewness'
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1168,7 +1234,7 @@ class FluctAna(object):
 
         D.vkind = 'kurtosis'
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1186,7 +1252,7 @@ class FluctAna(object):
         D.vkind = 'hurst'
 
         pshot = D.shot
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1221,7 +1287,7 @@ class FluctAna(object):
 
         pshot = D.shot
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1294,7 +1360,7 @@ class FluctAna(object):
 
         D.vkind = 'jscom'
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1319,7 +1385,7 @@ class FluctAna(object):
 
         D.vkind = 'nsent'
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1344,7 +1410,7 @@ class FluctAna(object):
 
         D = self.Dlist[dnum]
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1365,7 +1431,7 @@ class FluctAna(object):
         D.vkind = 'intermittency'
 
         pshot = D.shot
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(len(D.clist))
 
@@ -1393,7 +1459,7 @@ class FluctAna(object):
         tidx_list = np.arange(int(tidx_win/2), len(Done.time)-int(tidx_win/2), tidx_step, dtype='int64')
         Done.ax = Done.time[tidx_list]
 
-        cnum = len(Done.data)  # number of cmp channels
+        cnum = len(Done.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 
@@ -1470,7 +1536,7 @@ class FluctAna(object):
 
         D = self.Dlist[dnum]
 
-        cnum = len(D.data)  # number of cmp channels
+        cnum = len(D.clist)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
 

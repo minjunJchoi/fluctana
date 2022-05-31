@@ -54,12 +54,15 @@ class KstarBes(Connection):
             # get MDSplus node from channel name
             node = cname + ':FOO'
 
-            # no resampling
-            time_node = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
-            data_node = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node) # offset subtracted already
+            # sub sampling node
+            # time_node = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
+            # data_node = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node) # offset subtracted already
+            time_node = 'dim_of(resample(\{:s},{:f},{:f},2e-6))'.format(node,self.trange[0],self.trange[1])
+            data_node = 'resample(\{:s},{:f},{:f},2e-6)'.format(node,self.trange[0],self.trange[1]) # offset subtracted already
 
             if norm == 2:
-                adata_node = 'setTimeContext({:f},{:f},*),\{:s}'.format(atrange[0],atrange[1],node) # offset subtracted already
+                # adata_node = 'setTimeContext({:f},{:f},*),\{:s}'.format(atrange[0],atrange[1],node) # offset subtracted already
+                adata_node = 'resample(\{:s},{:f},{:f},2e-6)'.format(node,atrange[0],atrange[1]) # offset subtracted already
 
             try:
                 # load time
@@ -104,6 +107,69 @@ class KstarBes(Connection):
         self.closeTree(BES_TREE, self.shot)
 
         return self.time, self.data
+
+    def get_multi_data(self, time_points=None, twin=1e-3, norm=0, res=0, verbose=1):
+        if norm == 0:
+            if verbose == 1: print('Data is not normalized')
+        elif norm == 1:
+            if verbose == 1: print('Data is normalized by time average')
+
+        self.time_points = time_points
+
+        # open tree
+        try:
+            self.openTree(BES_TREE, self.shot)
+            if verbose == 1: print('Open the tree {:s} to get data {:s}'.format(BES_TREE, self.clist[0]))
+        except:
+            if verbose == 1: print('Failed to open the tree {:s} to get data {:s}'.format(BES_TREE, self.clist[0]))
+            return self.time, self.data
+
+        # check data size and get fs
+        # test_node = 'setTimeContext({:f},{:f},*),dim_of(\BES_0101:FOO)'.format(time_points[0]-twin/2,time_points[0]+twin/2)
+        test_node = 'dim_of(resample(\BES_0101:FOO,{:f},{:f},2e-6))'.format(time_points[0]-twin/2,time_points[0]+twin/2)
+        test_data = self.get(test_node).data()
+        # get fs
+        self.fs = round(1/(test_data[1] - test_data[0])/1000)*1000.0        
+
+        # --- loop starts --- # assuming all good channels 
+        self.multi_time = np.zeros((len(time_points), len(test_data)))
+        self.multi_data = np.zeros((len(self.clist), len(time_points), len(test_data)))
+
+        for i, cname in enumerate(self.clist):
+            # get MDSplus node from channel name
+            node = cname + ':FOO'
+
+            for j, tp in enumerate(time_points):
+                # sub sampling node
+                # time_node = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(tp-twin/2,tp+twin/2,node)
+                time_node = 'dim_of(resample(\{:s},{:f},{:f},2e-6))'.format(node,tp-twin/2,tp+twin/2)
+                # data_node = 'setTimeContext({:f},{:f},*),\{:s}'.format(tp-twin/2,tp+twin/2,node) # offset subtracted already
+                data_node = 'resample(\{:s},{:f},{:f},2e-6)'.format(node,tp-twin/2,tp+twin/2) # offset subtracted already
+
+                try:
+                    # load time
+                    if i == 0:
+                        self.multi_time[j,:] = self.get(time_node).data()
+
+                    # load data
+                    v = self.get(data_node).data()
+                    if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, node, len(v)))
+
+                    # normalize by std if norm == 1
+                    if norm == 1:
+                        v = v/np.mean(v) - 1
+
+                    # expand dimension - concatenate
+                    self.multi_data[i,j,:] = v
+
+                except:
+                    print('Failed to get data {:d} : {:s} {:s}'.format(self.shot, data_node, cname))
+        # --- loop ends --- #
+
+        # close tree
+        self.closeTree(BES_TREE, self.shot)
+
+        return self.multi_time, self.multi_data
 
     def channel_position(self):
         # get channel position from MDSplus server
