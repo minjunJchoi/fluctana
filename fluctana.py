@@ -18,6 +18,7 @@ import pickle
 from kstarecei import *
 from kstarmir import *
 from kstarcss import *
+from kstarbes import *
 from kstarmds import *
 #from diiiddata import *  # needs pidly
 from diiidbes import *
@@ -90,7 +91,7 @@ class FluctData(object):
         idx = (time >= trange[0])*(time <= trange[1])
 
         # get fs
-        self.fs = round(1/(time[1] - time[0])/1000)*1000.0            
+        self.fs = round(1/(time[1] - time[0])/1000)*1000.0
 
         return time[idx], idx
 
@@ -100,7 +101,7 @@ class FluctAna(object):
         self.Dlist = []
 
     def add_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], trange=[6.8,7.0], norm=1, atrange=[1.0, 1.01], res=0, verbose=1, **kwargs):
-        # for an arbitrary data 
+        # for an arbitrary data
         if 'data' in kwargs:
             time = kwargs['time']
             data = kwargs['data']
@@ -117,6 +118,8 @@ class FluctAna(object):
                 D = KstarMir(shot=shot, clist=clist)
             elif 'CSS' in clist[0]:
                 D = KstarCss(shot=shot, clist=clist)
+            elif 'BES' in clist[0]:
+                D = KstarBes(shot=shot, clist=clist)
             else:
                 D = KstarMds(shot=shot, clist=clist)
         elif dev == 'DIIID':
@@ -186,7 +189,7 @@ class FluctAna(object):
         if verbose == 1:
             plt.plot(D.rpos, D.zpos, 'bx')
 
-        # replace with corrected channel position saved in fname 
+        # replace with corrected channel position saved in fname
         with open(fname, 'rb') as fin:
             fdata = pickle.load(fin)
 
@@ -202,7 +205,7 @@ class FluctAna(object):
                 D.rpos = np.array([rpos_full[clist_full.index(i)] for i in D.clist])
                 D.zpos = np.array([zpos_full[clist_full.index(i)] for i in D.clist])
 
-        if verbose == 1: 
+        if verbose == 1:
             plt.plot(D.rpos, D.zpos, 'ro')
             plt.gca().set_aspect('equal')
             plt.xlabel('R [m]'); plt.ylabel('z [m]')
@@ -217,7 +220,7 @@ class FluctAna(object):
             with open(calib_factor_fname, 'rb') as fin:
                 [calib_factor] = pickle.load(fin)
 
-            D.data = D.data * calib_factor           
+            D.data = D.data * calib_factor
 
             print('data calibrated with {:s}'.format(calib_factor_fname))
         elif new == 1: # use absolute data saved file (e.g., ecei_pos*.pkl (syndia))
@@ -228,7 +231,7 @@ class FluctAna(object):
             raw_data = np.mean(D.data, axis=1)
 
             calib_factor = np.expand_dims(abs_data/raw_data, axis=1)
-            
+
             D.data = D.data * calib_factor
 
             with open(calib_factor_fname, 'wb') as fout:
@@ -238,8 +241,8 @@ class FluctAna(object):
             print('calibration factors are saved in {:s}'.format(calib_factor_fname))
 
         if hasattr(D, 'good_channels'):
-            D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0)) 
-                  
+            D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0))
+
 ############################# down sampling #############################
 
     def downsample(self, dnum, q, verbose=0, fig=None, axs=None):
@@ -280,18 +283,18 @@ class FluctAna(object):
         print('down sample with q={:d}, fs={:g}'.format(q, D.fs))
 
     def subsample(self, dnum, twin, tstep):
-        # return sub samples along time 
+        # return sub samples along time
         D = self.Dlist[dnum]
 
         cnum = len(D.clist)
 
-        raw_data = np.copy(D.data)        
+        raw_data = np.copy(D.data)
 
         # subsample tidx list
         tidx_win = int(D.fs*twin) # buffer window
         tidx_step = int(D.fs*tstep)
         tidx_list = range(int(tidx_win/2), len(D.time)-int(tidx_win/2), tidx_step)
-        
+
         D.time = D.time[tidx_list]
         D.data = np.empty((cnum, len(D.time)))
         for c in range(cnum):
@@ -303,7 +306,7 @@ class FluctAna(object):
 ############################# data filtering functions #########################
 
     def ma_filt(self, dnum=0, twin=300e-6, window='rectwin', type='time', demean=0, cut_edge=False): # twin window size in [s]
-        # moving average #### add option data or val 
+        # moving average #### add option data or val
         D = self.Dlist[dnum]
 
         cnum = len(D.clist)
@@ -387,7 +390,7 @@ class FluctAna(object):
 
         rpos = D.rpos[:]
         zpos = D.zpos[:]
-        
+
         tnum = len(D.time)
         D.clev = np.zeros(tnum)
         D.ilev = np.zeros(tnum)
@@ -397,7 +400,7 @@ class FluctAna(object):
 
             # fill bad channel
             if bcut > 0:
-                data1d = ms.fill_bad_channel(data1d, rpos, zpos, D.good_channels, bcut) 
+                data1d = ms.fill_bad_channel(data1d, rpos, zpos, D.good_channels, bcut)
 
             # make it 2D
             data2d = data1d.reshape((row,column))
@@ -409,7 +412,7 @@ class FluctAna(object):
             D.data[:,i] = data2d.reshape(data1d.shape)
 
             if verbose == 1 and i%100 ==0: print('wave2d filter: {:d}/{:d} done'.format(i, tnum))
-        
+
         if verbose == 1:
             plt.plot(D.time, D.clev, 'r')
             plt.plot(D.time, D.ilev, 'b')
@@ -455,10 +458,10 @@ class FluctAna(object):
 
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
-    def cwt(self, df, tavg=0, detrend=0, full=0): 
+    def cwt(self, df, tavg=0, detrend=0, full=0):
         for d, D in enumerate(self.Dlist):
             # time step
-            dt = D.time[1] - D.time[0]  
+            dt = D.time[1] - D.time[0]
 
             # bin index
             bidx = np.where((np.mean(D.time) - tavg*1e-6/2 < D.time)*(D.time < np.mean(D.time) + tavg*1e-6/2))[0]
@@ -470,15 +473,15 @@ class FluctAna(object):
             # value dimension
             cnum = len(D.data)  # number of cmp channels
             bins = len(bidx)
-            snum = len(ax_half) 
+            snum = len(ax_half)
             ncwt = (1+full)*snum-(1*full)
             D.spdata = np.zeros((cnum, bins, ncwt), dtype=np.complex_)
             for c in range(cnum):
                 x = D.data[c,:]
-                D.ax, cwtdata, D.cwtdj, D.cwtts = sp.cwt(x, dt, df, detrend, full) 
+                D.ax, cwtdata, D.cwtdj, D.cwtts = sp.cwt(x, dt, df, detrend, full)
                 D.spdata[c,:,:] = cwtdata[bidx,:]
 
-            D.win_factor = 1.0 
+            D.win_factor = 1.0
             D.nfreq = ncwt
             D.bins = len(bidx)
             # D.nens = len(D.bidx) / ( D.fs/(2*1.03*ax_half) ) # need corrections
@@ -978,10 +981,10 @@ class FluctAna(object):
         # calculate transfer functions
         if wit == 1:
             print('Wit method')
-            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY)            
+            Lk, Qijk, Bk, Aijk = sp.wit_nonlinear(XX, YY)
         else:
             print('Ritz method')
-            Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY) 
+            Lk, Qijk, Bk, Aijk = sp.ritz_nonlinear(XX, YY)
 
         if show == 1:
             # plot info
@@ -1076,7 +1079,7 @@ class FluctAna(object):
             plt.legend()
             plt.show()
 
-            # use another XX and YY from different ensemble (data set) if want to check the model keeps working  
+            # use another XX and YY from different ensemble (data set) if want to check the model keeps working
             Gyy2 = sp.nonlinear_gof(self.Dlist[done+2].spdata[0,:,:], self.Dlist[dtwo+2].spdata[0,:,:], Lk, Qijk)
             plt.plot(pax1, Gyy2, color='k', label='goodness of fit')
             plt.xlim([0, pax1[-1]])
@@ -1095,7 +1098,7 @@ class FluctAna(object):
 
         D = self.Dlist[dnum]
 
-        if verbose == 1:    
+        if verbose == 1:
             fig, axs = make_axes(len(D.clist), ptype='mplot', fig=fig, axs=axs)
 
         D.vkind = 'skplane'
@@ -1149,7 +1152,7 @@ class FluctAna(object):
         D.vkind = 'skewness'
 
         cnum = len(D.data)  # number of cmp channels
-        
+
         if cnl == 'all': cnl = range(cnum)
 
         # data dimension
@@ -1294,7 +1297,7 @@ class FluctAna(object):
         cnum = len(D.data)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
-        
+
         nst = math.factorial(d) # number of possible states
 
         bsize = int(1.0*len(D.data[0,:])/bins)
@@ -1340,7 +1343,7 @@ class FluctAna(object):
         self.chplane(dnum=dnum, cnl=cnl, d=d, bins=bins, verbose=0)
 
         D = self.Dlist[dnum]
-        
+
         cnum = len(D.data)  # number of cmp channels
 
         if cnl == 'all': cnl = range(cnum)
@@ -1421,7 +1424,7 @@ class FluctAna(object):
                     _, XX, _ = sp.fftbins(dx, 1.0/Done.fs, nfft=vpara['nfft'], window=vpara['window'], overlap=vpara['overlap'], detrend=vpara['detrend'], full=vpara['full'])
 
                 # calculation here
-                if vkind == 'rescaled_complexity': 
+                if vkind == 'rescaled_complexity':
                     _, pi, _ = st.bp_prob(dy, d=vpara['d'], bins=vpara['bins'])
                     Done.jscom[c,j], Done.nsent[c,j] = st.ch_measure(pi) # jscom and nsent
                 elif vkind == 'cross_power':
@@ -1433,7 +1436,7 @@ class FluctAna(object):
                     val = sp.coherence(XX, YY)
                     Done.val[c,j] = np.sum(val[fidx])
                 elif vkind == 'peak_stat':
-                    pidx, pp = signal.find_peaks(dy, height=(vpara['height_min'],None), width=(None,vpara['width_max']), prominence=(vpara['prom_min'],None))  
+                    pidx, pp = signal.find_peaks(dy, height=(vpara['height_min'],None), width=(None,vpara['width_max']), prominence=(vpara['prom_min'],None))
                     if len(pidx) > 0:
                         Done.npeak[c,j] = len(pidx)
                         Done.mprom[c,j] = np.mean(pp["prominences"])
@@ -1454,7 +1457,7 @@ class FluctAna(object):
         # print(tidx_list)
         # print(tidx_list - int(tidx_win/2))
         # print(tidx_list + int(tidx_win/2))
-        
+
         # print(Done.ax)
         # print(Done.time[tidx_list - int(tidx_win/2)])
         # print(Done.time[tidx_list + int(tidx_win/2)])
@@ -1585,7 +1588,7 @@ class FluctAna(object):
         # calculate summed coherence image
         # or cross power rms image
         # or group velocity image
-        
+
         D = self.Dlist[dnum]
 
         vkind = D.vkind
@@ -1870,13 +1873,13 @@ class FluctAna(object):
 
                 plt.show()
 
-                # mouse or text input 
+                # mouse or text input
                 if c == 1:
                     g = plt.ginput(1)[0][0]
                 elif c == 2:
-                    g = float(input('X value to plot: '))        
+                    g = float(input('X value to plot: '))
                     plt.draw()
-                    
+
                 if g >= pbase[0] and g <= pbase[-1]:
                     tidx = np.where(pbase + 1e-10 >= g)[0][0]
                 else:
@@ -2017,7 +2020,7 @@ def nextpow2(i):
 
 
 def make_axes(cnum, ptype='mplot', maxcol=8, fig=None, axs=None, type='time'):
-    # plot dimension 
+    # plot dimension
     if cnum < maxcol:
         col = cnum
     else:
@@ -2040,7 +2043,7 @@ def make_axes(cnum, ptype='mplot', maxcol=8, fig=None, axs=None, type='time'):
                         axprops = dict(sharex = axs[i], sharey = axs[i])
                 else:
                     axs[i] = fig.add_subplot(row,col,i+1, **axprops)
-    
+
     elif ptype == 'cplot' or 'iplot':
         if fig == None:
             fig = plt.figure(facecolor='w', figsize=(5,5+int(5/23*row)))
@@ -2051,4 +2054,4 @@ def make_axes(cnum, ptype='mplot', maxcol=8, fig=None, axs=None, type='time'):
             ax2 = fig.add_axes([0.85, 0.25, 0.03, 0.28])
             axs = [ax0, ax1, ax2]
 
-    return fig, axs 
+    return fig, axs
