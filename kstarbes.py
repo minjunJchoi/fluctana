@@ -112,25 +112,23 @@ class KstarBes(Connection):
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.zeros(cnum)  # angle [rad]
 
-        # # open tree
-        # self.openTree(BES_TREE, self.shot)
-        # print('OPEN MDS tree {:s} to read rpos'.format(BES_TREE))
-        #
-        # # read rnode from MDSplus
-        # cnum = len(self.clist)
-        # for c in range(cnum):
-        #     # set r,z node
-        #     rnode = '\{:s}:RPOS'.format(self.clist[c])
-        #     znode = '\{:s}:ZPOS'.format(self.clist[c])
-        #
-        #     print(rnode, znode)
-        #
-        #     # read r,z node
-        #     self.rpos[c] = self.get(rnode).data()
-        #     self.zpos[c] = self.get(znode).data()
-        #
-        # # close tree
-        # self.closeTree(tree, self.shot)
+        # open tree
+        self.openTree(BES_TREE, self.shot)
+        print('OPEN MDS tree {:s} to read rpos'.format(BES_TREE))
+        
+        # read rnode from MDSplus
+        cnum = len(self.clist)
+        for c in range(cnum):
+            # set r,z node
+            rnode = '\{:s}:RPOS'.format(self.clist[c]) 
+            znode = '\{:s}:ZPOS'.format(self.clist[c]) 
+                
+            # read r,z node
+            self.rpos[c] = self.get(rnode) / 1000 # [mm] -> [m]
+            self.zpos[c] = self.get(znode) / 1000 # [mm] -> [m]
+        
+        # close tree
+        self.closeTree(tree, self.shot)
 
 
     def expand_clist(self, clist):
@@ -155,23 +153,3 @@ class KstarBes(Connection):
         clist = exp_clist
 
         return clist
-
-
-class NoPosMdsError(Exception):
-    def __init__(self, msg='No position in MDSplus server'):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
-if __name__ == "__main__":
-    pass
-
-    # g = KstarMds(shot=17245,clist=['neAVGM'])
-    # g.get_data(trange=[0,10])
-    # plt.plot(g.time, g.data[0,:], color='k')
-    # plt.show()
-    # g.close
-
-# DisconnectFromMds(g.socket)
