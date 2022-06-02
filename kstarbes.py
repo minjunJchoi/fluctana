@@ -108,13 +108,13 @@ class KstarBes(Connection):
 
         return self.time, self.data
 
-    def get_multi_data(self, time_points=None, twin=1e-3, norm=0, res=0, verbose=1):
+    def get_multi_data(self, time_list=None, tspan=1e-3, norm=0, res=0, verbose=1):
         if norm == 0:
             if verbose == 1: print('Data is not normalized')
         elif norm == 1:
             if verbose == 1: print('Data is normalized by time average')
 
-        self.time_points = time_points
+        self.time_list = time_list
 
         # open tree
         try:
@@ -122,29 +122,29 @@ class KstarBes(Connection):
             if verbose == 1: print('Open the tree {:s} to get data {:s}'.format(BES_TREE, self.clist[0]))
         except:
             if verbose == 1: print('Failed to open the tree {:s} to get data {:s}'.format(BES_TREE, self.clist[0]))
-            return self.time, self.data
+            return self.multi_time, self.multi_data
 
         # check data size and get fs
-        # test_node = 'setTimeContext({:f},{:f},*),dim_of(\BES_0101:FOO)'.format(time_points[0]-twin/2,time_points[0]+twin/2)
-        test_node = 'dim_of(resample(\BES_0101:FOO,{:f},{:f},2e-6))'.format(time_points[0]-twin/2,time_points[0]+twin/2)
+        # test_node = 'setTimeContext({:f},{:f},*),dim_of(\BES_0101:FOO)'.format(time_list[0]-tspan/2,time_list[0]+tspan/2)
+        test_node = 'dim_of(resample(\BES_0101:FOO,{:f},{:f},2e-6))'.format(time_list[0]-tspan/2,time_list[0]+tspan/2)
         test_data = self.get(test_node).data()
         # get fs
         self.fs = round(1/(test_data[1] - test_data[0])/1000)*1000.0        
 
         # --- loop starts --- # assuming all good channels 
-        self.multi_time = np.zeros((len(time_points), len(test_data)))
-        self.multi_data = np.zeros((len(self.clist), len(time_points), len(test_data)))
+        self.multi_time = np.zeros((len(time_list), len(test_data)))
+        self.multi_data = np.zeros((len(self.clist), len(time_list), len(test_data)))
 
         for i, cname in enumerate(self.clist):
             # get MDSplus node from channel name
             node = cname + ':FOO'
 
-            for j, tp in enumerate(time_points):
+            for j, tp in enumerate(time_list):
                 # sub sampling node
-                # time_node = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(tp-twin/2,tp+twin/2,node)
-                time_node = 'dim_of(resample(\{:s},{:f},{:f},2e-6))'.format(node,tp-twin/2,tp+twin/2)
-                # data_node = 'setTimeContext({:f},{:f},*),\{:s}'.format(tp-twin/2,tp+twin/2,node) # offset subtracted already
-                data_node = 'resample(\{:s},{:f},{:f},2e-6)'.format(node,tp-twin/2,tp+twin/2) # offset subtracted already
+                # time_node = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(tp-tspan/2,tp+tspan/2,node)
+                time_node = 'dim_of(resample(\{:s},{:f},{:f},2e-6))'.format(node,tp-tspan/2,tp+tspan/2)
+                # data_node = 'setTimeContext({:f},{:f},*),\{:s}'.format(tp-tspan/2,tp+tspan/2,node) # offset subtracted already
+                data_node = 'resample(\{:s},{:f},{:f},2e-6)'.format(node,tp-tspan/2,tp+tspan/2) # offset subtracted already
 
                 try:
                     # load time

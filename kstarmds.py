@@ -197,6 +197,74 @@ class KstarMds(Connection):
 
         return self.time, self.data
 
+    # for ECE only now    
+    def get_multi_data(self, time_list=None, tspan=0.1, norm=0, res=0, verbose=1):
+        if norm == 0:
+            if verbose == 1: print('Data is not normalized')
+        elif norm == 1:
+            if verbose == 1: print('Data is normalized by time average')
+
+        self.time_list = time_list
+
+        # open tree
+        tree = find_tree(self.clist[0])
+        try:
+            self.openTree(tree, self.shot)
+            if verbose == 1: print('Open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+        except:
+            if verbose == 1: print('Failed to open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            return self.multi_time, self.multi_data
+
+        # read full time data and check truncated data size and fs
+        time_node = 'setTimeContext(*,*,*),dim_of(\{:s})'.format(self.clist[0])
+        full_time = self.get(time_node).data()
+        tidx = (time_list[0]-tspan/2-1e-7 <= full_time) & (full_time <= time_list[0]+tspan/2+1e-7)
+        tnum = len(full_time[tidx])
+        self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0
+
+        print(len(full_time[tidx]), full_time[tidx])
+
+        # --- loop starts --- # assuming all good channels 
+        self.multi_time = np.zeros((len(time_list), tnum))
+        self.multi_data = np.zeros((len(self.clist), len(time_list), tnum))
+
+        for i, cname in enumerate(self.clist):
+            # get MDSplus node from channel name
+            node = cname 
+            data_node = 'setTimeContext(*,*,*),\{:s}'.format(node) # offset subtracted already
+
+            # get full data
+            full_data = self.get(data_node).data()
+            if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, node, len(full_data)))
+
+            # divide time and data
+            for j, tp in enumerate(time_list):
+                
+                # tidx
+                tidx = (tp-tspan/2-1e-7 <= full_time) & (full_time <= tp+tspan/2+1e-7)
+                
+                print(len(full_time[tidx]), full_time[tidx])
+
+                # get time
+                if i == 0:
+                    self.multi_time[j,:] = full_time[tidx]
+
+                # load data
+                v = full_data[tidx]
+                
+                # normalize by std if norm == 1
+                if norm == 1:
+                    v = v/np.mean(v) - 1
+
+                # expand dimension - concatenate
+                self.multi_data[i,j,:] = v
+        # --- loop ends --- #
+
+        # close tree
+        self.closeTree(tree, self.shot)
+
+        return self.multi_time, self.multi_data      
+
     def channel_position(self):  # Needs updates ####################
         # get channel position either from MDSplus server or kstardata
         cnum = len(self.clist)

@@ -109,22 +109,21 @@ class FluctAna(object):
             zpos = kwargs['zpos']
             apos = kwargs['apos']
             D = FluctData(shot=shot, clist=clist, time=time, data=data, rpos=rpos, zpos=zpos, apos=apos)
-
-        # KSTAR diagnostics
-        if dev == 'KSTAR':
-            if 'ECEI' in clist[0]:
-                D = KstarEcei(shot=shot, clist=clist)
-            elif 'MIR' in clist[0]:
-                D = KstarMir(shot=shot, clist=clist)
-            elif 'CSS' in clist[0]:
-                D = KstarCss(shot=shot, clist=clist)
-            elif 'BES' in clist[0]:
-                D = KstarBes(shot=shot, clist=clist)
-            else:
-                D = KstarMds(shot=shot, clist=clist)
-        elif dev == 'DIIID':
-            if 'BES' in clist[0]:
-                D = DiiidBes(shot=shot, clist=clist)
+        else:
+            if dev == 'KSTAR': # KSTAR data 
+                if 'ECEI' in clist[0]:
+                    D = KstarEcei(shot=shot, clist=clist)
+                elif 'MIR' in clist[0]:
+                    D = KstarMir(shot=shot, clist=clist)
+                elif 'CSS' in clist[0]:
+                    D = KstarCss(shot=shot, clist=clist)
+                elif 'BES' in clist[0]:
+                    D = KstarBes(shot=shot, clist=clist)
+                else:
+                    D = KstarMds(shot=shot, clist=clist)
+            elif dev == 'DIIID': # DIII-D data 
+                if 'BES' in clist[0]:
+                    D = DiiidBes(shot=shot, clist=clist)
 
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
