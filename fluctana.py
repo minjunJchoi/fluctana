@@ -128,7 +128,7 @@ class FluctAna(object):
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
 
-    def add_multi_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], time_points=[6.8,6.9], twin=1e-3, norm=1, res=0, verbose=1, **kwargs):
+    def add_multi_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], time_list=[6.8,6.9], tspan=1e-3, norm=1, res=0, verbose=1, **kwargs):
         # KSTAR diagnostics
         if dev == 'KSTAR':
             if 'ECEI' in clist[0]:
@@ -145,7 +145,7 @@ class FluctAna(object):
             if 'BES' in clist[0]:
                 D = DiiidBes(shot=shot, clist=clist)
 
-        D.get_multi_data( time_points=time_points, twin=twin, norm=norm, res=res, verbose=verbose)
+        D.get_multi_data(time_list=time_list, tspan=tspan, norm=norm, res=res, verbose=verbose)
         self.Dlist.append(D)
 
     def del_data(self, dnum):
