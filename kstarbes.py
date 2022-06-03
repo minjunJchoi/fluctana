@@ -32,6 +32,8 @@ class KstarBes(Connection):
 
         self.clist = self.expand_clist(clist)
 
+        self.good_channels = np.ones(len(self.clist))
+        
         self.channel_position()
 
         self.time = None
