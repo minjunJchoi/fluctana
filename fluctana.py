@@ -478,7 +478,7 @@ class FluctAna(object):
             print('dnum {:d} fftbins {:d} with {:s} size {:d} overlap {:g} detrend {:d} full {:d}'.format(d, bins, window, nfft, overlap, detrend, full))
 
 
-    def fftmulti(self, window, detrend=0, full=0):
+    def fftmulti(self, window, overlap=0, detrend=0, full=0):
         # IN : self, multi data window name, detrend or not
         # OUT : multi x N FFT of time series data; frequency axis
         # self.list_data()
@@ -487,15 +487,18 @@ class FluctAna(object):
             # get window function
             tnum = len(D.multi_time[0,:])
             nfft = tnum
-            overlap = 0 
             _, win = sp.fft_window(tnum, nfft, window, overlap)
+            bins = len(D.multi_time)
+
             dt = D.multi_time[0,1] - D.multi_time[0,0]  # time step
 
             D.window = window
-            D.detrend = detrend
+            D.overlap = overlap
+            D.detrend = detrend            
+            D.bins = bins
 
             # make fft data
-            bins = len(D.multi_time)
+            
             cnum = len(D.multi_data)
             if full == 1: # full shift to -fN ~ 0 ~ fN
                 if np.mod(nfft, 2) == 0:  # even nfft
@@ -509,11 +512,6 @@ class FluctAna(object):
                 for t in range(bins):
                     x = D.multi_data[c,t,:]
                     D.ax, D.spdata[c,t,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
-
-            print(D.multi_time.shape)
-            print(D.multi_data.shape)
-            print(D.ax.shape)
-            print(D.spdata.shape)
 
             # update attributes
             if np.mod(nfft, 2) == 0:

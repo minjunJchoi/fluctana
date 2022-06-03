@@ -157,6 +157,8 @@ class KstarBes(Connection):
                     # add data 
                     self.multi_data[i,j,:] = v
 
+                print('Data added', cname)
+
         return self.multi_time, self.multi_data
 
     def channel_position(self):
