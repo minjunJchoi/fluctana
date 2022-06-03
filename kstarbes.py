@@ -123,14 +123,13 @@ class KstarBes(Connection):
         with h5py.File(self.fname, 'r') as fin:
 
             # get fs
-            fulltime = np.array(fin.get('TIME'))
-            self.fs = round(1/(fulltime[1] - fulltime[0])/1000)*1000.0        
+            full_time = np.array(fin.get('TIME'))
+            self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0        
 
             # get data size
-            idx = np.where((time_list[0] - tspan/2 <= fulltime)*(fulltime <= time_list[0] + tspan/2))
-            idx1 = int(idx[0][0])
-            idx2 = int(idx[0][-1]+1)
-            tnum = len(fulltime[idx1:idx2])
+            idx1 = int((time_list[0] - tspan/2 - full_time[0])*self.fs) + 1
+            idx2 = int((time_list[0] + tspan/2 - full_time[0])*self.fs) + 2
+            tnum = len(full_time[idx1:idx2])
             
             # get multi time and data 
             self.multi_time = np.zeros((len(time_list), tnum))
@@ -139,13 +138,12 @@ class KstarBes(Connection):
             for i, cname in enumerate(self.clist):
                 for j, tp in enumerate(time_list):
                     # get tidx 
-                    idx = np.where((tp - tspan/2 <= fulltime)*(fulltime <= tp + tspan/2))
-                    idx1 = int(idx[0][0])
-                    idx2 = int(idx[0][-1]+1)
+                    idx1 = int((tp - tspan/2 - full_time[0])*self.fs) + 1
+                    idx2 = int((tp + tspan/2 - full_time[0])*self.fs) + 2
 
                     # load time
                     if i == 0:
-                        self.multi_time[j,:] = fulltime[idx1:idx2]
+                        self.multi_time[j,:] = full_time[idx1:idx2]
 
                     # load data
                     v = np.array(fin.get(cname)[idx1:idx2])

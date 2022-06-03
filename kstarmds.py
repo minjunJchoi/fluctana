@@ -218,12 +218,13 @@ class KstarMds(Connection):
         # read full time data and check truncated data size and fs
         time_node = 'setTimeContext(*,*,*),dim_of(\{:s})'.format(self.clist[0])
         full_time = self.get(time_node).data()
-        tidx = (time_list[0]-tspan/2-1e-7 <= full_time) & (full_time <= time_list[0]+tspan/2+1e-7)
-        tnum = len(full_time[tidx])
         self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0
 
-        print(len(full_time[tidx]), full_time[tidx])
-
+        # get data size
+        idx1 = int((time_list[0] - tspan/2 - full_time[0])*self.fs) + 1
+        idx2 = int((time_list[0] + tspan/2 - full_time[0])*self.fs) + 2
+        tnum = len(full_time[idx1:idx2])
+        
         # --- loop starts --- # assuming all good channels 
         self.multi_time = np.zeros((len(time_list), tnum))
         self.multi_data = np.zeros((len(self.clist), len(time_list), tnum))
@@ -241,16 +242,15 @@ class KstarMds(Connection):
             for j, tp in enumerate(time_list):
                 
                 # tidx
-                tidx = (tp-tspan/2-1e-7 <= full_time) & (full_time <= tp+tspan/2+1e-7)
-                
-                print(len(full_time[tidx]), full_time[tidx])
+                idx1 = int((tp - tspan/2 - full_time[0])*self.fs) + 1
+                idx2 = int((tp + tspan/2 - full_time[0])*self.fs) + 2
 
                 # get time
                 if i == 0:
-                    self.multi_time[j,:] = full_time[tidx]
+                    self.multi_time[j,:] = full_time[idx1:idx2]
 
                 # load data
-                v = full_data[tidx]
+                v = full_data[idx1:idx2]
                 
                 # normalize by std if norm == 1
                 if norm == 1:
