@@ -28,8 +28,6 @@ class KstarBes(Connection):
         self.shot = shot
 
         path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
-        if os.path.exists(path) == False:
-            os.makedirs(path)        
         self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
 
         self.clist = self.expand_clist(clist)
@@ -42,6 +40,12 @@ class KstarBes(Connection):
         self.data = None
 
     def reformat_hdf5(self):
+        # make directory if necessary
+        path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
+        if os.path.exists(path) == False:
+            os.makedirs(path)        
+        self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
+
         # open MDSplus tree
         self.openTree(BES_TREE, self.shot)
 
