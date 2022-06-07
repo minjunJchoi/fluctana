@@ -85,8 +85,6 @@ class KstarBes(Connection):
         print('saved', self.fname)
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0, verbose=1):
-        if tag != None: self.fname = self.fname.replace('h5',tag+'.h5')
-
         if norm == 0:
             if verbose == 1: print('Data is not normalized')
         elif norm == 1:
@@ -128,8 +126,6 @@ class KstarBes(Connection):
         return self.time, self.data
 
     def get_multi_data(self, time_list=None, tspan=1e-3, norm=0, res=0, verbose=1):
-        if tag != None: self.fname = self.fname.replace('h5',tag+'.h5')
-
         if norm == 0:
             if verbose == 1: print('Data is not normalized')
         elif norm == 1:
