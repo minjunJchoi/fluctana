@@ -139,16 +139,18 @@ class KstarMds(Connection):
                     # get fs
                     self.fs = round(1/(self.time[-1] - self.time[-2])/10)*10.0
 
-                    # find index for trange
-                    idx = np.where((self.time >= trange[0])*(self.time <= trange[1]))
-                    idx1 = int(idx[0][0])
-                    idx2 = int(idx[0][-1]+1)
-
                     # find offest index for ECE
                     if res != 0 and 'ECE' == self.clist[0][0:3]: 
                         oidx = (self.time >= -0.5)*(self.time <= -0.1)
 
-                    self.time = self.time[idx1:idx2]
+                    # find index and resize 
+                    if (self.time[0] < trange[0]) or (trange[1] < self.time[-1]): 
+                        idx1 = round((max(trange[0],self.time[0]) + 1e-9 - self.time[0])*self.fs) 
+                        idx2 = round((min(trange[1],self.time[-1]) + 1e-9 - self.time[0])*self.fs)
+                        self.time = self.time[idx1:idx2]
+                        doResize = True
+                    else:
+                        doResize = False
 
                 # remove offest for ECE
                 if res != 0 and 'ECE' == self.clist[0][0:3]: 
@@ -161,7 +163,8 @@ class KstarMds(Connection):
                         continue
 
                 # resize data
-                v = v[idx1:idx2]
+                if doResize == True:
+                    v = v[idx1:idx2]
 
                 # normalize if necessary
                 if norm == 1:
@@ -221,8 +224,8 @@ class KstarMds(Connection):
         self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0
 
         # get data size
-        idx1 = int((time_list[0] - tspan/2 - full_time[0])*self.fs) + 1
-        idx2 = int((time_list[0] + tspan/2 - full_time[0])*self.fs) + 2
+        idx1 = int((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
+        idx2 = int((time_list[0] + tspan/2 + 1e-8 - full_time[0])*self.fs) 
         tnum = len(full_time[idx1:idx2])
         
         # --- loop starts --- # assuming all good channels 
@@ -242,8 +245,8 @@ class KstarMds(Connection):
             for j, tp in enumerate(time_list):
                 
                 # tidx
-                idx1 = int((tp - tspan/2 - full_time[0])*self.fs) + 1
-                idx2 = int((tp + tspan/2 - full_time[0])*self.fs) + 2
+                idx1 = int((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
+                idx2 = int((tp + tspan/2 + 1e-8 - full_time[0])*self.fs) 
 
                 # get time
                 if i == 0:

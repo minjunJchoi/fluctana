@@ -39,7 +39,7 @@ class KstarBes(Connection):
         self.time = None
         self.data = None
 
-    def reformat_hdf5(self):
+    def reformat_hdf5(self, filt=True):
         # make directory if necessary
         path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
         if os.path.exists(path) == False:
@@ -64,7 +64,8 @@ class KstarBes(Connection):
                 # get and add data 
                 data = self.get('\{:s}:FOO'.format(cname)).data()
 
-                if 'filt' in self.fname:
+                # filter data
+                if filt == True: 
                     # freq_filter = ft.ThresholdFftFilter(D.fs, fL, fH, b=b, nbins=nbins)                    
                     freq_filter = ft.FftFilter('FFT_pass', fs, 10*1000, 100*1000)
                     data = freq_filter.apply(data)
@@ -98,15 +99,15 @@ class KstarBes(Connection):
             # read time base and get tidx 
             self.time = np.array(fin.get('TIME'))
 
-            idx = np.where((trange[0] <= self.time)*(self.time <= trange[1]))
-            idx1 = int(idx[0][0])
-            idx2 = int(idx[0][-1]+1)
-            
-            self.time = self.time[idx1:idx2]
-
             # get sampling frequency 
             self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
-            
+
+            # subsample 
+            idx1 = round((max(trange[0],self.time[0]) + 1e-9 - self.time[0])*self.fs) 
+            idx2 = round((min(trange[1],self.time[-1]) + 1e-9 - self.time[0])*self.fs)
+
+            self.time = self.time[idx1:idx2]
+
             # get data
             for i, cname in enumerate(self.clist):
                 # load data
@@ -141,8 +142,8 @@ class KstarBes(Connection):
             self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0        
 
             # get data size
-            idx1 = int((time_list[0] - tspan/2 - full_time[0])*self.fs) + 1
-            idx2 = int((time_list[0] + tspan/2 - full_time[0])*self.fs) + 2
+            idx1 = round((time_list[0] - tspan/2 + 1e-9 - full_time[0])*self.fs) 
+            idx2 = round((time_list[0] + tspan/2 + 1e-9 - full_time[0])*self.fs) 
             tnum = len(full_time[idx1:idx2])
             
             # get multi time and data 
@@ -152,8 +153,8 @@ class KstarBes(Connection):
             for i, cname in enumerate(self.clist):
                 for j, tp in enumerate(time_list):
                     # get tidx 
-                    idx1 = int((tp - tspan/2 - full_time[0])*self.fs) + 1
-                    idx2 = int((tp + tspan/2 - full_time[0])*self.fs) + 2
+                    idx1 = round((tp - tspan/2 + 1e-9 - full_time[0])*self.fs) 
+                    idx2 = round((tp + tspan/2 + 1e-9 - full_time[0])*self.fs) 
 
                     # load time
                     if i == 0:

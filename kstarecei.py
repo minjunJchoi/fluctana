@@ -1,5 +1,3 @@
-#!/usr/bin/env python2.7
-
 # Author : Minjun J. Choi (mjchoi@nfri.re.kr)
 #
 # Description : This code reads the KSTAR ECEI data via the iKSTAR server
@@ -44,8 +42,10 @@ class KstarEcei(object):
             self.data_path = '/eceidata2/exp_2019/'
         elif 24100 < shot and shot < 27400:
             self.data_path = '/eceidata2/exp_2020/'
-        elif 27400 < shot:
+        elif 27400 < shot and shot < 30540:
             self.data_path = '/eceidata2/exp_2021/'
+        elif 30540 < shot:
+            self.data_path = '/eceidata2/exp_2022/'
 
         self.clist = self.expand_clist(clist)
 
@@ -192,17 +192,17 @@ class KstarEcei(object):
 
         fulltime = fulltime[0:ENUM]
 
-        idx = np.where((fulltime >= trange[0])*(fulltime <= trange[1]))
-        idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+1)
+        idx1 = round((max(trange[0],fulltime[0]) + 1e-9 - fulltime[0])*self.fs) 
+        idx2 = round((min(trange[1],fulltime[-1]) + 1e-9 - fulltime[0])*self.fs)  
 
         if toff < 0:
-            oidx = np.where((fulltime >= toff)*(fulltime <= toff+0.01))
+            oidx1 = round((toff + 1e-9 - fulltime[0])*self.fs) 
+            oidx2 = round((toff + 0.01 + 1e-9 - fulltime[0])*self.fs) 
         else:
             print('#### offset from end in KstarEcei.time_base ####')
             oidx = np.where((fulltime >= fulltime[-1]-0.01)*(fulltime <= fulltime[-1]))
-        oidx1 = int(oidx[0][0])
-        oidx2 = int(oidx[0][-1]+1)
+            oidx1 = round((fulltime[-1] - 0.01 + 1e-9 - fulltime[0])*self.fs) 
+            oidx2 = round((fulltime[-1] + 1e-9 - fulltime[0])*self.fs)      
 
         return fulltime[idx1:idx2], idx1, idx2, oidx1, oidx2
 

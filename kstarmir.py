@@ -28,8 +28,12 @@ class KstarMir(object):
             self.data_path = '/eceidata2/exp_2018/'
         elif 21778 < shot and shot < 24100:
             self.data_path = '/eceidata2/exp_2019/'
-        elif 24100 < shot:
+        elif 24100 < shot and shot < 27400:
             self.data_path = '/eceidata2/exp_2020/'
+        elif 27400 < shot and shot < 30540:
+            self.data_path = '/eceidata2/exp_2021/'
+        elif 30540 < shot:
+            self.data_path = '/eceidata2/exp_2022/'
 
         self.clist = self.expand_clist(clist)
 
@@ -150,9 +154,8 @@ class KstarMir(object):
 
         fulltime = fulltime[0:MNUM]
 
-        idx = np.where((fulltime >= trange[0])*(fulltime <= trange[1]))
-        idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+1)
+        idx1 = round((max(trange[0],fulltime[0]) + 1e-9 - fulltime[0])*self.fs) 
+        idx2 = round((min(trange[1],fulltime[-1]) + 1e-9 - fulltime[0])*self.fs)  
 
         self.time = fulltime[idx1:idx2]
 
