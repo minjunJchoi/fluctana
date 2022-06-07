@@ -5,6 +5,8 @@
 # Acknowledgement : Special thanks to Dr. J.W. Kim
 #
 
+import filtdata as ft
+
 from MDSplus import Connection
 # from MDSplus import DisconnectFromMds
 # from MDSplus._mdsshr import MdsException
@@ -49,6 +51,7 @@ class KstarBes(Connection):
         # get time base
         time_node = 'dim_of(\BES_0101:FOO)'
         time = self.get(time_node).data()
+        fs = round(1/(time[1] - time[0])/1000)*1000.0
 
         with h5py.File(self.fname, 'w') as fout:
             fout.create_dataset('TIME', data=time)
@@ -56,6 +59,13 @@ class KstarBes(Connection):
             for cname in clist:
                 # get and add data 
                 data = self.get('\{:s}:FOO'.format(cname)).data()
+
+                if 'filt' in self.fname:
+                    # freq_filter = ft.ThresholdFftFilter(D.fs, fL, fH, b=b, nbins=nbins)                    
+                    freq_filter = ft.FftFilter('FFT_pass', fs, 10*1000, 100*1000)
+                    data = freq_filter.apply(data)
+                    print('filtered') 
+
                 fout.create_dataset(cname, data=data)
 
                 # get and add rpos
@@ -71,6 +81,8 @@ class KstarBes(Connection):
         print('saved', self.fname)
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0, verbose=1):
+        if tag != None: self.fname = self.fname.replace('h5',tag+'.h5')
+
         if norm == 0:
             if verbose == 1: print('Data is not normalized')
         elif norm == 1:
@@ -112,6 +124,8 @@ class KstarBes(Connection):
         return self.time, self.data
 
     def get_multi_data(self, time_list=None, tspan=1e-3, norm=0, res=0, verbose=1):
+        if tag != None: self.fname = self.fname.replace('h5',tag+'.h5')
+
         if norm == 0:
             if verbose == 1: print('Data is not normalized')
         elif norm == 1:
