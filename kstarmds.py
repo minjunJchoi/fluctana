@@ -145,8 +145,8 @@ class KstarMds(Connection):
 
                     # find index and resize 
                     if (self.time[0] < trange[0]) or (trange[1] < self.time[-1]): 
-                        idx1 = round((max(trange[0],self.time[0]) + 1e-9 - self.time[0])*self.fs) 
-                        idx2 = round((min(trange[1],self.time[-1]) + 1e-9 - self.time[0])*self.fs)
+                        idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
+                        idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
                         self.time = self.time[idx1:idx2]
                         doResize = True
                     else:
