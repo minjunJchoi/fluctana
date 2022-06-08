@@ -34,7 +34,8 @@ class KstarBes(Connection):
 
         self.good_channels = np.ones(len(self.clist))
         
-        self.channel_position()
+        if os.path.exists(self.fname):
+            self.channel_position()
 
         self.time = None
         self.data = None
