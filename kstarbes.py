@@ -30,17 +30,20 @@ class KstarBes(Connection):
         path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
         self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
 
+        if os.path.exists(self.fname) == False:
+            print('reformat BES data to hdf5 file') 
+            self.reformat_hdf5()
+
         self.clist = self.expand_clist(clist)
 
         self.good_channels = np.ones(len(self.clist))
         
-        if os.path.exists(self.fname):
-            self.channel_position()
+        self.channel_position()            
 
         self.time = None
         self.data = None
 
-    def reformat_hdf5(self, **kwargs):
+    def reformat_hdf5(self):
         # make directory if necessary
         path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
         if os.path.exists(path) == False:
@@ -64,13 +67,6 @@ class KstarBes(Connection):
             for cname in clist:
                 # get and add data 
                 data = self.get('\{:s}:FOO'.format(cname)).data()
-
-                # filter data
-                if 'flimits' in kwargs:
-                    freq_filter = ft.FftFilter('FFT_pass', fs, kwargs['flimits'][0]*1000, kwargs['flimits'][1]*1000)
-                    data = freq_filter.apply(data)
-                    print('filtered for {:g}--{:g} kHz'.format(kwargs['flimits'][0], kwargs['flimits'][1])) 
-
                 fout.create_dataset(cname, data=data)
 
                 # get and add rpos

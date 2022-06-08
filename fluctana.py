@@ -390,6 +390,24 @@ class FluctAna(object):
 
         print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
+    def filtmulti(self, dnum=0, name='FIR_pass', fL=0, fH=10000, b=0.08, nbins=100, verbose=0):
+        D = self.Dlist[dnum]
+
+        # select filter except svd
+        if name[0:3] == 'FIR':
+            freq_filter = ft.FirFilter(name, D.fs, fL, fH, b)
+        elif name[0:3] == 'FFT':
+            freq_filter = ft.FftFilter(name, D.fs, fL, fH)
+        elif name == 'Threshold_FFT':
+            freq_filter = ft.ThresholdFftFilter(D.fs, fL, fH, b=b, nbins=nbins)
+
+        for c in range(len(D.clist)):
+            for t in range(len(D.multi_time)):
+                x = np.copy(D.multi_data[c,t,:])
+                D.multi_data[c,:] = freq_filter.apply(x)
+
+        print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
+
     def svd_filt(self, dnum=0, cutoff=0.9, verbose=0):
         D = self.Dlist[dnum]
 
