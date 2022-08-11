@@ -192,17 +192,17 @@ class KstarEcei(object):
 
         fulltime = fulltime[0:ENUM]
 
-        idx1 = round((max(trange[0],fulltime[0]) + 1e-8 - fulltime[0])*self.fs) 
-        idx2 = round((min(trange[1],fulltime[-1]) + 1e-8 - fulltime[0])*self.fs)  
+        idx = np.where((trange[0] <= fulltime)*(fulltime <= trange[1]))
+        idx1 = int(idx[0][0])
+        idx2 = int(idx[0][-1]+1)
 
         if toff < 0:
-            oidx1 = round((toff + 1e-8 - fulltime[0])*self.fs) 
-            oidx2 = round((toff + 0.01 + 1e-8 - fulltime[0])*self.fs) 
+            oidx = np.where((toff <= fulltime)*(fulltime <= toff+0.01))
         else:
             print('#### offset from end in KstarEcei.time_base ####')
-            oidx = np.where((fulltime >= fulltime[-1]-0.01)*(fulltime <= fulltime[-1]))
-            oidx1 = round((fulltime[-1] - 0.01 + 1e-8 - fulltime[0])*self.fs) 
-            oidx2 = round((fulltime[-1] + 1e-8 - fulltime[0])*self.fs)      
+            oidx = np.where((fulltime[-1]-0.01 <= fulltime)*(fulltime <= fulltime[-1]))
+        oidx1 = int(oidx[0][0])
+        oidx2 = int(oidx[0][-1]+1)
 
         return fulltime[idx1:idx2], idx1, idx2, oidx1, oidx2
 

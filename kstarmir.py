@@ -154,8 +154,9 @@ class KstarMir(object):
 
         fulltime = fulltime[0:MNUM]
 
-        idx1 = round((max(trange[0],fulltime[0]) + 1e-8 - fulltime[0])*self.fs) 
-        idx2 = round((min(trange[1],fulltime[-1]) + 1e-8 - fulltime[0])*self.fs)  
+        idx = np.where((trange[0] <= fulltime)*(fulltime <= trange[1]))
+        idx1 = int(idx[0][0])
+        idx2 = int(idx[0][-1]+1)
 
         self.time = fulltime[idx1:idx2]
 
