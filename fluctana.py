@@ -1521,6 +1521,10 @@ class FluctAna(object):
                     if len(pidx) > 0:
                         Done.npeak[c,j] = len(pidx)
                         Done.mprom[c,j] = np.mean(pp["prominences"])
+                elif vkind == 'max':
+                    Done.val[c,j] = np.max(dy)
+                elif vkind == 'min':
+                    Done.val[c,j] = np.min(dy)                    
 
                 print('tcal channel {:d}/{:d} time {:d}/{:d}'.format(c, len(cnl), j+1, len(tidx_list)))
 
