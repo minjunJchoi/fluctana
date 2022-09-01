@@ -197,3 +197,25 @@ class KstarMir(object):
         clist = exp_clist
 
         return clist
+
+def expand_clist(clist):
+    # IN : List of channel names (e.g. 'MIR_0101-1604')
+    # OUT : Expanded list (e.g. 'MIR_0101', ..., 'MIR_1604')
+
+    # KSTAR MIR
+    exp_clist = []
+    for c in range(len(clist)):
+        if 'MIR' in clist[c] and len(clist[c]) == 13:
+            vi = int(clist[c][4:6])
+            fi = int(clist[c][6:8])
+            vf = int(clist[c][9:11])
+            ff = int(clist[c][11:13])
+
+            for v in range(vi, vf+1):
+                for f in range(fi, ff+1):
+                    exp_clist.append(clist[c][0:4] + '{:02d}{:02d}'.format(v, f))
+        else:
+            exp_clist.append(clist[c])
+    clist = exp_clist
+
+    return clist

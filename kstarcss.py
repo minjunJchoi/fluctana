@@ -152,6 +152,26 @@ class KstarCss(Connection):
         return clist
 
 
+def expand_clist(clist):
+    # IN : List of channel names (e.g. 'CSS_01-04')
+    # OUT : Expanded list (e.g. 'CSS_01', 'CSS_02', 'CSS_03', 'CSS_04')
+
+    # KSTAR CSS
+    exp_clist = []
+    for c in range(len(clist)):
+        if 'CSS' in clist[c] and len(clist[c]) == 9:
+            vi = int(clist[c][4:6])
+            vf = int(clist[c][7:9])
+
+            for v in range(vi, vf+1):
+                exp_clist.append(clist[c][0:4] + '{:02d}'.format(v))
+        else:
+            exp_clist.append(clist[c])
+    clist = exp_clist
+
+    return clist
+
+
 class NoPosMdsError(Exception):
     def __init__(self, msg='No position in MDSplus server'):
         self.msg = msg
@@ -170,3 +190,4 @@ if __name__ == "__main__":
     # g.close
 
 # DisconnectFromMds(g.socket)
+
