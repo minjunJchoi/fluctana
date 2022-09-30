@@ -842,6 +842,9 @@ class FluctAna(object):
         # calculate for each pair of done and dtwo and average
         # number of cmp channels = number of ref channels
         # kstep [cm^-1]
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'vlimits' in kwargs: vlimits = kwargs['vlimits']
         Done = self.Dlist[done]
         Dtwo = self.Dlist[dtwo]
 
@@ -919,6 +922,13 @@ class FluctAna(object):
         plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
 
         plt.colorbar()
+            
+        if 'xlimits' in kwargs:  # xlimits
+            plt.xlim([xlimits[0], xlimits[1]])
+        if 'ylimits' in kwargs:  # ylimits
+            plt.ylim([ylimits[0], ylimits[1]])
+        if 'vlimits' in kwargs:  # vlimits
+            plt.clim([vlimits[0], vlimits[1]])
 
         chpos = '({:.1f}, {:.1f})'.format(np.mean(Dtwo.rpos*100), np.mean(Dtwo.zpos*100)) # [cm]
         plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
