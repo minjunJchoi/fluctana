@@ -110,7 +110,7 @@ class FluctAna(object):
             apos = kwargs['apos']
             D = FluctData(shot=shot, clist=clist, time=time, data=data, rpos=rpos, zpos=zpos, apos=apos)
         else:
-            if dev == 'KSTAR': # KSTAR data 
+            if dev == 'KSTAR': # KSTAR data
                 if 'ECEI' in clist[0]:
                     D = KstarEcei(shot=shot, clist=clist)
                 elif 'MIR' in clist[0]:
@@ -121,7 +121,7 @@ class FluctAna(object):
                     D = KstarBes(shot=shot, clist=clist)
                 else:
                     D = KstarMds(shot=shot, clist=clist)
-            elif dev == 'DIIID': # DIII-D data 
+            elif dev == 'DIIID': # DIII-D data
                 if 'BES' in clist[0]:
                     D = DiiidBes(shot=shot, clist=clist)
 
@@ -512,11 +512,11 @@ class FluctAna(object):
 
             D.window = window
             D.overlap = overlap
-            D.detrend = detrend            
+            D.detrend = detrend
             D.bins = bins
 
             # make fft data
-            
+
             cnum = len(D.multi_data)
             if full == 1: # full shift to -fN ~ 0 ~ fN
                 if np.mod(nfft, 2) == 0:  # even nfft
@@ -838,7 +838,7 @@ class FluctAna(object):
 
         return fig, axs
 
-    def skw(self, done=0, dtwo=1, kstep=0.01, **kwargs):
+    def skw(self, done=0, dtwo=1, kstep=0.01, show=1, **kwargs):
         # calculate for each pair of done and dtwo and average
         # number of cmp channels = number of ref channels
         # kstep [cm^-1]
@@ -913,33 +913,34 @@ class FluctAna(object):
         Dtwo.K = np.mean(K, 0)
         Dtwo.sigK = np.mean(sigK, 0)
 
-        pshot = Dtwo.shot
-        pfreq = Dtwo.ax/1000
-        pdata = Dtwo.val + 1e-10
+        if show == 1:
+            pshot = Dtwo.shot
+            pfreq = Dtwo.ax/1000
+            pdata = Dtwo.val + 1e-10
 
-        pdata = np.log10(pdata)
+            pdata = np.log10(pdata)
 
-        plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
+            plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
 
-        plt.colorbar()
-            
-        if 'xlimits' in kwargs:  # xlimits
-            plt.xlim([xlimits[0], xlimits[1]])
-        if 'ylimits' in kwargs:  # ylimits
-            plt.ylim([ylimits[0], ylimits[1]])
-        if 'vlimits' in kwargs:  # vlimits
-            plt.clim([vlimits[0], vlimits[1]])
+            plt.colorbar()
 
-        chpos = '({:.1f}, {:.1f})'.format(np.mean(Dtwo.rpos*100), np.mean(Dtwo.zpos*100)) # [cm]
-        plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
-        plt.xlabel('Frequency [kHz]')
-        plt.ylabel('Local wavenumber [rad/cm]')
+            if 'xlimits' in kwargs:  # xlimits
+                plt.xlim([xlimits[0], xlimits[1]])
+            if 'ylimits' in kwargs:  # ylimits
+                plt.ylim([ylimits[0], ylimits[1]])
+            if 'vlimits' in kwargs:  # vlimits
+                plt.clim([vlimits[0], vlimits[1]])
 
-        # plt.plot(pfreq, Dtwo.K, 'k')
-        # plt.plot(pfreq, Dtwo.K + Dtwo.sigK, 'r')
-        # plt.plot(pfreq, Dtwo.K - Dtwo.sigK, 'r')
+            chpos = '({:.1f}, {:.1f})'.format(np.mean(Dtwo.rpos*100), np.mean(Dtwo.zpos*100)) # [cm]
+            plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
+            plt.xlabel('Frequency [kHz]')
+            plt.ylabel('Local wavenumber [rad/cm]')
 
-        plt.show()
+            # plt.plot(pfreq, Dtwo.K, 'k')
+            # plt.plot(pfreq, Dtwo.K + Dtwo.sigK, 'r')
+            # plt.plot(pfreq, Dtwo.K - Dtwo.sigK, 'r')
+
+            plt.show()
 
     def bicoherence(self, done=0, dtwo=1, cnl='all', vlimits=[0,0.3], show=1, **kwargs):
         # fftbins full = 1
@@ -1534,7 +1535,7 @@ class FluctAna(object):
                 elif vkind == 'max':
                     Done.val[c,j] = np.max(dy)
                 elif vkind == 'min':
-                    Done.val[c,j] = np.min(dy)                    
+                    Done.val[c,j] = np.min(dy)
 
                 print('tcal channel {:d}/{:d} time {:d}/{:d}'.format(c, len(cnl), j+1, len(tidx_list)))
 
