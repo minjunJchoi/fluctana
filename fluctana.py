@@ -866,7 +866,7 @@ class FluctAna(object):
 
         # k-axes
         dmin = Dtwo.dist.min()*100 # [cm]
-        kax = np.arange(-np.pi/dmin, np.pi/dmin, kstep) # [cm^-1]
+        kax = np.arange(-np.pi/dmin, np.pi/dmin, kstep) # [rad/cm]
         Dtwo.kax = kax
 
         nkax = len(kax)
@@ -896,7 +896,7 @@ class FluctAna(object):
                 Pxx[b,:] = X*np.matrix.conjugate(X) / win_factor
                 Pyy[b,:] = Y*np.matrix.conjugate(Y) / win_factor
                 Pxy = X*np.matrix.conjugate(Y)
-                Kxy[b,:] = np.arctan2(Pxy.imag, Pxy.real).real / (Dtwo.dist[c]*100) # [cm^-1]
+                Kxy[b,:] = np.arctan2(Pxy.imag, Pxy.real).real / (Dtwo.dist[c]*100) # [rad/cm]
 
                 # calculate SKw
                 for w in range(nfreq):
@@ -1520,12 +1520,26 @@ class FluctAna(object):
                     _, pi, _ = st.bp_prob(dy, d=vpara['d'], bins=vpara['bins'])
                     Done.jscom[c,j], Done.nsent[c,j] = st.ch_measure(pi) # jscom and nsent
                 elif vkind == 'cross_power':
-                    fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
                     val = 2*sp.cross_power(XX, YY, win_factor)
-                    Done.val[c,j] = np.sqrt(np.sum(val[fidx]))
+                    if vpara['clim'] > 0:
+                        coh = sp.coherence(XX, YY)
+                        nidx = (coh < vpara['clim'])
+                        nfax = fax[nidx]
+                        npower = val[nidx]
+                        npower = np.polyval(np.polyfit(nfax, npower, 1), fax)
+
+                        fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2']) & (coh > vpara['clim'])
+                        if np.sum(val[fidx] - npower[fidx]) > 0:
+                            Done.val[c,j] = np.sqrt(np.sum(val[fidx] - npower[fidx]))
+                        # plt.plot(fax, val, '-kx')
+                        # plt.plot(fax, npower, 'r')
+                        # plt.show()
+                    else:              
+                        fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
+                        Done.val[c,j] = np.sqrt(np.sum(val[fidx]))                    
                 elif vkind == 'coherence':
-                    fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
                     val = sp.coherence(XX, YY)
+                    fidx = (vpara['f1'] <= fax) & (fax <= vpara['f2'])
                     Done.val[c,j] = np.sum(val[fidx])
                 elif vkind == 'peak_stat':
                     pidx, pp = signal.find_peaks(dy, height=(vpara['height_min'],None), width=(None,vpara['width_max']), prominence=(vpara['prom_min'],None))
