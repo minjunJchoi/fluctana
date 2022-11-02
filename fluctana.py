@@ -841,7 +841,7 @@ class FluctAna(object):
     def skw(self, done=0, dtwo=1, kstep=0.01, show=1, **kwargs):
         # calculate for each pair of done and dtwo and average
         # number of cmp channels = number of ref channels
-        # kstep [cm^-1]
+        # kstep [rad/cm]
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'vlimits' in kwargs: vlimits = kwargs['vlimits']
