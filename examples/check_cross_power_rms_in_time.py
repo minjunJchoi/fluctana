@@ -9,7 +9,7 @@ clist1 = ['ECEI_L1303']
 clist2 = ['ECEI_L1403']
 vkind = 'cross_power'
 twin = 50e-3; tstep = 10e-3
-vpara = {'nfft':512, 'window':'hann', 'overlap':0.5, 'detrend':0, 'full':0, 'norm':1, 'f1':1000, 'f2':50000}
+vpara = {'nfft':512, 'window':'hann', 'overlap':0.5, 'detrend':0, 'full':0, 'norm':1, 'f1':1000, 'f2':50000, 'clim':0}
 
 # read not normalized data      
 A = FluctAna()
