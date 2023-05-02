@@ -24,6 +24,9 @@ class DiiidData():
         self.shot = shot
         self.clist = clist
 
+        self.time = None
+        self.data = None
+
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0, verbose=1):
         if norm == 0:
             if verbose == 1: print('Data is not normalized')
@@ -51,37 +54,39 @@ class DiiidData():
             try:
                 #idl.pro('gadat,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
                 idl.pro('gadat2,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
-                time, v = idl.time, idl.data
+                
+                if self.data == None:
+                    self.time, v = idl.time, idl.data
+
+                    # [ms] -> [s]
+                    self.time = self.time/1000.0
+                    self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000
+
+                    # data resize
+                    idx = np.where((self.time >= trange[0])*(self.time <= trange[1]))
+                    idx1 = int(idx[0][0])
+                    idx2 = int(idx[0][-1]+1)
+                    self.time = self.time[idx1:idx2]
+                    v = v[idx1:idx2]
+                else:
+                    _, v = idl.time, idl.data
+                    v = v[idx1:idx2]
+
                 if verbose == 1: print("Read {:d} - {:s} (number of data points = {:d})".format(self.shot, node, len(v)))
+
+                if norm == 1:
+                    v = v/np.mean(v) - 1
+
+                # expand dimension - concatenate
+                v = np.expand_dims(v, axis=0)
+                if self.data == None:
+                    self.data = v
+                else:
+                    self.data = np.concatenate((self.data, v), axis=0)
             except:
                 self.clist.remove(cname)
                 if verbose == 1: print("Failed   {:s}".format(node))
-                continue
-
-            # [ms] -> [s]
-            time = time/1000.0
-
-            # set data size
-            idx = np.where((time >= trange[0])*(time <= trange[1]))
-            idx1 = int(idx[0][0])
-            idx2 = int(idx[0][-1]+1)
-            time = time[idx1:idx2]
-            v = v[idx1:idx2]
-
-            if norm == 1:
-                v = v/np.mean(v) - 1
-
-            # expand dimension - concatenate
-            v = np.expand_dims(v, axis=0)
-            if i == 0:
-                data = v
-            else:
-                data = np.concatenate((data, v), axis=0)
         # --- loop ends --- #
-
-        self.time = time
-        self.fs = round(1/(time[1] - time[0])/1000)*1000
-        self.data = data
 
         # get channel position
         self.channel_position()
@@ -89,7 +94,7 @@ class DiiidData():
         # close idl
         idl.close()
 
-        return time, data
+        return self.time, self.data
 
     def channel_position(self):  # Needs updates ####################
         cnum = len(self.clist)

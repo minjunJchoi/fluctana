@@ -20,7 +20,7 @@ from kstarmir import *
 from kstarcss import *
 from kstarbes import *
 from kstarmds import *
-#from diiiddata import *  # needs pidly
+from diiiddata import *  # needs pidly
 from diiidbes import *
 
 import specs as sp
@@ -124,6 +124,9 @@ class FluctAna(object):
             elif dev == 'DIIID': # DIII-D data
                 if 'BES' in clist[0]:
                     D = DiiidBes(shot=shot, clist=clist)
+                else:
+                    D = DiiidData(shot=shot, clist=clist)
+
 
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
