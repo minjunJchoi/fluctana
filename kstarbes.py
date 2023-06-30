@@ -18,7 +18,7 @@ import h5py
 
 # BES tree
 BES_TREE = 'KSTAR'
-BES_PATH = '/home/mjchoi/KSTAR/BES_data'
+BES_PATH = '/home/mjchoi/data/KSTAR/bes_data'
 
 class KstarBes(Connection):
     def __init__(self, shot, clist):

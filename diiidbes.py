@@ -18,12 +18,12 @@ class DiiidBes(object):
     def __init__(self, shot, clist):
         self.shot = shot
 
-        self.data_path = '/home/mjchoi/DIIID/besdata/'
+        self.data_path = '/Volumes/myNFRI/data/DIIID/bes_data/{:06d}'.format(shot)
 
         self.clist = self.expand_clist(clist)
 
         # file name
-        self.fname = "{:s}{:06d}/BES.{:06d}.h5".format(self.data_path, shot, shot)
+        self.fname = "{:s}/BES.{:06d}.h5".format(self.data_path, shot)
 
         if os.path.exists(self.fname):
             print('BES file = {}'.format(self.fname))
