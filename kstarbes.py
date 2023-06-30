@@ -27,14 +27,13 @@ class KstarBes(Connection):
 
         self.shot = shot
 
+        self.clist = self.expand_clist(clist)
+
         path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
         self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
-
         if os.path.exists(self.fname) == False:
             print('reformat BES data to hdf5 file') 
             self.reformat_hdf5()
-
-        self.clist = self.expand_clist(clist)
 
         self.good_channels = np.ones(len(self.clist))
         

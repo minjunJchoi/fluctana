@@ -13,18 +13,16 @@ import h5py
 MNUM = 10000000  # totla number of samples in an ECEI channel
 VN = 16  # number of vertical arrays
 
+BES_PATH = '/Volumes/myNFRI/data/DIIID/bes_data'
 
 class DiiidBes(object):
     def __init__(self, shot, clist):
         self.shot = shot
 
-        self.data_path = '/Volumes/myNFRI/data/DIIID/bes_data/{:06d}'.format(shot)
-
         self.clist = self.expand_clist(clist)
 
-        # file name
-        self.fname = "{:s}/BES.{:06d}.h5".format(self.data_path, shot)
-
+        path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
+        self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
         if os.path.exists(self.fname):
             print('BES file = {}'.format(self.fname))
         
