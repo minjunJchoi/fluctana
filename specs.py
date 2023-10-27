@@ -60,7 +60,7 @@ def fftbins(x, dt, nfft, window, overlap, detrend=0, full=0):
         idx1 = int(b*np.fix(nfft*(1 - overlap)))
         idx2 = idx1 + nfft
 
-        sx = np.copy(x[idx1:idx2])
+        sx = x[idx1:idx2]
 
         if detrend == 0:
             sx = signal.detrend(sx, type='constant')  # subtract mean
