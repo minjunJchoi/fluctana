@@ -1505,11 +1505,11 @@ class FluctAna(object):
                 t1idx = tidx - int(tidx_win/2)
                 t2idx = tidx + int(tidx_win/2)
 
-                dy = np.copy(Done.data[c,t1idx:t2idx])
+                dy = Done.data[c,t1idx:t2idx]
 
                 # pre-processing here
                 if vkind in ['cross_power', 'coherence']:
-                    dx = np.copy(Dtwo.data[c,t1idx:t2idx])
+                    dx = Dtwo.data[c,t1idx:t2idx]
 
                     if vpara['norm'] == 1:
                         dy = dy/np.mean(dy) - 1.0
