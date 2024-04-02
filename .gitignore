@@ -4,3 +4,6 @@ examples/.ipynb_checkpoints/
 .DS_Store
 *.pyc
 .ftpconfig
+.vscode
+__pycache__
+.gitignore

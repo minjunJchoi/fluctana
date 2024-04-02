@@ -18,7 +18,7 @@ CSS_TREE = ['CSS_I{:02d}:FOO'.format(i) for i in range(1,5)] + ['CSS_Q{:02d}:FOO
 class KstarCss(Connection):
     def __init__(self, shot, clist):
         # from iKSTAR
-        super(KstarCss,self).__init__('172.17.100.200:8005')  # call __init__ in Connection
+        super(KstarCss,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
         # from opi to CSS Host PC
         # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot
