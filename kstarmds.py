@@ -49,7 +49,7 @@ NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
 class KstarMds(Connection):
     def __init__(self, shot, clist):
         # from iKSTAR
-        super(KstarMds,self).__init__('172.17.100.200:8005')  # call __init__ in Connection
+        super(KstarMds,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
         # from opi to CSS Host PC
         # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot

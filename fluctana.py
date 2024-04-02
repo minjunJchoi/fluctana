@@ -1828,7 +1828,7 @@ class FluctAna(object):
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
 
         fs = self.Dlist[dnum].fs
-        nov = nfft*0.9
+        nov = int(nfft*0.9)
 
         for c in cnl:
             pshot = self.Dlist[dnum].shot
@@ -1875,6 +1875,7 @@ class FluctAna(object):
         tidx1 = 0  # starting index
         if c == 0:
             # make axes
+            plt.ion()
             fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
 
             tstep = int(input('time step [idx]: '))  # jumping index # tstep = 10
@@ -1900,7 +1901,6 @@ class FluctAna(object):
                 axs[0].cla()
                 axs[1].cla()
                 axs[2].cla()
-                plt.ion()
 
                 axs[0].plot(pbase, psample)  # ax1.hold(True)
                 axs[0].axvline(x=pbase[tidx], color='g')
@@ -1936,6 +1936,7 @@ class FluctAna(object):
                 print('Select a point in the top axes to plot the image')
 
             # make axes
+            plt.ion()            
             fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
 
             while True:
@@ -1960,7 +1961,6 @@ class FluctAna(object):
                 axs[0].cla()
                 axs[1].cla()
                 axs[2].cla()
-                plt.ion()
 
                 axs[0].plot(pbase, psample)  # ax1.hold(True)
                 axs[0].axvline(x=pbase[tidx], color='g')
@@ -2001,7 +2001,7 @@ class FluctAna(object):
                     plt.close()
                     break
 
-                plt.ioff()
+            plt.ioff()
             plt.close()
 
         D.pdata = pdata
