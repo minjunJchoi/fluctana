@@ -7,7 +7,7 @@
 
 import filtdata as ft
 
-from MDSplus import Connection
+# from MDSplus import Connection
 # from MDSplus import DisconnectFromMds
 # from MDSplus._mdsshr import MdsException
 
@@ -19,11 +19,13 @@ import h5py
 # BES tree
 BES_TREE = 'KSTAR'
 BES_PATH = '/home/mjchoi/data/KSTAR/bes_data' # on ukstar
+BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data' # on MJC-MacStudio
 
-class KstarBes(Connection):
+# class KstarBes(Connection):
+class KstarBes():
     def __init__(self, shot, clist):
         # from iKSTAR/uKSTAR
-        super(KstarBes,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
+        # super(KstarBes,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
 
         self.shot = shot
 

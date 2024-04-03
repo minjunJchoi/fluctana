@@ -17,9 +17,9 @@ import pickle
 
 from kstarecei import *
 from kstarmir import *
-from kstarcss import *
+#from kstarcss import *
 from kstarbes import *
-from kstarmds import *
+#from kstarmds import *
 from diiiddata import *  # needs pidly
 from diiidbes import *
 
@@ -923,7 +923,8 @@ class FluctAna(object):
 
             pdata = np.log10(pdata)
 
-            plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
+            # plt.imshow(pdata, extent=(pfreq.min(), pfreq.max(), kax.min(), kax.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
+            plt.imshow(pdata.T, extent=(kax.min(), kax.max(), pfreq.min(), pfreq.max()), interpolation='none', aspect='auto', origin='lower', cmap=CM)
 
             plt.colorbar()
 
@@ -935,9 +936,12 @@ class FluctAna(object):
                 plt.clim([vlimits[0], vlimits[1]])
 
             chpos = '({:.1f}, {:.1f})'.format(np.mean(Dtwo.rpos*100), np.mean(Dtwo.zpos*100)) # [cm]
-            plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
-            plt.xlabel('Frequency [kHz]')
-            plt.ylabel('Local wavenumber [rad/cm]')
+            # plt.title('#{:d}, {:s}'.format(pshot, chpos), fontsize=10)
+            # plt.xlabel('Frequency [kHz]')
+            # plt.ylabel('Local wavenumber [rad/cm]')
+            plt.ylabel('Frequency [kHz]')
+            plt.xlabel('Local wavenumber [rad/cm]')   
+            plt.tight_layout()         
 
             # plt.plot(pfreq, Dtwo.K, 'k')
             # plt.plot(pfreq, Dtwo.K + Dtwo.sigK, 'r')
