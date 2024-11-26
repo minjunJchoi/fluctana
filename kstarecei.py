@@ -47,7 +47,7 @@ class KstarEcei(object):
         elif 30540 < shot:
             self.data_path = '/eceidata2/exp_2022/'
 
-        self.data_path = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on my MacStudio
+        # self.data_path = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
         self.clist = self.expand_clist(clist)
 

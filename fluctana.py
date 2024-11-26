@@ -17,9 +17,9 @@ import pickle
 
 from kstarecei import *
 from kstarmir import *
-#from kstarcss import *
+from kstarcss import *
 from kstarbes import *
-#from kstarmds import *
+from kstarmds import *
 from diiiddata import *  # needs pidly
 from diiidbes import *
 
@@ -165,7 +165,7 @@ class FluctAna(object):
                     cstr = ''
             # print '     # %d size : %s' % (i, self.Dlist[i].data.shape)
 
-    def add_channel(self, dnum, clist):  # re-do fftbins after add channels
+    def add_channel(self, dnum, clist, norm=1, atrange=[1.0, 1.01], res=0):  # re-do fftbins after add channels
         D = self.Dlist[dnum]
 
         old_clist = D.clist
