@@ -16,6 +16,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pickle
 
 from kstarecei import *
+from kstareceirt import *
 from kstarmir import *
 from kstarcss import *
 from kstarbes import *
@@ -111,8 +112,10 @@ class FluctAna(object):
             D = FluctData(shot=shot, clist=clist, time=time, data=data, rpos=rpos, zpos=zpos, apos=apos)
         else:
             if dev == 'KSTAR': # KSTAR data
-                if 'ECEI' in clist[0]:
+                if 'ECEI' in clist[0] and shot < 35000:
                     D = KstarEcei(shot=shot, clist=clist)
+                elif 'ECEI' in clist[0] and shot > 35000:
+                    D = KstarEceiRemote(shot=shot, clist=clist)
                 elif 'MIR' in clist[0]:
                     D = KstarMir(shot=shot, clist=clist)
                 elif 'CSS' in clist[0]:
