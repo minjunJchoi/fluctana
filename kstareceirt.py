@@ -245,6 +245,7 @@ class KstarEceiRemote(Connection):
         mu0 = 4*np.pi*1e-7  # permeability
         ttn = 56*16         # total TF coil turns
 
+        self.hn = 2 ###########
         self.itf = 18000 ############# toroidal field coil current [A]
         self.lo = 75 ############### [GHz]
         self.sf = 498 ########## [mm]
