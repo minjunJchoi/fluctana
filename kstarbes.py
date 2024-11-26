@@ -60,7 +60,6 @@ class KstarBes(Connection):
         # get time base
         time_node = 'dim_of(\BES_0101:FOO)'
         time = self.get(time_node).data()
-        fs = round(1/(time[1] - time[0])/1000)*1000.0
 
         with h5py.File(self.fname, 'w') as fout:
             fout.create_dataset('TIME', data=time)
