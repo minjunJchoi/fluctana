@@ -101,7 +101,7 @@ class FluctAna(object):
     def __init__(self):
         self.Dlist = []
 
-    def add_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], trange=[6.8,7.0], norm=1, atrange=[1.0, 1.01], res=0, verbose=1, **kwargs):
+    def add_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], trange=[6.8,7.0], norm=1, atrange=[1.0, 1.01], res=0, verbose=1, savedata=False, **kwargs):
         # for an arbitrary data
         if 'data' in kwargs:
             time = kwargs['time']
@@ -115,13 +115,13 @@ class FluctAna(object):
                 if 'ECEI' in clist[0] and shot < 35000:
                     D = KstarEcei(shot=shot, clist=clist)
                 elif 'ECEI' in clist[0] and shot > 35000:
-                    D = KstarEceiRemote(shot=shot, clist=clist)
+                    D = KstarEceiRemote(shot=shot, clist=clist, savedata=savedata)
                 elif 'MIR' in clist[0]:
                     D = KstarMir(shot=shot, clist=clist)
                 elif 'CSS' in clist[0]:
                     D = KstarCss(shot=shot, clist=clist)
                 elif 'BES' in clist[0]:
-                    D = KstarBes(shot=shot, clist=clist)
+                    D = KstarBes(shot=shot, clist=clist, savedata=savedata)
                 else:
                     D = KstarMds(shot=shot, clist=clist)
             elif dev == 'DIIID': # DIII-D data

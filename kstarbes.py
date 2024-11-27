@@ -23,7 +23,7 @@ BES_PATH = '/home/mjchoi/data/KSTAR/bes_data' # on ukstar
 
 class KstarBes(Connection):
 # class KstarBes():
-    def __init__(self, shot, clist):
+    def __init__(self, shot, clist, savedata):
         # from iKSTAR/uKSTAR
         super(KstarBes,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
 
@@ -33,9 +33,11 @@ class KstarBes(Connection):
 
         path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
         self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
-        if os.path.exists(self.fname) == False:
+        if os.path.exists(self.fname) == False and savedata == True:
             print('reformat BES data to hdf5 file') 
             self.reformat_hdf5()
+        else:
+            print('load BES data from MDSplus server')
 
         self.good_channels = np.ones(len(self.clist))
         
@@ -66,15 +68,15 @@ class KstarBes(Connection):
 
             for cname in clist:
                 # get and add data 
-                data = self.get('\{:s}:FOO'.format(cname)).data()
+                data = self.get(f'\{cname}:FOO').data()
                 fout.create_dataset(cname, data=data)
 
                 # get and add rpos
-                rpos = self.get('\{:s}:RPOS'.format(cname))
+                rpos = self.get(f'\{cname}:RPOS')
                 fout.create_dataset(cname +'_RPOS', data=rpos)
 
                 # get and add zpos
-                zpos = self.get('\{:s}:VPOS'.format(cname))
+                zpos = self.get(f'\{cname}:VPOS')
                 fout.create_dataset(cname +'_ZPOS', data=zpos)
                 
                 print('added', cname)
@@ -89,29 +91,79 @@ class KstarBes(Connection):
 
         self.trange = trange
 
-        # open file   
-        with h5py.File(self.fname, 'r') as fin:
+        if os.path.exists(self.fname):
+            # read data from hdf5
+            with h5py.File(self.fname, 'r') as fin:
+                # read time base and get tidx 
+                self.time = np.array(fin.get('TIME'))
 
-            # read time base and get tidx 
-            self.time = np.array(fin.get('TIME'))
+                # get sampling frequency 
+                self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
 
-            # get sampling frequency 
+                # subsample 
+                idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
+                idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+
+                self.time = self.time[idx1:idx2]
+
+                # get data
+                for i, cname in enumerate(self.clist):
+                    # load data
+                    v = np.array(fin.get(cname)[idx1:idx2])
+
+                    # normalize by std if norm == 1
+                    if norm == 1:
+                        v = v/np.mean(v) - 1
+                    elif norm == 2:
+                        anode = f'setTimeContext({atrange[0]},{atrange[1]},*),\{cname}:FOO'
+                        av = self.get(anode).data()
+
+                        v = v/np.mean(av) - 1
+                    elif norm == 3:
+                        base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
+                        base = base_filter.apply(v).real
+                        v = v/base - 1
+
+                    # expand dimension - concatenate
+                    v = np.expand_dims(v, axis=0)
+                    if self.data is None:
+                        self.data = v
+                    else:
+                        self.data = np.concatenate((self.data, v), axis=0)
+        else: 
+            ################################# BES setTimeContext does not work; should subsample for trange
+            # load data from MDSplus
+            self.openTree(BES_TREE, self.shot)
+
+            # time
+            tnode = f'dim_of(\{self.clist[0]}:FOO)'
+            self.time = self.get(tnode).data()
             self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
 
             # subsample 
             idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
             idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
-
             self.time = self.time[idx1:idx2]
 
-            # get data
+            # data
             for i, cname in enumerate(self.clist):
-                # load data
-                v = np.array(fin.get(cname)[idx1:idx2])
+                dnode = f'\{cname}:FOO'
+                v = self.get(dnode).data()
+                v = v[idx1:idx2] 
 
-                # normalize by std if norm == 1
+                # normalization 
                 if norm == 1:
                     v = v/np.mean(v) - 1
+                elif norm == 2:
+                    anode = f'\{cname}:FOO'
+                    av = self.get(anode).data()
+                    av = av[idx1:idx2]
+
+                    v = v/(np.mean(av) - self.offlev[i]) - 1
+                elif norm == 3:
+                    base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
+                    base = base_filter.apply(v).real
+                    v = v/base - 1
 
                 # expand dimension - concatenate
                 v = np.expand_dims(v, axis=0)
@@ -119,6 +171,8 @@ class KstarBes(Connection):
                     self.data = v
                 else:
                     self.data = np.concatenate((self.data, v), axis=0)
+
+                print('loaded', cname)
 
         return self.time, self.data
 
@@ -177,11 +231,20 @@ class KstarBes(Connection):
         self.zpos = np.zeros(cnum)  # z [m]
         self.apos = np.zeros(cnum)  # angle [rad]
 
-        # open file   
-        with h5py.File(self.fname, 'r') as fin:
+        if os.path.exists(self.fname):
+            # open file   
+            with h5py.File(self.fname, 'r') as fin:
+                for c, cname in enumerate(self.clist):
+                    self.rpos[c] = np.array(fin.get(cname+'_RPOS')) / 1000 # [mm] -> [m]
+                    self.zpos[c] = np.array(fin.get(cname+'_ZPOS')) / 1000 # [mm] -> [m]
+        else:
+            # open MDSplus tree
+            self.openTree(BES_TREE, self.shot)
+
+            # rpos and zpos
             for c, cname in enumerate(self.clist):
-                self.rpos[c] = np.array(fin.get(cname+'_RPOS')) / 1000 # [mm] -> [m]
-                self.zpos[c] = np.array(fin.get(cname+'_ZPOS')) / 1000 # [mm] -> [m]
+                self.rpos[c] = self.get(f'\{cname}:RPOS')
+                self.zpos[c] = self.get(f'\{cname}:VPOS')
 
     def expand_clist(self, clist):
         # IN : List of channel names (e.g. 'BES_0101-0416')

@@ -26,7 +26,7 @@ ECEI_PATH = '/home/mjchoi/data/KSTAR/ecei_data/' # on ukstar
 
 # on iKSTAR/uKSTAR
 class KstarEceiRemote(Connection):
-    def __init__(self, shot, clist):
+    def __init__(self, shot, clist, savedata):
         super(KstarEceiRemote,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
 
 # on local machine
@@ -46,9 +46,11 @@ class KstarEceiRemote(Connection):
         self.fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(self.data_path, shot, shot, self.dev)
 
         # if files do not exist, read the data from KSTAR MDSplus
-        if os.path.exists(self.fname) == False:
+        if os.path.exists(self.fname) == False and savedata == True:
             print('reformat ECEI data to hdf5 file') 
             self.reformat_hdf5()
+        else:
+            print('load ECEI data from MDSplus server')
 
         # data quality
         self.good_channels = np.ones(len(self.clist))
@@ -108,32 +110,75 @@ class KstarEceiRemote(Connection):
         elif norm == 3:
             if verbose == 1: print('Data is normalized by the low pass signal')
 
-        # get data
-        with h5py.File(self.fname, 'r') as fin:
-            # read time base and get tidx 
-            self.time = np.array(fin.get('TIME'))
+        if os.path.exists(self.fname):
+            # read data from hdf5
+            with h5py.File(self.fname, 'r') as fin:
+                # read time base and get tidx 
+                self.time = np.array(fin.get('TIME'))
 
-            # get sampling frequency 
+                # get sampling frequency 
+                self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
+
+                # get tidx for signal, offset, and atrange
+                idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
+                idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+
+                oidx1 = round((-0.08 + 1e-8 - self.time[0])*self.fs) 
+                oidx2 = round((-0.02 + 1e-8 - self.time[0])*self.fs)
+
+                aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
+                aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+
+                # get time for trange
+                self.time = self.time[idx1:idx2]
+
+                # get data
+                for i, cname in enumerate(self.clist):
+                    # load data
+                    ov = np.array(fin.get(cname)[oidx1:oidx2]) # offset
+                    v = np.array(fin.get(cname)[idx1:idx2]) # signal
+                    
+                    self.offlev[i] = np.median(ov)
+                    self.offstd[i] = np.std(ov)
+
+                    v = v - self.offlev[i]
+
+                    self.siglev[i] = np.median(v)
+                    self.sigstd[i] = np.std(v)
+
+                    # normalization 
+                    if norm == 1:
+                        v = v/np.mean(v) - 1
+                    elif norm == 2:
+                        av = np.array(fin.get(cname)[aidx1:aidx2]) # atrange signal
+                        v = v/(np.mean(av) - self.offlev[i]) - 1
+                    elif norm == 3:
+                        base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
+                        base = base_filter.apply(v).real
+                        v = v/base - 1
+
+                    # expand dimension - concatenate
+                    v = np.expand_dims(v, axis=0)
+                    if self.data is None:
+                        self.data = v
+                    else:
+                        self.data = np.concatenate((self.data, v), axis=0)
+        else:
+            # load data from MDSplus
+            self.openTree(ECEI_TREE, self.shot)
+
+            # time 
+            tnode = f'setTimeContext({trange[0]},{trange[1]},{res}),dim_of(\{self.clist[0]}:FOO)'
+            self.time = self.get(tnode).data()
             self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
 
-            # get tidx for signal, offset, and atrange
-            idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-            idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
-
-            oidx1 = round((-0.08 + 1e-8 - self.time[0])*self.fs) 
-            oidx2 = round((-0.02 + 1e-8 - self.time[0])*self.fs)
-
-            aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-            aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
-
-            # get time for trange
-            self.time = self.time[idx1:idx2]
-
-            # get data
+            # data
             for i, cname in enumerate(self.clist):
-                # load data
-                ov = np.array(fin.get(cname)[oidx1:oidx2]) # offset
-                v = np.array(fin.get(cname)[idx1:idx2]) # signal
+                onode = f'setTimeContext(-0.08,-0.02,{res}),\{cname}:FOO'
+                ov = self.get(onode).data()
+
+                dnode = f'setTimeContext({trange[0]},{trange[1]},{res}),\{cname}:FOO'
+                v = self.get(dnode).data()
                 
                 self.offlev[i] = np.median(ov)
                 self.offstd[i] = np.std(ov)
@@ -147,7 +192,9 @@ class KstarEceiRemote(Connection):
                 if norm == 1:
                     v = v/np.mean(v) - 1
                 elif norm == 2:
-                    av = np.array(fin.get(cname)[aidx1:aidx2]) # atrange signal
+                    anode = f'setTimeContext({atrange[0]},{atrange[1]},{res}),\{cname}:FOO'
+                    av = self.get(anode).data()
+
                     v = v/(np.mean(av) - self.offlev[i]) - 1
                 elif norm == 3:
                     base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
@@ -160,6 +207,8 @@ class KstarEceiRemote(Connection):
                     self.data = v
                 else:
                     self.data = np.concatenate((self.data, v), axis=0)
+
+                print('loaded', cname)
 
         # check data quality
         self.find_bad_channel()
