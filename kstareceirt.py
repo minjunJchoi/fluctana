@@ -168,33 +168,22 @@ class KstarEceiRemote(Connection):
             self.openTree(ECEI_TREE, self.shot)
 
             # time 
-            tnode = 'dim_of(\{:s}:FOO)'.format(self.clist[0])
+            tnode = f'setTimeContext({trange[0]},{trange[1]},{res}),dim_of(\{self.clist[0]}:FOO)'
             self.time = self.get(tnode).data()
             self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
-            
-            # time idx
-            idx1 = int((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs)
-            idx2 = int((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
-            
-            oidx1 = int((max(-0.08,self.time[0]) + 1e-8 - self.time[0])*self.fs)
-            oidx2 = int((min(-0.02,self.time[-1]) + 1e-8 - self.time[0])*self.fs)
-            
-            aidx1 = int((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs)
-            aidx2 = int((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
-
-            self.time = self.time[idx1:idx2]
 
             # data
             for i, cname in enumerate(self.clist):
-                dnode = '\{:s}:FOO'.format(cname)
+                onode = f'setTimeContext(-0.08,-0.02,{res}),\{cname}:FOO'
+                ov = self.get(onode).data()
+
+                dnode = f'setTimeContext({trange[0]},{trange[1]},{res}),\{cname}:FOO'
                 v = self.get(dnode).data()
-                
-                ov = v[oidx1:oidx2]
                 
                 self.offlev[i] = np.median(ov)
                 self.offstd[i] = np.std(ov)
 
-                v = v[idx1:idx2] - self.offlev[i]
+                v = v - self.offlev[i]
 
                 self.siglev[i] = np.median(v)
                 self.sigstd[i] = np.std(v)
@@ -203,8 +192,8 @@ class KstarEceiRemote(Connection):
                 if norm == 1:
                     v = v/np.mean(v) - 1
                 elif norm == 2:
-                    av = self.get(dnode).data()
-                    av = av[aidx1:aidx2]
+                    anode = f'setTimeContext({atrange[0]},{atrange[1]},{res}),\{cname}:FOO'
+                    av = self.get(anode).data()
 
                     v = v/(np.mean(av) - self.offlev[i]) - 1
                 elif norm == 3:
