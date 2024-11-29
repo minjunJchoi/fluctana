@@ -43,8 +43,6 @@ class KstarBes(Connection):
         if os.path.exists(self.fname) == False and savedata == True:
             print('reformat BES data to hdf5 file') 
             self.reformat_hdf5()
-        else:
-            print('load BES data from MDSplus server')
 
         self.good_channels = np.ones(len(self.clist))
         
@@ -101,6 +99,8 @@ class KstarBes(Connection):
         if os.path.exists(self.fname):
             # read data from hdf5
             with h5py.File(self.fname, 'r') as fin:
+                print('read BES data from hdf5 file')
+
                 # read time base and get tidx 
                 self.time = np.array(fin.get('TIME'))
 
@@ -139,6 +139,7 @@ class KstarBes(Connection):
                     else:
                         self.data = np.concatenate((self.data, v), axis=0)
         else: 
+            print('load BES data from MDSplus server')
             ################################# setTimeContext cannot be used ofr BES data
             # load data from MDSplus
             self.openTree(BES_TREE, self.shot)
