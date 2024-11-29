@@ -24,13 +24,13 @@ ECEI_TREE = 'KSTAR'
 ECEI_PATH = '/home/mjchoi/data/KSTAR/ecei_data/' # on ukstar
 # ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
-# on iKSTAR/uKSTAR
+# on uKSTAR
 class KstarEceiRemote(Connection):
     def __init__(self, shot, clist, savedata):
         super(KstarEceiRemote,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
 
 # on local machine
-# class KstarEcei(object):
+# class KstarEceiRemote(object):
 #     def __init__(self, shot, clist):
 
         self.shot = shot
@@ -123,8 +123,8 @@ class KstarEceiRemote(Connection):
                 idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
                 idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
 
-                oidx1 = round((-0.08 + 1e-8 - self.time[0])*self.fs) 
-                oidx2 = round((-0.02 + 1e-8 - self.time[0])*self.fs)
+                oidx1 = round((max(-0.08,self.time[0]) + 1e-8 - self.time[0])*self.fs) 
+                oidx2 = round((min(-0.02,self.time[-1]) + 1e-8 - self.time[0])*self.fs)
 
                 aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
                 aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
@@ -194,7 +194,6 @@ class KstarEceiRemote(Connection):
                 elif norm == 2:
                     anode = f'setTimeContext({atrange[0]},{atrange[1]},{res}),\{cname}:FOO'
                     av = self.get(anode).data()
-
                     v = v/(np.mean(av) - self.offlev[i]) - 1
                 elif norm == 3:
                     base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
@@ -296,7 +295,7 @@ class KstarEceiRemote(Connection):
 
         self.hn = 2 ###########
         self.itf = 18000 ############# toroidal field coil current [A]
-        self.lo = 75 ############### [GHz]
+        self.lo = 79 ############### [GHz]
         self.sf = 498 ########## [mm]
         self.sz = 250 ########### [mm]
 

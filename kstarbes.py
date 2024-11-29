@@ -1,9 +1,13 @@
-# Author : Minjun J. Choi (mjchoi@kfe.re.kr)
-#
-# Description : This code reads the KSTAR BES data from the KSTAR MDSplus server
-#
-# Acknowledgement : Special thanks to Dr. J.W. Kim
-#
+"""
+Author : Minjun J. Choi (mjchoi@kfe.re.kr)
+
+Description : This code reads the KSTAR BES data from the KSTAR MDSplus server
+
+Acknowledgement : Dr. J.W. Kim
+
+Last updated
+2024.11.26 : version 0.10; cold resonance positions
+"""
 
 import filtdata as ft
 
@@ -21,11 +25,14 @@ BES_TREE = 'KSTAR'
 BES_PATH = '/home/mjchoi/data/KSTAR/bes_data' # on ukstar
 # BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data' # on local machine
 
+# on uKSTAR
 class KstarBes(Connection):
-# class KstarBes():
     def __init__(self, shot, clist, savedata):
-        # from iKSTAR/uKSTAR
         super(KstarBes,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
+
+# on local machine
+# class KstarBes(object):
+#     def __init__(self, shot, clist):
 
         self.shot = shot
 
@@ -104,6 +111,9 @@ class KstarBes(Connection):
                 idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
                 idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
 
+                aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
+                aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)                
+
                 self.time = self.time[idx1:idx2]
 
                 # get data
@@ -115,9 +125,7 @@ class KstarBes(Connection):
                     if norm == 1:
                         v = v/np.mean(v) - 1
                     elif norm == 2:
-                        anode = f'setTimeContext({atrange[0]},{atrange[1]},*),\{cname}:FOO'
-                        av = self.get(anode).data()
-
+                        av = np.array(fin.get(cname)[aidx1:aidx2]) # atrange signal
                         v = v/np.mean(av) - 1
                     elif norm == 3:
                         base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
@@ -131,7 +139,7 @@ class KstarBes(Connection):
                     else:
                         self.data = np.concatenate((self.data, v), axis=0)
         else: 
-            ################################# BES setTimeContext does not work; should subsample for trange
+            ################################# setTimeContext cannot be used ofr BES data
             # load data from MDSplus
             self.openTree(BES_TREE, self.shot)
 
@@ -143,23 +151,24 @@ class KstarBes(Connection):
             # subsample 
             idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
             idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+
+            aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
+            aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)                
+
             self.time = self.time[idx1:idx2]
 
             # data
             for i, cname in enumerate(self.clist):
                 dnode = f'\{cname}:FOO'
-                v = self.get(dnode).data()
-                v = v[idx1:idx2] 
+                full_v = self.get(dnode).data()
+                v = full_v[idx1:idx2]
 
                 # normalization 
                 if norm == 1:
                     v = v/np.mean(v) - 1
                 elif norm == 2:
-                    anode = f'\{cname}:FOO'
-                    av = self.get(anode).data()
-                    av = av[idx1:idx2]
-
-                    v = v/(np.mean(av) - self.offlev[i]) - 1
+                    av = full_v[aidx1:aidx2]
+                    v = v/np.mean(av) - 1
                 elif norm == 3:
                     base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
                     base = base_filter.apply(v).real
