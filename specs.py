@@ -2,8 +2,10 @@ import time
 
 import numpy as np
 from scipy import signal
+from sklearn.linear_model import QuantileRegressor
 
 import matplotlib.pyplot as plt
+
 
 def fft_window(tnum, nfft, window, overlap):
     # IN : full length of time series, nfft, window name, overlap ratio
@@ -31,7 +33,83 @@ def fft_window(tnum, nfft, window, overlap):
     return bins, win
 
 
-def fftbins(x, dt, nfft, window, overlap, detrend=0, full=0):
+def fix_tqr_coef(coef, f0):
+    # input: ceof = [p, ntau] tqr coefficient matrix from tqr_fit()
+    # output: [2, ntau] matrix of tqr coefficients
+    if f0 == 0:
+        # for f = 0
+        coef = np.vstack([0, 0])
+    elif f0 == 0.5:
+        # for f = 0.5: rescale coef of cosine by 2 so qdft can be defined as usual
+        coef = np.vstack([2 * coef[0, :], 0])
+    else:
+        # for f in (0, 0.5)
+        pass
+    return coef
+
+
+def tqr_fit(y, f0, tau, prepared=True):
+    n = len(y)
+    tt = np.arange(1, n + 1)
+    
+    if f0 == 0:
+        X = np.ones((n, 1))
+    elif f0 == 0.5:
+        X = np.column_stack([np.cos(2 * np.pi * f0 * tt)])
+    else:
+        X = np.column_stack([np.cos(2 * np.pi * f0 * tt), np.sin(2 * np.pi * f0 * tt)])
+
+    coef = []
+    model = QuantileRegressor(quantile=tau, alpha=0, solver='highs')
+    model.fit(X, y)
+    coef.append(model.coef_)   
+    coef = np.array(coef).T
+
+    if prepared:
+        coef = fix_tqr_coef(coef, f0)
+
+    return coef
+
+
+def z_transform(x):
+    x = np.reshape(x, (-1, 2)).T
+    return x[0, :] - 1j * x[1, :]
+
+
+def extend_qdft(y, tau, qdft, sel_f):
+    ns = y.shape[0]
+    extended_qdft = np.empty_like(y, dtype=complex)
+    extended_qdft[0] = ns * np.quantile(y, tau)
+
+    tmp = np.array(qdft)
+    tmp2 = np.flip(np.conj(tmp[sel_f]))
+
+    extended_qdft[1:ns] = np.vstack([tmp, tmp2]).flatten() * (ns / 2)
+
+    return extended_qdft
+
+
+def qdft(y, tau):
+    """
+    This function computes the quantile discrete Fourier transform (QDFT) of a time series.
+    The relevant codes are translated from R codes qfa_2.1 written by Dr. Ta-Hsin Li https://github.com/IBM/qfa
+    """
+    ns = y.shape[0]
+    f2 = np.arange(ns) / ns
+    f = f2[(f2 > 0) & (f2 <= 0.5)]
+    sel_f = np.where(f < 0.5)[0]
+
+    qdft = []
+    for i in range(len(f)):
+        coef = tqr_fit(y, f[i], tau)
+        qdft.append(np.apply_along_axis(z_transform, 0, coef))
+
+    qdft = extend_qdft(y, tau, qdft, sel_f)
+
+    return qdft
+
+
+def fftbins(x, dt, nfft, window, overlap, tau=0, demean=1, detrend=0, full=0):
     # IN : 1 x tnum data
     # OUT : bins x faxis fftdata
     tnum = len(x)
@@ -62,15 +140,19 @@ def fftbins(x, dt, nfft, window, overlap, detrend=0, full=0):
 
         sx = x[idx1:idx2]
 
-        if detrend == 0:
+        if demean == 1:
             sx = signal.detrend(sx, type='constant')  # subtract mean
-        elif detrend == 1:
+        if detrend == 1:
             sx = signal.detrend(sx, type='linear')
 
         sx = sx * win  # apply window function
 
         # get fft
-        SX = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
+        if tau == 0:
+            SX = np.fft.fft(sx, n=nfft)/nfft  # divide by the length
+        else:
+            SX = qdft(sx, tau)
+
         if np.mod(nfft, 2) == 0:  # even nfft
             SX = np.hstack([SX[0:int(nfft/2)], np.conj(SX[int(nfft/2)]), SX[int(nfft/2):nfft]])
         if full == 1: # shift to -fN ~ 0 ~ fN
