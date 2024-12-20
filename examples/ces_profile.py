@@ -5,7 +5,7 @@ from fluctana import *
 # python3 ces_profile.py 22531 [3.5,3.6] 22531 [5,5.1] TI
 
 TORV = sys.argv[-1] # TI or VT
-Rrange = [1.3,2.3] # [mm]
+Rrange = [1.7,2.225] # [mm]
 npts = len(sys.argv) - 1
 
 A = FluctAna()
@@ -21,6 +21,8 @@ for i in range(int(npts/2)):
     clist = ['{:s}'.format(clist_temp[i]) for i in idx]
     A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=0)
 
+A.list_data()
+
 ## compare multiple profiles
 fig = plt.figure(figsize=(7,7))
 for i in range(int(npts/2)):
@@ -29,14 +31,14 @@ for i in range(int(npts/2)):
     tag = 'shot {:d}, t=[{:g},{:g}]'.format(shot, trange[0],trange[1])
     
     x = A.Dlist[i].rpos
-    y = np.mean(A.Dlist[i].data,axis=1)/1000.0
-    yerr = A.Dlist[i].err/1000.0    
+    y = np.mean(A.Dlist[i].data,axis=1)
+    yerr = A.Dlist[i].err    
 
     # plt.plot(x, y, marker='o', label=tag)
     plt.errorbar(x, y, yerr=yerr, fmt='-o', label=tag)
 
 if TORV == 'TI':
-    plt.title('CES TI [keV]')
+    plt.title('CES TI [eV]')
 elif TORV == 'VT':
     plt.title('CES Vtor [km/s]')
 plt.xlabel('R [m]')
