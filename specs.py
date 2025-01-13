@@ -3,8 +3,7 @@ import time
 import numpy as np
 from scipy import signal
 from sklearn.linear_model import QuantileRegressor
-
-import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import ccovf
 
 
 def fft_window(tnum, nfft, window, overlap):
@@ -31,6 +30,18 @@ def fft_window(tnum, nfft, window, overlap):
             0.000000132974*np.cos(10*z)
 
     return bins, win
+
+
+def e_hanning_window(n, M):
+    """
+    n: int, length of data
+    M: int, length of window edge
+    """
+    lags = np.arange(n)
+    tmp = 0.5 * (1 + np.cos(np.pi * lags / M))
+    tmp[lags > M] = 0
+    window = tmp + np.concatenate([[0], np.flip(tmp[1:])])
+    return window
 
 
 def fix_tqr_coef(coef, f0):
@@ -76,37 +87,66 @@ def z_transform(x):
     return x[0, :] - 1j * x[1, :]
 
 
-def extend_qdft(y, tau, qdft, sel_f):
+def extend_qdft(y, tau, Y_qdft, sel_f):
     ns = y.shape[0]
-    extended_qdft = np.empty_like(y, dtype=complex)
-    extended_qdft[0] = ns * np.quantile(y, tau)
+    extended_Y_qdft = np.empty_like(y, dtype=complex)
+    extended_Y_qdft[0] = ns * np.quantile(y, tau)
 
-    tmp = np.array(qdft)
+    tmp = np.array(Y_qdft)
     tmp2 = np.flip(np.conj(tmp[sel_f]))
 
-    extended_qdft[1:ns] = np.vstack([tmp, tmp2]).flatten() * (ns / 2)
+    extended_Y_qdft[1:ns] = np.vstack([tmp, tmp2]).flatten() * (ns / 2)
 
-    return extended_qdft
+    return extended_Y_qdft
 
 
 def qdft(y, tau):
     """
-    This function computes the quantile discrete Fourier transform (QDFT) of a time series.
+    This function computes the quantile discrete Fourier transform (qdft) of a time series.
     The relevant codes are translated from R codes qfa_2.1 written by Dr. Ta-Hsin Li https://github.com/IBM/qfa
-    """
+    """    
     ns = y.shape[0]
     f2 = np.arange(ns) / ns
     f = f2[(f2 > 0) & (f2 <= 0.5)]
     sel_f = np.where(f < 0.5)[0]
 
-    qdft = []
+    Y_qdft = []
     for i in range(len(f)):
         coef = tqr_fit(y, f[i], tau)
-        qdft.append(np.apply_along_axis(z_transform, 0, coef))
+        Y_qdft.append(np.apply_along_axis(z_transform, 0, coef))
 
-    qdft = extend_qdft(y, tau, qdft, sel_f)
+    Y_qdft = extend_qdft(y, tau, Y_qdft, sel_f)
 
-    return qdft
+    return Y_qdft
+
+
+def qccf(X_qdft, Y_qdft):
+    x = np.empty_like(X_qdft, dtype=np.float64)
+    x = np.real(np.fft.ifft(X_qdft)) 
+    
+    y = np.empty_like(Y_qdft, dtype=np.float64)
+    y = np.real(np.fft.ifft(Y_qdft)) 
+    
+    qccf_xy = ccovf(x, y, adjusted=False, demean=True, fft=True)
+
+    return qccf_xy
+
+
+def qspec_lw(X_qdft, Y_qdft, M=None):
+    ns = Y_qdft.shape[0]
+
+    qccf_xy = qccf(X_qdft, Y_qdft)
+    qccf_yx = qccf(Y_qdft, X_qdft)
+
+    if M is None:  # rectangular window
+        lw = np.ones(2*ns)
+    else:  # overlap = 0.5
+        lw = e_hanning_window(2*ns, M)
+
+    gam = np.concatenate([qccf_xy, [0], np.flip(qccf_yx[1:])]) * lw
+    qspec_xy = np.fft.fft(gam)[::2] / ns
+
+    return qspec_xy
 
 
 def fftbins(x, dt, nfft, window, overlap, tau=0, demean=1, detrend=0, full=0):
@@ -223,7 +263,7 @@ def cross_power(XX, YY, win_factor):
     return Pxy
 
 
-def coherence(XX, YY):
+def coherence(XX, YY, M=None):
     # normalization outside loop 
     
     # Pxy = np.mean(XX * np.conjugate(YY), 0)
@@ -241,10 +281,21 @@ def coherence(XX, YY):
         X = XX[i,:]
         Y = YY[i,:]
 
-        Pxx = X * np.matrix.conjugate(X)
-        Pyy = Y * np.matrix.conjugate(Y)
+        if M is None: # ordinary coherence
+            Pxy = X * np.matrix.conjugate(Y)
+            Pxx = X * np.matrix.conjugate(X)
+            Pyy = Y * np.matrix.conjugate(Y)
+        else: # quantile coherence
+            X = np.fft.ifftshift(X) # -fN ~ fN -> 0 ~ fN -fN ~ -f1 for qspec_lw
+            Y = np.fft.ifftshift(Y)
+            Pxy = qspec_lw(X, Y, M=M)
+            Pxx = qspec_lw(X, X, M=M)
+            Pyy = qspec_lw(Y, Y, M=M)
+            Pxy = np.fft.fftshift(Pxy) # 0 ~ fN -fN ~ -f1 -> -fN ~ fN for plots
+            Pxx = np.fft.fftshift(Pxx)
+            Pyy = np.fft.fftshift(Pyy)
 
-        val[i,:] = X*np.matrix.conjugate(Y) / np.sqrt(Pxx*Pyy)
+        val[i,:] = Pxy / np.sqrt(Pxx.real*Pyy.real)
 
     # average over bins
     Gxy = np.mean(val, 0)

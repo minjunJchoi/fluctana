@@ -609,7 +609,7 @@ class FluctAna(object):
             else: # half
                 Dtwo.val[c,:] = 2*sp.cross_power(XX, YY, Dtwo.win_factor)  # product 2 for half return
 
-    def coherence(self, done=0, dtwo=1):
+    def coherence(self, done=0, dtwo=1, M=None):
         # IN : data number one (ref), data number two (cmp), etc
         # OUT : x-axis (ax), y-axis (val)
         Done = self.Dlist[done]
@@ -638,7 +638,7 @@ class FluctAna(object):
 
             YY = Dtwo.spdata[c,:,:]
 
-            Dtwo.val[c,:] = sp.coherence(XX, YY)
+            Dtwo.val[c,:] = sp.coherence(XX, YY, M=M)
 
     def cross_phase(self, done=0, dtwo=1):
         # IN : data number one (ref), data number two (cmp)
