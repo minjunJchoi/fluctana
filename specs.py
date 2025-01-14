@@ -3,7 +3,6 @@ import time
 import numpy as np
 from scipy import signal
 from sklearn.linear_model import QuantileRegressor
-from statsmodels.tsa.stattools import ccovf
 
 
 def fft_window(tnum, nfft, window, overlap):
@@ -120,6 +119,23 @@ def qdft(y, tau):
     return Y_qdft
 
 
+def ccovf(x, y, unbiased=False, demean=True):
+    n = len(x)
+    
+    if demean:
+        x = x - np.mean(x)
+        y = y - np.mean(y)
+    
+    corr = signal.correlate(x, y, mode='full', method='fft')
+    corr = corr[n - 1:]
+    
+    if unbiased:
+        lags = np.arange(n, 0, -1) 
+        return corr / lags
+    else:
+        return corr / n
+
+
 def qccf(X_qdft, Y_qdft):
     x = np.empty_like(X_qdft, dtype=np.float64)
     x = np.real(np.fft.ifft(X_qdft)) 
@@ -127,7 +143,7 @@ def qccf(X_qdft, Y_qdft):
     y = np.empty_like(Y_qdft, dtype=np.float64)
     y = np.real(np.fft.ifft(Y_qdft)) 
     
-    qccf_xy = ccovf(x, y, adjusted=False, demean=True, fft=True)
+    qccf_xy = ccovf(x, y, unbiased=False, demean=True)
 
     return qccf_xy
 
