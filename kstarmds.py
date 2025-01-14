@@ -47,13 +47,17 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
 NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
 
 class KstarMds(Connection):
-    def __init__(self, shot, clist):
+    def __init__(self, shot=1234, tree=None, clist=['abc']):
         # from iKSTAR
         super(KstarMds,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
         # from opi to CSS Host PC
         # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot
+        self.tree = tree
         self.clist = clist
+
+        if tree is None:
+            self.tree = find_tree(self.clist[0])
 
         # if ('ECE' == self.clist[0][0:3]) or ('CES' == self.clist[0][0:3]) or ('TS' == self.clist[0][0:2]) or \
         # ('EP' == self.clist[0][0:2]) or ('MC1' == self.clist[0][0:3]):
@@ -74,12 +78,11 @@ class KstarMds(Connection):
         self.trange = trange
 
         # open tree
-        tree = find_tree(self.clist[0])
         try:
-            self.openTree(tree,self.shot)
-            if verbose == 1: print('OPEN MDS tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            self.openTree(self.tree, self.shot)
+            if verbose == 1: print('OPEN MDS tree {:s} to get data {:s}'.format(self.tree, self.clist[0]))
         except:
-            if verbose == 1: print('FAIL to open MDS tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('FAIL to open MDS tree {:s} to get data {:s}'.format(self.tree, self.clist[0]))
             return self.time, self.data
 
         # --- loop starts --- #
@@ -97,20 +100,20 @@ class KstarMds(Connection):
                 snode = 'resample(\{:s},{:f},{:f},{:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
                 tnode = 'dim_of(resample(\{:s},{:f},{:f},{:f}))'.format(node,self.trange[0],self.trange[1],res)  # resampling                
 
-                if ('ECE' == self.clist[0][0:3]) & ('KSTAR' == tree): 
+                if ('ECE' == self.clist[0][0:3]) & ('KSTAR' == self.tree): 
                     snode = 'setTimeContext(*,*,{:f}),\{:s}'.format(res,node)
                     tnode = 'setTimeContext(*,*,{:f}),dim_of(\{:s})'.format(res,node)                
-                elif 'RTECEI' == tree:
+                elif 'RTECEI' == self.tree:
                     snode = 'resample({:s},{:f},{:f},{:f})'.format(node,self.trange[0],self.trange[1],res)  # resampling
                     tnode = 'dim_of(resample({:s},{:f},{:f},{:f}))'.format(node,self.trange[0],self.trange[1],res)  # resampling                
             else:
                 snode = 'setTimeContext({:f},{:f},*),\{:s}'.format(self.trange[0],self.trange[1],node)
                 tnode = 'setTimeContext({:f},{:f},*),dim_of(\{:s})'.format(self.trange[0],self.trange[1],node)
 
-                if ('ECE' == self.clist[0][0:3]) & ('KSTAR' == tree): # do not sub-sample for ECE (KSTAR MDSplus bug?)
+                if ('ECE' == self.clist[0][0:3]) & ('KSTAR' == self.tree): # do not sub-sample for ECE (KSTAR MDSplus bug?)
                     snode = 'setTimeContext(*,*,*),\{:s}'.format(node)
                     tnode = 'setTimeContext(*,*,*),dim_of(\{:s})'.format(node)
-                elif 'RTECEI' == tree:
+                elif 'RTECEI' == self.tree:
                     snode = 'setTimeContext({:f},{:f},*),{:s}'.format(self.trange[0],self.trange[1],node)
                     tnode = 'setTimeContext({:f},{:f},*),dim_of({:s})'.format(self.trange[0],self.trange[1],node)
 
@@ -133,7 +136,7 @@ class KstarMds(Connection):
                     self.time = self.get(tnode).data()
 
                     # time in [s]
-                    if tree == 'EFIT01': # time unit in sec
+                    if self.tree == 'EFIT01': # time unit in sec
                         self.time = self.time*0.001
 
                     # get fs
@@ -196,7 +199,7 @@ class KstarMds(Connection):
         self.meas_error()
 
         # close tree
-        self.closeTree(tree, self.shot)
+        self.closeTree(self.tree, self.shot)
 
         return self.time, self.data
 
@@ -210,12 +213,11 @@ class KstarMds(Connection):
         self.time_list = time_list
 
         # open tree
-        tree = find_tree(self.clist[0])
         try:
-            self.openTree(tree, self.shot)
-            if verbose == 1: print('Open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            self.openTree(self.tree, self.shot)
+            if verbose == 1: print('Open the tree {:s} to get data {:s}'.format(self.tree, self.clist[0]))
         except:
-            if verbose == 1: print('Failed to open the tree {:s} to get data {:s}'.format(tree, self.clist[0]))
+            if verbose == 1: print('Failed to open the tree {:s} to get data {:s}'.format(self.tree, self.clist[0]))
             return self.multi_time, self.multi_data
 
         # read full time data and check truncated data size and fs
@@ -264,7 +266,7 @@ class KstarMds(Connection):
         # --- loop ends --- #
 
         # close tree
-        self.closeTree(tree, self.shot)
+        self.closeTree(self.tree, self.shot)
 
         return self.multi_time, self.multi_data      
 
@@ -314,12 +316,9 @@ class KstarMds(Connection):
             print('apos is obtained from kstardata')
 
     def read_mds_rpos(self):
-        # find tree
-        tree = find_tree(self.clist[0])
-
         # open tree
-        self.openTree(tree, self.shot)
-        print('OPEN MDS tree {:s} to read rpos'.format(tree))
+        self.openTree(self.tree, self.shot)
+        print('OPEN MDS tree {:s} to read rpos'.format(self.tree))
             
         # read rnode from MDSplus 
         cnum = len(self.clist)
@@ -340,7 +339,7 @@ class KstarMds(Connection):
             # print('rpos of {:s} is read from MDS tree {:s}'.format(self.clist[c], tree))
 
         # close tree
-        self.closeTree(tree, self.shot)
+        self.closeTree(self.tree, self.shot)
 
     def meas_error(self):  # Needs updates ####################
         # read from MDSplus node

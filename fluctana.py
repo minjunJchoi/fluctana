@@ -101,7 +101,7 @@ class FluctAna(object):
     def __init__(self):
         self.Dlist = []
 
-    def add_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], trange=[6.8,7.0], norm=1, atrange=[1.0, 1.01], res=0, verbose=1, savedata=False, **kwargs):
+    def add_data(self, dev='KSTAR', shot=23359, tree=None, clist=['ECEI_GT1201'], trange=[6.8,7.0], norm=1, atrange=[1.0, 1.01], res=0, verbose=1, savedata=False, **kwargs):
         # for an arbitrary data
         if 'data' in kwargs:
             time = kwargs['time']
@@ -123,7 +123,7 @@ class FluctAna(object):
                 elif 'BES' in clist[0]:
                     D = KstarBes(shot=shot, clist=clist, savedata=savedata)
                 else:
-                    D = KstarMds(shot=shot, clist=clist)
+                    D = KstarMds(shot=shot, tree=tree, clist=clist)
             elif dev == 'DIIID': # DIII-D data
                 if 'BES' in clist[0]:
                     D = DiiidBes(shot=shot, clist=clist)
