@@ -253,8 +253,8 @@ class KstarBes(Connection):
 
             # rpos and zpos
             for c, cname in enumerate(self.clist):
-                self.rpos[c] = self.get(f'\{cname}:RPOS')
-                self.zpos[c] = self.get(f'\{cname}:VPOS')
+                self.rpos[c] = self.get(f'\{cname}:RPOS') / 1000
+                self.zpos[c] = self.get(f'\{cname}:VPOS') / 1000
 
     def expand_clist(self, clist):
         # IN : List of channel names (e.g. 'BES_0101-0416')
