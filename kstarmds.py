@@ -201,6 +201,9 @@ class KstarMds(Connection):
         # close tree
         self.closeTree(self.tree, self.shot)
 
+        # disconnect
+        self.disconnect()
+
         return self.time, self.data
 
     # for ECE only now    
@@ -267,6 +270,9 @@ class KstarMds(Connection):
 
         # close tree
         self.closeTree(self.tree, self.shot)
+
+        # disconnect
+        self.disconnect()
 
         return self.multi_time, self.multi_data      
 

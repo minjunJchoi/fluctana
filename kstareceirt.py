@@ -20,7 +20,7 @@ import filtdata as ft
 from MDSplus import Connection
 
 # ECEI tree 
-ECEI_TREE = 'KSTAR'
+ECEI_TREE = 'ECEI'
 ECEI_PATH = '/home/mjchoi/data/KSTAR/ecei_data/' # on ukstar
 # ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
@@ -91,6 +91,12 @@ class KstarEceiRemote(Connection):
                 print('added', cname)
 
         print('saved', self.fname)        
+
+        # close tree
+        self.closeTree(ECEI_TREE, self.shot)
+
+        # disconnect 
+        self.disconnect()
 
     def get_data(self, trange, norm=1, atrange=[1.0, 1.01], res=0, verbose=1):
         self.trange = trange
@@ -209,6 +215,12 @@ class KstarEceiRemote(Connection):
 
                 print('loaded', cname)
 
+            # close tree
+            self.closeTree(ECEI_TREE, self.shot)
+
+            # disconnect 
+            self.disconnect()
+
         # check data quality
         self.find_bad_channel()
 
@@ -293,11 +305,25 @@ class KstarEceiRemote(Connection):
         mu0 = 4*np.pi*1e-7  # permeability
         ttn = 56*16         # total TF coil turns
 
-        self.hn = 2 ###########
-        self.itf = 18000 ############# toroidal field coil current [A]
-        self.lo = 79 ############### [GHz]
-        self.sf = 498 ########## [mm]
-        self.sz = 250 ########### [mm]
+        # read operation parameters from MDSplus
+        self.openTree(ECEI_TREE, self.shot)
+
+        hn_node = '\\{0}::TOP.ECEI_{1}:{2}_MODE'.format(ECEI_TREE, self.dev, self.dev) 
+        self.hn = self.get(hn_node).data()
+
+        itf_node = '\\{0}::TOP:{1}'.format(ECEI_TREE, 'ECEI_I_TF') 
+        self.itf = self.get(itf_node).data()*1000 # [A]
+
+        lo_node = '\\{0}::TOP.ECEI_{1}:{2}_LOFREQ'.format(ECEI_TREE, self.dev, self.dev) 
+        self.lo = self.get(lo_node).data() # [GHz]
+
+        sf_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSFOCUS'.format(ECEI_TREE, self.dev, self.dev) 
+        self.sf = self.get(sf_node).data() # [mm]
+
+        sz_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSZOOM'.format(ECEI_TREE, self.dev, self.dev) 
+        self.sz = self.get(sz_node).data() # [mm]
+
+        self.closeTree(ECEI_TREE, self.shot)
 
         cnum = len(self.clist)
         self.rpos = np.zeros(cnum)  # R [m] of each channel
