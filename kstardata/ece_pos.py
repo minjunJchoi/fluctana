@@ -5,7 +5,7 @@ import numpy as np
 
 def get_tf_current(shot):
     print('Read I_TF from MDSplus')
-    B = kstarmds.KstarMds(shot, ['PCITFMSRD'])
+    B = kstarmds.KstarMds(shot=shot, tree='PCS_KSTAR', clist=['PCITFMSRD'])
     _, data = B.get_data(trange=[3,6], norm=0)
     itf = np.mean(data)
 
