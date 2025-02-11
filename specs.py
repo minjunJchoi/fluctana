@@ -307,7 +307,7 @@ def coherence(XX, YY, M=None):
             Pxy = qspec_lw(X, Y, M=M)
             Pxx = qspec_lw(X, X, M=M)
             Pyy = qspec_lw(Y, Y, M=M)
-            Pxy = np.abs(np.fft.fftshift(Pxy)) # 0 ~ fN -fN ~ -f1 -> -fN ~ fN for plots
+            Pxy = np.fft.fftshift(Pxy) # 0 ~ fN -fN ~ -f1 -> -fN ~ fN for plots
             Pxx = np.fft.fftshift(Pxx)
             Pyy = np.fft.fftshift(Pyy)
 
