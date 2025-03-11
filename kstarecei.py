@@ -81,7 +81,7 @@ class KstarEcei(object):
                 elif self.mode == 'X':
                     self.hn = 2
             except:
-                print('#### no Mode attribute in file, default: 2nd X-mode ####')
+                print('#### No Mode attribute in file, default: 2nd X-mode ####')
                 self.mode = 'X'
                 self.hn = 2
             self.lo = dset.attrs['LoFreq']
@@ -125,7 +125,7 @@ class KstarEcei(object):
         # get data
         with h5py.File(self.fname, 'r') as f:
             # time series length
-            tnum = idx2 - idx1
+            tnum = idx2 - idx1 + 1
 
             # number of channels
             cnum = len(self.clist)
@@ -134,8 +134,8 @@ class KstarEcei(object):
             for i in range(cnum):
                 node = "/ECEI/" + self.clist[i] + "/Voltage"
 
-                ov = f[node][oidx1:oidx2]/10000.0
-                v = f[node][idx1:idx2]/10000.0
+                ov = f[node][oidx1:oidx2+1]/10000.0
+                v = f[node][idx1:idx2+1]/10000.0
 
                 self.offlev[i] = np.median(ov)
                 self.offstd[i] = np.std(ov)
@@ -148,7 +148,7 @@ class KstarEcei(object):
                 if norm == 1:
                     v = v/np.mean(v) - 1
                 elif norm == 2:
-                    av = f[node][aidx1:aidx2]/10000.0
+                    av = f[node][aidx1:aidx2+1]/10000.0
                     v = v/(np.mean(av) - self.offlev[i]) - 1
                 elif norm == 3:
                     base_filter = ft.FirFilter('FIR_pass', self.fs, 0, 10, 0.01)
@@ -196,9 +196,9 @@ class KstarEcei(object):
 
         fulltime = fulltime[0:ENUM]
 
-        idx = np.where((trange[0] <= fulltime)*(fulltime <= trange[1]))
+        idx = np.where((trange[0] - 1e-8 <= fulltime)*(fulltime <= trange[1] + 1e-8))
         idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+1)
+        idx2 = int(idx[0][-1])
 
         if toff < 0:
             oidx = np.where((toff <= fulltime)*(fulltime <= toff+0.01))
@@ -206,9 +206,9 @@ class KstarEcei(object):
             print('#### offset from end in KstarEcei.time_base ####')
             oidx = np.where((fulltime[-1]-0.01 <= fulltime)*(fulltime <= fulltime[-1]))
         oidx1 = int(oidx[0][0])
-        oidx2 = int(oidx[0][-1]+1)
+        oidx2 = int(oidx[0][-1])
 
-        return fulltime[idx1:idx2], idx1, idx2, oidx1, oidx2
+        return fulltime[idx1:idx2+1], idx1, idx2, oidx1, oidx2
 
     def find_bad_channel(self):
         # auto-find bad 

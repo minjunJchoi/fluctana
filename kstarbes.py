@@ -22,8 +22,8 @@ import h5py
 
 # BES tree
 BES_TREE = 'KSTAR'
-BES_PATH = '/home/mjchoi/data/KSTAR/bes_data' # on ukstar
-# BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data' # on local machine
+BES_PATH = '/home/users/mjchoi/bes_data/' # on nKSTAR
+# BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data/' # on local machine
 
 # on uKSTAR
 class KstarBes(Connection):
@@ -38,25 +38,27 @@ class KstarBes(Connection):
 
         self.clist = self.expand_clist(clist)
 
-        path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
-        self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
-        if os.path.exists(self.fname) == False and savedata == True:
-            print('reformat BES data to hdf5 file') 
-            self.reformat_hdf5()
-
         self.good_channels = np.ones(len(self.clist))
         
+        # hdf5 file name
+        self.fname = "{:s}{:06d}/BES.{:06d}.h5".format(BES_PATH, shot, shot)
+        
+        # get channel posistions
         self.channel_position()            
+
+        # save MDSplus data in hdf5 format if necessary
+        if os.path.exists(self.fname) == False and savedata == True:
+            print('Reformat BES data to hdf5 file') 
+            self.reformat_hdf5()
 
         self.time = None
         self.data = None
 
     def reformat_hdf5(self):
         # make directory if necessary
-        path = '{:s}/{:06d}'.format(BES_PATH, self.shot)
+        path = '{:s}{:06d}'.format(BES_PATH, self.shot)
         if os.path.exists(path) == False:
             os.makedirs(path)        
-        self.fname = os.path.join(path, 'BES.{:06d}.h5'.format(self.shot))
 
         # open MDSplus tree
         self.openTree(BES_TREE, self.shot)
@@ -71,22 +73,26 @@ class KstarBes(Connection):
         with h5py.File(self.fname, 'w') as fout:
             fout.create_dataset('TIME', data=time)
 
-            for cname in clist:
-                # get and add data 
+            for c, cname in enumerate(clist):
+                # get and add data after multiply 1e6 and transform it into int32
                 data = self.get(f'\{cname}:FOO').data()
-                fout.create_dataset(cname, data=data)
+                data = (data * 1e6).astype(np.int32)
+                fout.create_dataset(cname, data=data, compression="gzip", compression_opts=5)
 
-                # get and add rpos
-                rpos = self.get(f'\{cname}:RPOS')
-                fout.create_dataset(cname +'_RPOS', data=rpos)
-
-                # get and add zpos
-                zpos = self.get(f'\{cname}:VPOS')
-                fout.create_dataset(cname +'_ZPOS', data=zpos)
+                # add channel positions as attributes
+                dset = fout[cname]
+                dset.attrs['RPOS'] = self.rpos[c]
+                dset.attrs['ZPOS'] = self.zpos[c]
                 
-                print('added', cname)
+                print('Added', cname)
 
-        print('saved', self.fname)
+        print('Saved', self.fname)
+
+        # close tree
+        self.closeTree(BES_TREE, self.shot)
+
+        # disconnect 
+        self.disconnect()
 
     def get_data(self, trange, norm=0, atrange=[1.0, 1.1], res=0, verbose=1):
         if norm == 0:
@@ -99,7 +105,7 @@ class KstarBes(Connection):
         if os.path.exists(self.fname):
             # read data from hdf5
             with h5py.File(self.fname, 'r') as fin:
-                print('read BES data from hdf5 file')
+                print('Read BES data from hdf5 file')
 
                 # read time base and get tidx 
                 self.time = np.array(fin.get('TIME'))
@@ -109,23 +115,23 @@ class KstarBes(Connection):
 
                 # subsample 
                 idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-                idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+                idx2 = round((min(trange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)
 
                 aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-                aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)                
+                aidx2 = round((min(atrange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)                
 
-                self.time = self.time[idx1:idx2]
+                self.time = self.time[idx1:idx2+1]
 
                 # get data
                 for i, cname in enumerate(self.clist):
                     # load data
-                    v = np.array(fin.get(cname)[idx1:idx2])
+                    v = np.array(fin.get(cname)[idx1:idx2+1]) / 1e6 # [int32] -> [V]
 
                     # normalize by std if norm == 1
                     if norm == 1:
                         v = v/np.mean(v) - 1
                     elif norm == 2:
-                        av = np.array(fin.get(cname)[aidx1:aidx2]) # atrange signal
+                        av = np.array(fin.get(cname)[aidx1:aidx2+1]) / 1e6 # [int32] -> [V] atrange signal
                         v = v/np.mean(av) - 1
                     elif norm == 3:
                         base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
@@ -139,7 +145,7 @@ class KstarBes(Connection):
                     else:
                         self.data = np.concatenate((self.data, v), axis=0)
         else: 
-            print('load BES data from MDSplus server')
+            print('Load BES data from MDSplus server')
             ################################# setTimeContext cannot be used ofr BES data
             # load data from MDSplus
             self.openTree(BES_TREE, self.shot)
@@ -151,24 +157,24 @@ class KstarBes(Connection):
 
             # subsample 
             idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-            idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+            idx2 = round((min(trange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)
 
             aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-            aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)                
+            aidx2 = round((min(atrange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)                
 
-            self.time = self.time[idx1:idx2]
+            self.time = self.time[idx1:idx2+1]
 
             # data
             for i, cname in enumerate(self.clist):
                 dnode = f'\{cname}:FOO'
                 full_v = self.get(dnode).data()
-                v = full_v[idx1:idx2]
+                v = full_v[idx1:idx2+1]
 
                 # normalization 
                 if norm == 1:
                     v = v/np.mean(v) - 1
                 elif norm == 2:
-                    av = full_v[aidx1:aidx2]
+                    av = full_v[aidx1:aidx2+1]
                     v = v/np.mean(av) - 1
                 elif norm == 3:
                     base_filter = ft.FirFilter('FIR_pass', self.fs, 0, 10, 0.01)
@@ -182,7 +188,13 @@ class KstarBes(Connection):
                 else:
                     self.data = np.concatenate((self.data, v), axis=0)
 
-                print('loaded', cname)
+                print('Loaded', cname)
+
+            # close tree
+            self.closeTree(BES_TREE, self.shot)
+
+            # disconnect 
+            self.disconnect()
 
         return self.time, self.data
 
@@ -203,8 +215,8 @@ class KstarBes(Connection):
 
             # get data size
             idx1 = round((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-            idx2 = round((time_list[0] + tspan/2 + 1e-8 - full_time[0])*self.fs) 
-            tnum = len(full_time[idx1:idx2])
+            idx2 = round((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+            tnum = len(full_time[idx1:idx2+1])
 
             # get multi time and data 
             self.multi_time = np.zeros((len(time_list), tnum))
@@ -214,14 +226,14 @@ class KstarBes(Connection):
                 for j, tp in enumerate(time_list):
                     # get tidx 
                     idx1 = round((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-                    idx2 = round((tp + tspan/2 + 1e-8 - full_time[0])*self.fs) 
+                    idx2 = round((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
 
                     # load time
                     if i == 0:
-                        self.multi_time[j,:] = full_time[idx1:idx2]
+                        self.multi_time[j,:] = full_time[idx1:idx2+1]
 
                     # load data
-                    v = np.array(fin.get(cname)[idx1:idx2])
+                    v = np.array(fin.get(cname)[idx1:idx2+1])
 
                     # normalize by std if norm == 1
                     if norm == 1:
@@ -245,16 +257,23 @@ class KstarBes(Connection):
             # open file   
             with h5py.File(self.fname, 'r') as fin:
                 for c, cname in enumerate(self.clist):
-                    self.rpos[c] = np.array(fin.get(cname+'_RPOS')) / 1000 # [mm] -> [m]
-                    self.zpos[c] = np.array(fin.get(cname+'_ZPOS')) / 1000 # [mm] -> [m]
+                    # self.rpos[c] = np.array(fin.get(cname+'_RPOS')) / 1000 # [mm] -> [m]
+                    # self.zpos[c] = np.array(fin.get(cname+'_ZPOS')) / 1000 # [mm] -> [m]
+                    
+                    dset = fin[cname]
+                    self.rpos[c] = dset.attrs['RPOS'] # [m]
+                    self.zpos[c] = dset.attrs['ZPOS'] # [m]
         else:
             # open MDSplus tree
             self.openTree(BES_TREE, self.shot)
 
             # rpos and zpos
             for c, cname in enumerate(self.clist):
-                self.rpos[c] = self.get(f'\{cname}:RPOS') / 1000
-                self.zpos[c] = self.get(f'\{cname}:VPOS') / 1000
+                self.rpos[c] = self.get(f'\{cname}:RPOS') / 1000 # [mm] -> [m]
+                self.zpos[c] = self.get(f'\{cname}:VPOS') / 1000 # [mm] -> [m]
+
+            # close tree
+            self.closeTree(BES_TREE, self.shot)
 
     def expand_clist(self, clist):
         # IN : List of channel names (e.g. 'BES_0101-0416')

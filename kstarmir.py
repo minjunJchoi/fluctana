@@ -84,7 +84,7 @@ class KstarMir(object):
         # get data
         with h5py.File(self.fname, 'r') as f:
             # time series length
-            tnum = idx2 - idx1
+            tnum = idx2 - idx1 + 1
 
             # number of channels
             cnum = len(self.clist)
@@ -101,8 +101,8 @@ class KstarMir(object):
                 inode = "/MIR/" + inode + "/Voltage"
                 qnode = "/MIR/" + qnode + "/Voltage"
 
-                iv = f[inode][idx1:idx2]/10000.0
-                qv = f[qnode][idx1:idx2]/10000.0
+                iv = f[inode][idx1:idx2+1]/10000.0
+                qv = f[qnode][idx1:idx2+1]/10000.0
 
                 # remove offset
                 iv = iv - np.mean(iv)
@@ -112,8 +112,8 @@ class KstarMir(object):
                     iv = iv/np.std(iv)
                     qv = qv/np.std(qv)
                 elif norm == 2:
-                    iav = f[inode][aidx1:aidx2]/10000.0
-                    qav = f[qnode][aidx1:aidx2]/10000.0
+                    iav = f[inode][aidx1:aidx2+1]/10000.0
+                    qav = f[qnode][aidx1:aidx2+1]/10000.0
                     iv = iv/np.std(iav)
                     qv = qv/np.std(qav)
 
@@ -154,13 +154,13 @@ class KstarMir(object):
 
         fulltime = fulltime[0:MNUM]
 
-        idx = np.where((trange[0] <= fulltime)*(fulltime <= trange[1]))
+        idx = np.where((trange[0] - 1e-8 <= fulltime)*(fulltime <= trange[1] + 1e-8))
         idx1 = int(idx[0][0])
-        idx2 = int(idx[0][-1]+1)
+        idx2 = int(idx[0][-1])
 
-        self.time = fulltime[idx1:idx2]
+        self.time = fulltime[idx1:idx2+1]
 
-        return fulltime[idx1:idx2], idx1, idx2
+        return fulltime[idx1:idx2+1], idx1, idx2
 
     def channel_position(self):
         # get self.rpos, self.zpos, self.apos

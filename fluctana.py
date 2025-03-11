@@ -236,7 +236,7 @@ class FluctAna(object):
             plt.xlabel('R [m]'); plt.ylabel('z [m]')
             plt.show()
 
-        print('channel position corrected with {:s}'.format(fname))
+        print('Channel position corrected with {:s}'.format(fname))
 
     def calibration(self, dnum=0, new=0, calib_factor_fname=None, abs_fname=None):
         D = self.Dlist[dnum]
@@ -247,7 +247,7 @@ class FluctAna(object):
 
             D.data = D.data * calib_factor
 
-            print('data calibrated with {:s}'.format(calib_factor_fname))
+            print('Data calibrated with {:s}'.format(calib_factor_fname))
         elif new == 1: # use absolute data saved file (e.g., ecei_pos*.pkl (syndia))
             with open(abs_fname, 'rb') as fin:
                 fdata = pickle.load(fin)
@@ -262,8 +262,8 @@ class FluctAna(object):
             with open(calib_factor_fname, 'wb') as fout:
                 pickle.dump([calib_factor], fout)
 
-            print('data calibrated with {:s}'.format(abs_fname))
-            print('calibration factors are saved in {:s}'.format(calib_factor_fname))
+            print('Data calibrated with {:s}'.format(abs_fname))
+            print('Calibration factors are saved in {:s}'.format(calib_factor_fname))
 
         if hasattr(D, 'good_channels'):
             D.good_channels = D.good_channels * np.squeeze(~(calib_factor == 0))
@@ -305,7 +305,7 @@ class FluctAna(object):
         if verbose == 1: plt.show()
 
         D.fs = round(1/(D.time[1] - D.time[0]))
-        print('down sample with q={:d}, fs={:g}'.format(q, D.fs))
+        print('Down sample with q={:d}, fs={:g}'.format(q, D.fs))
 
     def subsample(self, dnum, twin, tstep):
         # return sub samples along time
@@ -326,7 +326,7 @@ class FluctAna(object):
             D.data[c,:] = raw_data[c,tidx_list]
 
         D.fs = round(1/(D.time[1] - D.time[0]))
-        print('sub sample with twin={:g} us, tstep={:g} us'.format(twin*1e6, tstep*1e6))
+        print('Sub sample with twin={:g} us, tstep={:g} us'.format(twin*1e6, tstep*1e6))
 
 ############################# data filtering functions #########################
 
@@ -892,7 +892,7 @@ class FluctAna(object):
         for c in range(cnum):
             # reference channel name
             Dtwo.rname.append(Done.clist[c])
-            print('pair of {:s} and {:s}'.format(Dtwo.rname[c], Dtwo.clist[c]))
+            print('Pair of {:s} and {:s}'.format(Dtwo.rname[c], Dtwo.clist[c]))
 
             # calculate auto power and cross phase (wavenumber)
             for b in range(bins):
@@ -1878,7 +1878,7 @@ class FluctAna(object):
         CM = plt.cm.get_cmap('RdYlBu_r')
 
         if c == None:
-            c = int(input('automatic, mouse input, text input [0, 1, 2]: '))
+            c = int(input('Automatic, mouse input, text input [0, 1, 2]: '))
         tidx1 = 0  # starting index
         if c == 0:
             # make axes

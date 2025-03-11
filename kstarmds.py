@@ -129,7 +129,7 @@ class KstarMds(Connection):
             try:
                 # load data
                 v = self.get(dnode).data()
-                if verbose == 1: print('READ {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
+                if verbose == 1: print('Read {:d} : {:s} (number of data points = {:d})'.format(self.shot, dnode, len(v)))
 
                 # load time
                 if self.data is None:
@@ -149,8 +149,8 @@ class KstarMds(Connection):
                     # find index and resize 
                     if (self.time[0] < trange[0]) or (trange[1] < self.time[-1]): 
                         idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-                        idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
-                        self.time = self.time[idx1:idx2]
+                        idx2 = round((min(trange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)
+                        self.time = self.time[idx1:idx2+1]
                         doResize = True
                     else:
                         doResize = False
@@ -167,7 +167,7 @@ class KstarMds(Connection):
 
                 # resize data
                 if doResize == True:
-                    v = v[idx1:idx2]
+                    v = v[idx1:idx2+1]
 
                 # normalize if necessary
                 if norm == 1:
@@ -230,8 +230,8 @@ class KstarMds(Connection):
 
         # get data size
         idx1 = int((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-        idx2 = int((time_list[0] + tspan/2 + 1e-8 - full_time[0])*self.fs) 
-        tnum = len(full_time[idx1:idx2])
+        idx2 = int((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+        tnum = len(full_time[idx1:idx2+1])
         
         # --- loop starts --- # assuming all good channels 
         self.multi_time = np.zeros((len(time_list), tnum))
@@ -251,14 +251,14 @@ class KstarMds(Connection):
                 
                 # tidx
                 idx1 = int((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-                idx2 = int((tp + tspan/2 + 1e-8 - full_time[0])*self.fs) 
+                idx2 = int((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
 
                 # get time
                 if i == 0:
-                    self.multi_time[j,:] = full_time[idx1:idx2]
+                    self.multi_time[j,:] = full_time[idx1:idx2+1]
 
                 # load data
-                v = full_data[idx1:idx2]
+                v = full_data[idx1:idx2+1]
                 
                 # normalize by std if norm == 1
                 if norm == 1:

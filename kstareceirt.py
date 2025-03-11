@@ -21,12 +21,12 @@ from MDSplus import Connection
 
 # ECEI tree 
 ECEI_TREE = 'ECEI'
-ECEI_PATH = '/home/mjchoi/data/KSTAR/ecei_data/' # on ukstar
+ECEI_PATH = '/home/users/mjchoi/ecei_data/' # on nKSTAR
 # ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
 # on uKSTAR
 class KstarEceiRemote(Connection):
-    def __init__(self, shot, clist, savedata):
+    def __init__(self, shot, clist, savedata=False):
         super(KstarEceiRemote,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
 
 # on local machine
@@ -35,19 +35,20 @@ class KstarEceiRemote(Connection):
 
         self.shot = shot
 
-        self.data_path = ECEI_PATH
-
         self.clist = self.expand_clist(clist)
 
         self.cnidx1 = 7
         self.dev = self.clist[0][5:7]
 
-        # file name
-        self.fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(self.data_path, shot, shot, self.dev)
+        # hdf5 file name
+        self.fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(ECEI_PATH, shot, shot, self.dev)
 
-        # if files do not exist, read the data from KSTAR MDSplus
+        # get channel posistions
+        self.channel_position()
+
+        # save MDSplus data in hdf5 format if necessary
         if os.path.exists(self.fname) == False and savedata == True:
-            print('reformat ECEI data to hdf5 file') 
+            print('Reformat ECEI data to hdf5 file') 
             self.reformat_hdf5()
 
         # data quality
@@ -57,24 +58,20 @@ class KstarEceiRemote(Connection):
         self.siglev = np.zeros(len(self.clist))
         self.sigstd = np.zeros(len(self.clist))
 
-        # get channel posistion
-        self.channel_position()
-
         self.time = None
         self.data = None
 
     def reformat_hdf5(self):
         # make directory if necessary
-        path = '{:s}/{:06d}'.format(self.data_path, self.shot)
+        path = '{:s}{:06d}'.format(ECEI_PATH, self.shot)
         if os.path.exists(path) == False:
-            os.makedirs(path)        
-        self.fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(self.data_path, self.shot, self.shot, self.dev)
+            os.makedirs(path)
 
         # open MDSplus tree
         self.openTree(ECEI_TREE, self.shot)
 
-        # get full clist 
-        clist = self.expand_clist([f'ECEI_{self.dev}0101-2408'])
+        # get clist 
+        clist = self.clist
 
         # get time base
         time_node = f'dim_of(\ECEI_{self.dev}0101:FOO)'
@@ -83,14 +80,30 @@ class KstarEceiRemote(Connection):
         with h5py.File(self.fname, 'w') as fout:
             fout.create_dataset('TIME', data=time)
 
-            for cname in clist:
-                # get and add data 
+            for c, cname in enumerate(clist):
+                # get and add data after multiply 1e6 and transform it into int32
                 data = self.get('\{:s}:FOO'.format(cname)).data()
-                fout.create_dataset(cname, data=data)
+                data = (data * 1e6).astype(np.int32)
+                fout.create_dataset(cname, data=data, compression="gzip", compression_opts=5)
                 
-                print('added', cname)
+                dset = fout[cname]
+                dset.attrs['RPOS'] = self.rpos[c]
+                dset.attrs['ZPOS'] = self.zpos[c]
+                dset.attrs['APOS'] = self.apos[c]
 
-        print('saved', self.fname)        
+                print('Added', cname)
+                
+            fout.create_dataset(self.dev, shape=(0,))
+            dset = fout[self.dev]
+            dset.attrs['TFcurrent'] = self.itf/1000.0 # [A] -> [kA]
+            dset.attrs['TriggerTime'] = time[0] # [sec]
+            dset.attrs['SampleRate'] = round(1/(time[1] - time[0])/1000)*1000.0 # [Hz]
+            dset.attrs['HarmNum'] = self.hn # harmonic number
+            dset.attrs['LoFreq'] = self.lo # [GHz]
+            dset.attrs['LensFocus'] = self.sf # [mm]
+            dset.attrs['LensZoom'] = self.sz # [mm]
+
+        print('Saved', self.fname)        
 
         # close tree
         self.closeTree(ECEI_TREE, self.shot)
@@ -117,7 +130,7 @@ class KstarEceiRemote(Connection):
         if os.path.exists(self.fname):
             # read data from hdf5
             with h5py.File(self.fname, 'r') as fin:
-                print('read ECEI data from hdf5 file')
+                print('Read ECEI data from hdf5 file')
                 # read time base and get tidx 
                 self.time = np.array(fin.get('TIME'))
 
@@ -126,22 +139,22 @@ class KstarEceiRemote(Connection):
 
                 # get tidx for signal, offset, and atrange
                 idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-                idx2 = round((min(trange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+                idx2 = round((min(trange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)
 
                 oidx1 = round((max(-0.08,self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-                oidx2 = round((min(-0.02,self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+                oidx2 = round((min(-0.02,self.time[-1]) - 1e-8 - self.time[0])*self.fs)
 
                 aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-                aidx2 = round((min(atrange[1],self.time[-1]) + 1e-8 - self.time[0])*self.fs)
+                aidx2 = round((min(atrange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)
 
                 # get time for trange
-                self.time = self.time[idx1:idx2]
+                self.time = self.time[idx1:idx2+1]
 
                 # get data
                 for i, cname in enumerate(self.clist):
                     # load data
-                    ov = np.array(fin.get(cname)[oidx1:oidx2]) # offset
-                    v = np.array(fin.get(cname)[idx1:idx2]) # signal
+                    ov = np.array(fin.get(cname)[oidx1:oidx2+1]) / 1e6 # offset [int32] -> [V]
+                    v = np.array(fin.get(cname)[idx1:idx2+1]) / 1e6 # signal [int32] -> [V]
                     
                     self.offlev[i] = np.median(ov)
                     self.offstd[i] = np.std(ov)
@@ -155,7 +168,7 @@ class KstarEceiRemote(Connection):
                     if norm == 1:
                         v = v/np.mean(v) - 1
                     elif norm == 2:
-                        av = np.array(fin.get(cname)[aidx1:aidx2]) # atrange signal
+                        av = np.array(fin.get(cname)[aidx1:aidx2+1]) / 1e6 # atrange signal [int32] -> [V]
                         v = v/(np.mean(av) - self.offlev[i]) - 1
                     elif norm == 3:
                         base_filter = ft.FirFilter('FIR_pass', self.fs, 0, 10, 0.01)
@@ -169,7 +182,7 @@ class KstarEceiRemote(Connection):
                     else:
                         self.data = np.concatenate((self.data, v), axis=0)
         else:
-            print('load ECEI data from MDSplus server')
+            print('Load ECEI data from MDSplus server')
             # load data from MDSplus
             self.openTree(ECEI_TREE, self.shot)
 
@@ -213,7 +226,7 @@ class KstarEceiRemote(Connection):
                 else:
                     self.data = np.concatenate((self.data, v), axis=0)
 
-                print('loaded', cname)
+                print('Loaded', cname)
 
             # close tree
             self.closeTree(ECEI_TREE, self.shot)
@@ -243,8 +256,8 @@ class KstarEceiRemote(Connection):
 
     #         # get data size
     #         idx1 = round((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-    #         idx2 = round((time_list[0] + tspan/2 + 1e-8 - full_time[0])*self.fs) 
-    #         tnum = len(full_time[idx1:idx2])
+    #         idx2 = round((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+    #         tnum = len(full_time[idx1:idx2+1])
 
     #         # get multi time and data 
     #         self.multi_time = np.zeros((len(time_list), tnum))
@@ -254,14 +267,14 @@ class KstarEceiRemote(Connection):
     #             for j, tp in enumerate(time_list):
     #                 # get tidx 
     #                 idx1 = round((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-    #                 idx2 = round((tp + tspan/2 + 1e-8 - full_time[0])*self.fs) 
+    #                 idx2 = round((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
 
     #                 # load time
     #                 if i == 0:
-    #                     self.multi_time[j,:] = full_time[idx1:idx2]
+    #                     self.multi_time[j,:] = full_time[idx1:idx2+1]
 
     #                 # load data
-    #                 v = np.array(fin.get(cname)[idx1:idx2])
+    #                 v = np.array(fin.get(cname)[idx1:idx2+1])
 
     #                 # normalize by std if norm == 1
     #                 if norm == 1:
@@ -300,44 +313,54 @@ class KstarEceiRemote(Connection):
         # get self.rpos, self.zpos, self.apos
         # NEED corrections using syndia
         
-        me = 9.109e-31        # electron mass
-        e = 1.602e-19       # charge
-        mu0 = 4*np.pi*1e-7  # permeability
-        ttn = 56*16         # total TF coil turns
-
-        # read operation parameters from MDSplus
-        self.openTree(ECEI_TREE, self.shot)
-
-        hn_node = '\\{0}::TOP.ECEI_{1}:{2}_MODE'.format(ECEI_TREE, self.dev, self.dev) 
-        self.hn = self.get(hn_node).data()
-
-        itf_node = '\\{0}::TOP:{1}'.format(ECEI_TREE, 'ECEI_I_TF') 
-        self.itf = self.get(itf_node).data()*1000 # [A]
-
-        lo_node = '\\{0}::TOP.ECEI_{1}:{2}_LOFREQ'.format(ECEI_TREE, self.dev, self.dev) 
-        self.lo = self.get(lo_node).data() # [GHz]
-
-        sf_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSFOCUS'.format(ECEI_TREE, self.dev, self.dev) 
-        self.sf = self.get(sf_node).data() # [mm]
-
-        sz_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSZOOM'.format(ECEI_TREE, self.dev, self.dev) 
-        self.sz = self.get(sz_node).data() # [mm]
-
-        self.closeTree(ECEI_TREE, self.shot)
-
         cnum = len(self.clist)
         self.rpos = np.zeros(cnum)  # R [m] of each channel
         self.zpos = np.zeros(cnum)  # z [m] of each channel
         self.apos = np.zeros(cnum)  # angle [rad] of each channel
-        for c in range(0, cnum):
-            vn = int(self.clist[c][(self.cnidx1):(self.cnidx1+2)])
-            fn = int(self.clist[c][(self.cnidx1+2):(self.cnidx1+4)])
 
-            # assume cold resonance with Bt ~ 1/R
-            self.rpos[c] = self.hn*e*mu0*ttn*self.itf/((2*np.pi)**2*me*((fn - 1)*0.9 + 2.6 + self.lo)*1e9)
+        if os.path.exists(self.fname):
+            # open file   
+            with h5py.File(self.fname, 'r') as fin:
+                for c, cname in enumerate(self.clist):                    
+                    dset = fin[cname]
+                    self.rpos[c] = dset.attrs['RPOS'] # [m]
+                    self.zpos[c] = dset.attrs['ZPOS'] # [m]
+                    self.apos[c] = dset.attrs['APOS'] # [rad]
+        else:
+            me = 9.109e-31        # electron mass
+            e = 1.602e-19       # charge
+            mu0 = 4*np.pi*1e-7  # permeability
+            ttn = 56*16         # total TF coil turns
 
-            # get vertical position and angle at rpos
-            self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
+            # read operation parameters from MDSplus
+            self.openTree(ECEI_TREE, self.shot)
+
+            hn_node = '\\{0}::TOP.ECEI_{1}:{2}_MODE'.format(ECEI_TREE, self.dev, self.dev) 
+            self.hn = self.get(hn_node).data()
+
+            itf_node = '\\{0}::TOP:{1}'.format(ECEI_TREE, 'ECEI_I_TF') 
+            self.itf = self.get(itf_node).data()*1000 # [A]
+
+            lo_node = '\\{0}::TOP.ECEI_{1}:{2}_LOFREQ'.format(ECEI_TREE, self.dev, self.dev) 
+            self.lo = self.get(lo_node).data() # [GHz]
+
+            sf_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSFOCUS'.format(ECEI_TREE, self.dev, self.dev) 
+            self.sf = self.get(sf_node).data() # [mm]
+
+            sz_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSZOOM'.format(ECEI_TREE, self.dev, self.dev) 
+            self.sz = self.get(sz_node).data() # [mm]
+
+            self.closeTree(ECEI_TREE, self.shot)
+
+            for c in range(0, cnum):
+                vn = int(self.clist[c][(self.cnidx1):(self.cnidx1+2)])
+                fn = int(self.clist[c][(self.cnidx1+2):(self.cnidx1+4)])
+
+                # assume cold resonance with Bt ~ 1/R
+                self.rpos[c] = self.hn*e*mu0*ttn*self.itf/((2*np.pi)**2*me*((fn - 1)*0.9 + 2.6 + self.lo)*1e9)
+
+                # get vertical position and angle at rpos
+                self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
 
     def show_ch_position(self):
         fig, (a1) = plt.subplots(1,1, figsize=(6,6))
@@ -370,9 +393,10 @@ class KstarEceiRemote(Connection):
         return zpos, apos
 
     def get_abcd(self, sf, sz, Rinit):
+        sp = 2300 - Rinit*1000
+
         # ABCD matrix
         if self.dev == 'GT':
-            sp = 2300 - Rinit*1000
             abcd = np.array([[1,sp+(2025-sz)],[0,1]]).dot(
                    np.array([[1,0],[(1.52-1)/(-1000*1),1.52/1]])).dot(
                    np.array([[1,160],[0,1]])).dot(
@@ -391,7 +415,6 @@ class KstarEceiRemote(Connection):
                    np.array([[1,0],[0,1/1.52]])).dot(
                    np.array([[1,4940-(4520+30)],[0,1]]))
         elif self.dev == 'GR':
-            sp = 2300 - Rinit*1000
             abcd = np.array([[1,sp+(2025-sz)],[0,1]]).dot(
                    np.array([[1,0],[(1.52-1)/(-1000),1.52/1]])).dot(
                    np.array([[1,160],[0,1]])).dot(
@@ -410,7 +433,6 @@ class KstarEceiRemote(Connection):
                    np.array([[1,0],[0,1/1.52]])).dot(
                    np.array([[1,4940-(4520+30)],[0,1]]))
         elif self.dev == 'HT':
-            sp = 2300 - Rinit*1000
             abcd = np.array([[1,sp+2553.01],[0,1]]).dot(
                    np.array([[1,0],[(1.526-1)/(-695*1),1.526/1]])).dot(
                    np.array([[1,150],[0,1]])).dot(
