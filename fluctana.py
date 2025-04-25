@@ -5,6 +5,7 @@
 # Acknowledgement : Dr. S. Zoletnik and Prof. Y.-c. Ghim
 #
 
+import numpy as np
 from scipy import signal
 import math
 import itertools
@@ -12,17 +13,19 @@ import itertools
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import LinearSegmentedColormap
 
 import pickle
 
-from kstarecei import *
-from kstareceirt import *
-from kstarmir import *
-from kstarcss import *
-from kstarbes import *
-from kstarmds import *
-from diiiddata import *  # needs pidly
-from diiidbes import *
+from kstarecei import KstarEcei
+from kstareceirt import KstarEceiRemote
+from kstarmir import KstarMir
+from kstarcss import KstarCss
+from kstarbes import KstarBes
+from kstarmds import KstarMds
+from diiiddata import DiiidData  # needs pidly
+from diiidbes import DiiidBes
+from hl3data import Hl3Data
 
 import specs as sp
 import stats as st
@@ -129,7 +132,8 @@ class FluctAna(object):
                     D = DiiidBes(shot=shot, clist=clist)
                 else:
                     D = DiiidData(shot=shot, clist=clist)
-
+            elif dev == 'HL-3':
+                D = Hl3Data(shot=shot, clist=clist)
 
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
@@ -1865,153 +1869,125 @@ class FluctAna(object):
 
             plt.show()
 
-    def iplot(self, dnum, snum=0, c=None, type='time', vlimits=[-0.1, 0.1], istep=0.002, imethod='cubic', bcut=0.03, pmethod='contour', cline=False, fig=None, axs=None, **kwargs):
+    def iplot(self, dnum, snum=0, c=None, type='time', vlimits=[-0.1, 0.1], istep=0.002, imethod='linear', bcut=0.03, msize=5, pmethod='image', cline=False, fig=None, axs=None, **kwargs):
         # keyboard interactive image plot
         D = self.Dlist[dnum]
 
         if type == 'time':
             pbase = D.time
+            psample = D.data[snum,:]
         elif type == 'val':
             pbase = D.ax*1e+6
+            psample = D.val[snum,:]
             vkind = D.vkind
 
-        CM = plt.cm.get_cmap('RdYlBu_r')
+        # CM = plt.cm.get_cmap('RdYlBu_r')
+        CM = LinearSegmentedColormap.from_list("custom_cmap", ["black", "blue", "purple", "red", "orange", "yellow", "white"])
 
+        # define 2D plot function
+        def plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline):
+            # take data 
+            if type == 'time':
+                D.pdata = D.data[:,tidx]
+            elif type == 'val':
+                D.pdata = D.val[:,tidx]
+            
+            # get channel positions
+            rpos = D.rpos[:]
+            zpos = D.zpos[:]
+
+            # fill bad channel
+            D.pdata = ms.fill_bad_channel(D.pdata, rpos, zpos, D.good_channels, bcut)
+
+            # interpolation
+            if istep > 0:
+                ri, zi, pi = ms.interp_pdata(D.pdata, rpos, zpos, istep, imethod)
+
+            # smoothing
+            pi = ms.nanmedian_filter(pi, size=msize)
+
+            # plot
+            axs[0].clear()
+            axs[1].clear()
+            axs[2].clear()
+
+            axs[0].plot(pbase, psample)  # ax1.hold(True)
+            axs[0].axvline(x=pbase[tidx], color='g')
+            if istep > 0:
+                if pmethod == 'scatter':
+                    im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
+                elif pmethod == 'contour':
+                    if cline: axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=0.5, linestyles=cline, colors='k')
+                    im = axs[1].contourf(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
+                elif pmethod == 'image':
+                    im = axs[1].imshow(pi, extent=(ri.min(), ri.max(), zi.min(), zi.max()), vmin=vlimits[0], vmax=vlimits[1], cmap=CM, aspect='auto', origin='lower')
+            else:
+                im = axs[1].scatter(rpos, zpos, 500, D.pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
+            axs[1].set_aspect('equal')
+            plt.colorbar(im, cax=axs[2])
+
+            axs[1].set_xlabel('R [m]')
+            axs[1].set_ylabel('z [m]')
+            if type == 'time':
+                axs[0].set_xlabel('Time [s]')
+                axs[1].set_title('ECE image at t = {:g} sec'.format(pbase[tidx]))
+            elif type == 'val':
+                axs[0].set_xlabel('Time lag [us]')
+                axs[1].set_title('{:s} image at time lag = {:g} us'.format(vkind, pbase[tidx]))
+
+        # plot type
         if c == None:
-            c = int(input('Automatic, mouse input, text input [0, 1, 2]: '))
-        tidx1 = 0  # starting index
+            c = int(input('Text input or mouse click [0, 1]: '))
+            tidx = 0  # Initialize tidx with a default value  
+
         if c == 0:
-            # make axes
-            plt.ion()
-            fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
-
-            tstep = int(input('time step [idx]: '))  # jumping index # tstep = 10
-            for tidx in range(tidx1, len(pbase), tstep):
-                # take data and channel position
-                if type == 'time':
-                    pdata = D.data[:,tidx]
-                    psample = D.data[snum,:]
-                elif type == 'val':
-                    pdata = D.val[:,tidx]
-                    psample = D.val[snum,:]
-                rpos = D.rpos[:]
-                zpos = D.zpos[:]
-
-                # fill bad channel
-                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, bcut)
-
-                # interpolation
-                if istep > 0:
-                    ri, zi, pi = ms.interp_pdata(pdata, rpos, zpos, istep, imethod)
-
-                # plot
-                axs[0].cla()
-                axs[1].cla()
-                axs[2].cla()
-
-                axs[0].plot(pbase, psample)  # ax1.hold(True)
-                axs[0].axvline(x=pbase[tidx], color='g')
-                if istep > 0:
-                    if pmethod == 'scatter':
-                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
-                    elif pmethod == 'contour':
-                        if cline: axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=0.5, linestyles=cline, colors='k')
-                        im = axs[1].contourf(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
-                else:
-                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
-                axs[1].set_aspect('equal')
-                plt.colorbar(im, cax=axs[2])
-
-                axs[1].set_xlabel('R [m]')
-                axs[1].set_ylabel('z [m]')
-                if type == 'time':
-                    axs[0].set_xlabel('Time [s]')
-                    axs[1].set_title('ECE image at t = {:g} sec'.format(pbase[tidx]))
-                elif type == 'val':
-                    axs[0].set_xlabel('Time lag [us]')
-                    axs[1].set_title('{:s} image at time lag = {:g} us'.format(vkind, pbase[tidx]))
-
-                plt.show()
-                plt.pause(0.1)
-
-            plt.ioff()
-            plt.close()
-
-        elif c > 0:
-            tidx = tidx1
-            if c == 1:
-                print('Select a point in the top axes to plot the image')
+            tstep = int(input('Enter jump step (idx) first: '))  # jumping index # tstep = 10
+            print('Click the plot window to make it foregrounded')
+            print('Press right/left arrow key to plot the next/previous image')
+            print('Press up/down arrow key to increase/decrease the jump step')
 
             # make axes
-            plt.ion()            
             fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
 
-            while True:
-                # take data and channel position
-                if type == 'time':
-                    pdata = D.data[:,tidx]
-                    psample = D.data[snum,:]
-                elif type == 'val':
-                    pdata = D.val[:,tidx]
-                    psample = D.val[snum,:]
-                rpos = D.rpos[:]
-                zpos = D.zpos[:]
+            def on_key(event):
+                nonlocal tidx, tstep
+                if event.key == 'right':
+                    tidx = (tidx + tstep) % len(pbase)
+                elif event.key == 'left':
+                    tidx = (tidx - tstep) % len(pbase)
+                elif event.key == 'up':
+                    tstep = int(tstep * 1.5)
+                    print(f'Jump step (idx) = {tstep}')
+                elif event.key == 'down':
+                    tstep = int(tstep / 1.5)
+                    print(f'Jump step (idx) = {tstep}')
+                elif event.key == 'escape':
+                    plt.close(fig)
 
-                # fill bad channel
-                pdata = ms.fill_bad_channel(pdata, rpos, zpos, D.good_channels, bcut)
+                plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline)                
+                fig.canvas.draw()        
 
-                # interpolation
-                if istep > 0:
-                    ri, zi, pi = ms.interp_pdata(pdata, rpos, zpos, istep, imethod)
+            fig.canvas.mpl_connect('key_press_event', on_key)
 
-                # plot
-                axs[0].cla()
-                axs[1].cla()
-                axs[2].cla()
+            plt.show()
+        elif c == 1:
+            print('Click on the top axes to plot the image')
 
-                axs[0].plot(pbase, psample)  # ax1.hold(True)
-                axs[0].axvline(x=pbase[tidx], color='g')
-                if istep > 0:
-                    if pmethod == 'scatter':
-                        im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
-                    elif pmethod == 'contour':
-                        if cline: axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=0.5, linestyles=cline, colors='k')
-                        im = axs[1].contourf(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
-                else:
-                    im = axs[1].scatter(rpos, zpos, 500, pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
-                axs[1].set_aspect('equal')
-                plt.colorbar(im, cax=axs[2])
+            # make axes
+            fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
 
-                axs[1].set_xlabel('R [m]')
-                axs[1].set_ylabel('z [m]')
-                if type == 'time':
-                    axs[0].set_xlabel('Time [s]')
-                    axs[1].set_title('ECE image at t = {:g} sec'.format(pbase[tidx]))
-                elif type == 'val':
-                    axs[0].set_xlabel('Time lag [us]')
-                    axs[1].set_title('{:s} image at time lag = {:g} us'.format(vkind, pbase[tidx]))
+            def on_click(event):
+                nonlocal tidx
+                if event.inaxes == axs[0]:
+                    selected_x, _ = event.xdata, event.ydata
+                    tidx = (np.abs(pbase - selected_x)).argmin()
 
-                plt.show()
+                plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline)
+                fig.canvas.draw()        
 
-                # mouse or text input
-                if c == 1:
-                    g = plt.ginput(1)[0][0]
-                elif c == 2:
-                    g = float(input('X value to plot: '))
-                    plt.draw()
+            fig.canvas.mpl_connect('button_press_event', on_click)
 
-                if g >= pbase[0] and g <= pbase[-1]:
-                    tidx = np.where(pbase + 1e-10 >= g)[0][0]
-                else:
-                    print('Out of the time range')
-                    plt.ioff()
-                    plt.close()
-                    break
-
-            plt.ioff()
-            plt.close()
-
-        D.pdata = pdata
+            plt.show()
 
 ############################# test functions ###################################
 
