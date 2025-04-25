@@ -467,7 +467,7 @@ class FluctAna(object):
 
 ############################# spectral methods #############################
 
-    def fftbins(self, nfft, window, overlap, tau=0, demean=0, detrend=0, full=0):
+    def fftbins(self, nfft, window, overlap, tau=0, demean=1, detrend=0, full=0):
         # IN : self, data set number, nfft, window name, detrend or not
         # OUT : bins x N FFT of time series data; frequency axis
         # self.list_data()
