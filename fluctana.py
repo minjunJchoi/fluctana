@@ -1935,59 +1935,48 @@ class FluctAna(object):
                 axs[0].set_xlabel('Time lag [us]')
                 axs[1].set_title('{:s} image at time lag = {:g} us'.format(vkind, pbase[tidx]))
 
-        # plot type
-        if c == None:
-            c = int(input('Text input or mouse click [0, 1]: '))
-            tidx = 0  # Initialize tidx with a default value  
+        # plot
+        tidx = 0  # Initialize tidx with a default value  
+        tstep = int(input('Enter the jump step (idx): '))  # jumping index # tstep = 10
+        print('Click on the top axis to plot the image in the window')
+        print('Press right/left arrow key to plot the next/previous image')
+        print('Press up/down arrow key to increase/decrease the jump step')
 
-        if c == 0:
-            tstep = int(input('Enter jump step (idx) first: '))  # jumping index # tstep = 10
-            print('Click the plot window to make it foregrounded')
-            print('Press right/left arrow key to plot the next/previous image')
-            print('Press up/down arrow key to increase/decrease the jump step')
+        # make axes
+        fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
 
-            # make axes
-            fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
+        def on_key(event):
+            nonlocal tidx, tstep
+            if event.key == 'right':
+                tidx = (tidx + tstep) % len(pbase)
+            elif event.key == 'left':
+                tidx = (tidx - tstep) % len(pbase)
+            elif event.key == 'up':
+                tstep = int(tstep * 1.5)
+                print(f'Jump step (idx) = {tstep}')
+            elif event.key == 'down':
+                tstep = int(tstep / 1.5)
+                print(f'Jump step (idx) = {tstep}')
+            elif event.key == 'escape':
+                plt.close(fig)
 
-            def on_key(event):
-                nonlocal tidx, tstep
-                if event.key == 'right':
-                    tidx = (tidx + tstep) % len(pbase)
-                elif event.key == 'left':
-                    tidx = (tidx - tstep) % len(pbase)
-                elif event.key == 'up':
-                    tstep = int(tstep * 1.5)
-                    print(f'Jump step (idx) = {tstep}')
-                elif event.key == 'down':
-                    tstep = int(tstep / 1.5)
-                    print(f'Jump step (idx) = {tstep}')
-                elif event.key == 'escape':
-                    plt.close(fig)
+            plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline)                
+            fig.canvas.draw()        
 
-                plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline)                
-                fig.canvas.draw()        
+        def on_click(event):
+            nonlocal tidx
+            if event.inaxes == axs[0]:
+                selected_x, _ = event.xdata, event.ydata
+                tidx = (np.abs(pbase - selected_x)).argmin()
 
-            fig.canvas.mpl_connect('key_press_event', on_key)
+            plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline)
+            fig.canvas.draw()        
 
-            plt.show()
-        elif c == 1:
-            print('Click on the top axes to plot the image')
+        fig.canvas.mpl_connect('key_press_event', on_key)
+        fig.canvas.mpl_connect('button_press_event', on_click)
 
-            # make axes
-            fig, axs = make_axes(len(D.clist), ptype='iplot', fig=fig, axs=axs)
-
-            def on_click(event):
-                nonlocal tidx
-                if event.inaxes == axs[0]:
-                    selected_x, _ = event.xdata, event.ydata
-                    tidx = (np.abs(pbase - selected_x)).argmin()
-
-                plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline)
-                fig.canvas.draw()        
-
-            fig.canvas.mpl_connect('button_press_event', on_click)
-
-            plt.show()
+        plt.show()
+        
 
 ############################# test functions ###################################
 
