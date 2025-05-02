@@ -1,6 +1,10 @@
-# Author : Minjun J. Choi (mjchoi@kfe.re.kr)
-#
-# Description : This code reads the DIII-D data using OMFITmdsValue
+"""
+Author: Minjun J. Choi (mjchoi@kfe.re.kr)
+
+Description: This code reads the DIII-D data using OMFITmdsValue
+
+Acknowledgement: Dr. L. Bardoczi
+"""
 
 import numpy as np
 # import pidly

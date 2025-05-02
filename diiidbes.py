@@ -1,6 +1,10 @@
-# Author : Minjun J. Choi (mjchoi@kfe.re.kr)
-#
-# Description : This code reads and saves the DIIID BES data (h5 format)
+"""
+Author: Minjun J. Choi (mjchoi@kfe.re.kr)
+
+Description: This code reads and saves the DIII-D BES data (h5 format)
+
+Acknowledgement: Dr. S. Joung
+"""
 
 import os
 import numpy as np
