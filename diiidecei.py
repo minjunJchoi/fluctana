@@ -3,7 +3,7 @@ Author: Minjun J. Choi (mjchoi@kfe.re.kr)
 
 Description: This code reads and saves the DIII-D ECEI data (h5 format)
 
-Acknowledgement: Dr. G. Yu
+Acknowledgement: Dr. G. Yu, Dr. X. Li
 """
 
 import os
