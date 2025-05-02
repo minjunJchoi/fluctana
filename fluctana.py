@@ -23,8 +23,9 @@ from kstarmir import KstarMir
 from kstarcss import KstarCss
 from kstarbes import KstarBes
 from kstarmds import KstarMds
-from diiiddata import DiiidData  # needs pidly
+from diiiddata import DiiidData
 from diiidbes import DiiidBes
+from diiidecei import DiiidEcei
 from hl3data import Hl3Data
 
 import specs as sp
@@ -127,9 +128,11 @@ class FluctAna(object):
                     D = KstarBes(shot=shot, clist=clist, savedata=savedata)
                 else:
                     D = KstarMds(shot=shot, tree=tree, clist=clist)
-            elif dev == 'DIIID': # DIII-D data
-                if 'BES' in clist[0]:
+            elif dev == 'DIII-D': # DIII-D data
+                if 'BES_' in clist[0]:
                     D = DiiidBes(shot=shot, clist=clist)
+                elif 'LFS' in clist[0]:
+                    D = DiiidEcei(shot=shot, clist=clist)
                 else:
                     D = DiiidData(shot=shot, clist=clist)
             elif dev == 'HL-3':
@@ -151,7 +154,7 @@ class FluctAna(object):
                 D = KstarBes(shot=shot, clist=clist)
             else:
                 D = KstarMds(shot=shot, clist=clist)
-        elif dev == 'DIIID':
+        elif dev == 'DIII-D':
             if 'BES' in clist[0]:
                 D = DiiidBes(shot=shot, clist=clist)
 

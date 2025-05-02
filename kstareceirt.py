@@ -70,9 +70,6 @@ class KstarEceiRemote(Connection):
         # open MDSplus tree
         self.openTree(ECEI_TREE, self.shot)
 
-        # get clist 
-        clist = self.clist
-
         # get time base
         time_node = f'dim_of(\ECEI_{self.dev}0101:FOO)'
         time = self.get(time_node).data()
@@ -80,7 +77,7 @@ class KstarEceiRemote(Connection):
         with h5py.File(self.fname, 'w') as fout:
             fout.create_dataset('TIME', data=time)
 
-            for c, cname in enumerate(clist):
+            for c, cname in enumerate(self.clist):
                 # get and add data after multiply 1e6 and transform it into int32
                 data = self.get('\{:s}:FOO'.format(cname)).data()
                 data = (data * 1e6).astype(np.int32)
@@ -337,16 +334,12 @@ class KstarEceiRemote(Connection):
 
             hn_node = '\\{0}::TOP.ECEI_{1}:{2}_MODE'.format(ECEI_TREE, self.dev, self.dev) 
             self.hn = self.get(hn_node).data()
-
             itf_node = '\\{0}::TOP:{1}'.format(ECEI_TREE, 'ECEI_I_TF') 
             self.itf = self.get(itf_node).data()*1000 # [A]
-
             lo_node = '\\{0}::TOP.ECEI_{1}:{2}_LOFREQ'.format(ECEI_TREE, self.dev, self.dev) 
             self.lo = self.get(lo_node).data() # [GHz]
-
             sf_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSFOCUS'.format(ECEI_TREE, self.dev, self.dev) 
             self.sf = self.get(sf_node).data() # [mm]
-
             sz_node = '\\{0}::TOP.ECEI_{1}:{2}_LENSZOOM'.format(ECEI_TREE, self.dev, self.dev) 
             self.sz = self.get(sz_node).data() # [mm]
 

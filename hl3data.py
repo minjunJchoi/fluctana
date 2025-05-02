@@ -234,18 +234,18 @@ class Hl3Data():
         if clist[0].startswith('ECEI_'):
             exp_clist = []
 
-            for c in range(len(clist)):
-                if len(clist[c]) < 12:
-                    exp_clist.append(clist[c])
+            for cname in clist:
+                if len(cname) < 12:
+                    exp_clist.append(cname)
                 else: 
-                    vi = int(clist[c][5:7])
-                    fi = int(clist[c][7:9])
-                    vf = int(clist[c][10:12])
-                    ff = int(clist[c][12:14])
+                    vi = int(cname[5:7])
+                    fi = int(cname[7:9])
+                    vf = int(cname[10:12])
+                    ff = int(cname[12:14])
             
                     for v in range(vi, vf+1):
                         for f in range(fi, ff+1):
-                            exp_clist.append(clist[c][0:5] + '{:02d}{:02d}'.format(v, f))
+                            exp_clist.append(cname[0:5] + '{:02d}{:02d}'.format(v, f))
 
             clist = exp_clist
 
@@ -253,15 +253,15 @@ class Hl3Data():
         if clist[0].startswith('BES'):
             exp_clist = []
 
-            for c in range(len(clist)):
-                if len(clist[c]) < 6:
-                    exp_clist.append(clist[c])
+            for cname in clist:
+                if len(cname) < 6:
+                    exp_clist.append(cname)
                 else: 
-                    i = int(clist[c][3:5])
-                    f = int(clist[c][6:8])
+                    i = int(cname[3:5])
+                    f = int(cname[6:8])
             
                     for j in range(i, f+1):
-                        exp_clist.append(clist[c][0:3] + '{:02d}'.format(j))
+                        exp_clist.append(cname[0:3] + '{:02d}'.format(j))
 
             clist = exp_clist            
 
@@ -276,18 +276,18 @@ def expand_clist(self, clist):
     if clist[0].startswith('ECEI_'):
         exp_clist = []
 
-        for c in range(len(clist)):
-            if len(clist[c]) < 12:
-                exp_clist.append(clist[c])
+        for cname in clist:
+            if len(cname) < 12:
+                exp_clist.append(cname)
             else: 
-                vi = int(clist[c][5:7])
-                fi = int(clist[c][7:9])
-                vf = int(clist[c][10:12])
-                ff = int(clist[c][12:14])
+                vi = int(cname[5:7])
+                fi = int(cname[7:9])
+                vf = int(cname[10:12])
+                ff = int(cname[12:14])
         
                 for v in range(vi, vf+1):
                     for f in range(fi, ff+1):
-                        exp_clist.append(clist[c][0:5] + '{:02d}{:02d}'.format(v, f))
+                        exp_clist.append(cname[0:5] + '{:02d}{:02d}'.format(v, f))
 
         clist = exp_clist
 
@@ -295,15 +295,15 @@ def expand_clist(self, clist):
     if clist[0].startswith('BES'):
         exp_clist = []
 
-        for c in range(len(clist)):
-            if len(clist[c]) < 6:
-                exp_clist.append(clist[c])
+        for cname in clist:
+            if len(cname) < 6:
+                exp_clist.append(cname)
             else: 
-                i = int(clist[c][3:5])
-                f = int(clist[c][6:8])
+                i = int(cname[3:5])
+                f = int(cname[6:8])
         
                 for j in range(i, f+1):
-                    exp_clist.append(clist[c][0:3] + '{:02d}'.format(j))
+                    exp_clist.append(cname[0:3] + '{:02d}'.format(j))
 
         clist = exp_clist
 

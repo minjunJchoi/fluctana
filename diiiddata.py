@@ -1,13 +1,14 @@
-# Author : Minjun J. Choi (mjchoi@nfri.re.kr)
+# Author : Minjun J. Choi (mjchoi@kfe.re.kr)
 #
-# Description : This code reads the DIII-D data using gadat.pro code
-#
-# Last updated
-#  2018.10.08 :
+# Description : This code reads the DIII-D data using OMFITmdsValue
 
 import numpy as np
-import matplotlib.pyplot as plt
-import pidly
+# import pidly
+import traceback
+try: 
+    import omfit_classes.omfit_mds as om
+except ImportError:
+    om = None
 
 #### VAR to NODE
 # TECE01--TECE40 : calibrated ECE
@@ -20,9 +21,20 @@ import pidly
 VAR_NODE = {'ne':'DENR0F', 'Da04':'FS04', 'NBI_15L':'PINJ_15L', 'NBI_15R':'PINJ_15R', 'n1_amp':'n1rms', 'n2_amp':'n2rms'}
 
 class DiiidData():
-    def __init__(self, shot ,clist):
+    def __init__(self, shot, clist):
         self.shot = shot
-        self.clist = clist
+
+        self.clist = self.expand_clist(clist)
+
+        # get channel posistions
+        self.channel_position()
+
+        # data quality
+        self.good_channels = np.ones(len(self.clist))
+        self.offlev = np.zeros(len(self.clist))
+        self.offstd = np.zeros(len(self.clist))
+        self.siglev = np.zeros(len(self.clist))
+        self.sigstd = np.zeros(len(self.clist))
 
         self.time = None
         self.data = None
@@ -37,8 +49,8 @@ class DiiidData():
 
         self.trange = trange
 
-        # open idl
-        idl = pidly.IDL('/fusion/usc/opt/idl/idl84/bin/idl')
+        # # open idl
+        # idl = pidly.IDL('/fusion/usc/opt/idl/idl84/bin/idl')
 
         # --- loop starts --- #
         clist_temp = self.clist.copy()
@@ -53,10 +65,12 @@ class DiiidData():
             # load data
             try:
                 #idl.pro('gadat,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
-                idl.pro('gadat2,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
-                
-                if self.data == None:
-                    self.time, v = idl.time, idl.data
+                # idl.pro('gadat2,time,data,/alldata',node,self.shot,XMIN=self.trange[0]*1000.0,XMAX=self.trange[1]*1000.0)
+                temp = om.OMFITmdsValue(server='DIII-D', shot=self.shot, TDI=node)
+
+                if i == 0:
+                    # self.time, v = idl.time, idl.data
+                    self.time, v = temp.dim_of(0), temp.data()
 
                     # [ms] -> [s]
                     self.time = self.time/1000.0
@@ -69,7 +83,8 @@ class DiiidData():
                     self.time = self.time[idx1:idx2]
                     v = v[idx1:idx2]
                 else:
-                    _, v = idl.time, idl.data
+                    # _, v = idl.time, idl.data
+                    _, v = temp.dim_of(0), temp.data()
                     v = v[idx1:idx2]
 
                 if verbose == 1: print("Read {:d} - {:s} (number of data points = {:d})".format(self.shot, node, len(v)))
@@ -79,33 +94,87 @@ class DiiidData():
 
                 # expand dimension - concatenate
                 v = np.expand_dims(v, axis=0)
-                if self.data == None:
+                if i == 0:
                     self.data = v
                 else:
                     self.data = np.concatenate((self.data, v), axis=0)
-            except:
+            except Exception as e:
                 self.clist.remove(cname)
-                if verbose == 1: print("Failed   {:s}".format(node))
+                self.rpos[i] = -1
+                if verbose == 1: 
+                    print('Failed {:d} : {:s}. {:s} is removed'.format(self.shot, node, cname))
+                    print(f"Error: {e}")
+                    traceback.print_exc()                      
         # --- loop ends --- #
 
-        # get channel position
-        self.channel_position()
+        # # close idl
+        # idl.close()
 
-        # close idl
-        idl.close()
+        # remove positions of excluded channels
+        cidx = self.rpos >= 0
+        self.rpos = self.rpos[cidx]
+        self.zpos = self.zpos[cidx]
+        self.apos = self.apos[cidx]
+
+        # # check data quality
+        # self.find_bad_channel()
 
         return self.time, self.data
+    
+    def find_bad_channel(self):
+        # auto-find bad 
+        for c in range(len(self.clist)):
+            # check signal level
+            if self.siglev[c] > 0.01:
+                ref = 100*self.offstd[c]/self.siglev[c]
+            else:
+                ref = 100            
+            if ref > 30:
+                self.good_channels[c] = 0
+                print('LOW signal level channel {:s}, ref = {:g}%, siglevel = {:g} V'.format(self.clist[c], ref, self.siglev[c]))
+            
+            # check bottom saturation
+            if self.offstd[c] < 0.001:
+                self.good_channels[c] = 0
+                print('SAT offset data  channel {:s}, offstd = {:g}%, offlevel = {:g} V'.format(self.clist[c], self.offstd[c], self.offlev[c]))
+
+            # check top saturation.               
+            if self.sigstd[c] < 0.001:
+                self.good_channels[c] = 0
+                print('SAT signal data  channel {:s}, offstd = {:g}%, siglevel = {:g} V'.format(self.clist[c], self.sigstd[c], self.siglev[c]))
 
     def channel_position(self):  # Needs updates ####################
         cnum = len(self.clist)
-        self.rpos = np.arange(cnum)  # R [m]
+        self.rpos = np.zeros(cnum)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
-        self.apos = np.arange(cnum)  # angle [rad]
-        for c in range(cnum):
-            # Mirnov coils
-            # ECE
-            pass
+        self.apos = np.zeros(cnum)  # angle [rad]
 
+        # ECE
+        if self.clist[0].startswith('ece'):
+            R0 = 1.67 # [m]
+            m = 2
+            Bt = 1.9 # [T]
+            ece_freq = np.concatenate((np.arange(83.5, 98.5 + 1, 1), np.arange(98.5, 113.5 + 1, 1), np.arange(115.5, 129.5 + 2, 2))) # RF frequency (center [GHz])
+            ece_rpos = 27.99*m*Bt*R0/ece_freq # [m]
+
+            for c, cname in enumerate(self.clist):
+                self.rpos[c] = ece_rpos[int(int(cname[3:]) - 1)]
+
+    def expand_clist(self, clist):
+        # IN : List of channel names (e.g. 'LFS1201-1208').
+        # OUT : Expanded list (e.g. 'LFS1201', ..., 'LFS1208')
+        pass
+
+        return clist
+
+
+def expand_clist(self, clist):
+    # IN : List of channel names (e.g. '').
+    # OUT : Expanded list (e.g. '', ..., '')
+
+    pass
+
+    return clist
 
 if __name__ == "__main__":
     pass
