@@ -23,6 +23,7 @@ import h5py
 # BES tree
 BES_TREE = 'KSTAR'
 BES_PATH = '/home/users/mjchoi/bes_data/' # on nKSTAR
+BES_PATH = '/UKSTAR_HOME/mjchoi/data/KSTAR/bes_data/' # on uKSTAR
 # BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data/' # on local machine
 
 # on uKSTAR
@@ -81,9 +82,9 @@ class KstarBes(Connection):
 
                 # add channel positions as attributes
                 dset = fout[cname]
-                dset.attrs['RPOS'] = self.rpos[c]
-                dset.attrs['ZPOS'] = self.zpos[c]
-                
+                dset.attrs['RPOS'] = self.get(f'\{cname}:RPOS') / 1000 # [mm] -> [m]
+                dset.attrs['ZPOS'] = self.get(f'\{cname}:VPOS') / 1000 # [mm] -> [m]
+
                 print('Added', cname)
 
         print('Saved', self.fname)
@@ -214,9 +215,10 @@ class KstarBes(Connection):
             self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0        
 
             # get data size
-            idx1 = round((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-            idx2 = round((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
-            tnum = len(full_time[idx1:idx2+1])
+            # idx1 = round((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
+            # # idx2 = round((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+            # idx2 = idx1 + int(tspan*self.fs)
+            tnum = int(tspan*self.fs)
 
             # get multi time and data 
             self.multi_time = np.zeros((len(time_list), tnum))
@@ -226,14 +228,15 @@ class KstarBes(Connection):
                 for j, tp in enumerate(time_list):
                     # get tidx 
                     idx1 = round((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-                    idx2 = round((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+                    # idx2 = round((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+                    idx2 = idx1 + tnum
 
                     # load time
                     if i == 0:
-                        self.multi_time[j,:] = full_time[idx1:idx2+1]
+                        self.multi_time[j,:] = full_time[idx1:idx2]
 
                     # load data
-                    v = np.array(fin.get(cname)[idx1:idx2+1])
+                    v = np.array(fin.get(cname)[idx1:idx2]) / 1e6 # [int32] -> [V]
 
                     # normalize by std if norm == 1
                     if norm == 1:

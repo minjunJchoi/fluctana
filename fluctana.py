@@ -141,7 +141,7 @@ class FluctAna(object):
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)
 
-    def add_multi_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], time_list=[6.8,6.9], tspan=1e-3, norm=1, res=0, verbose=1, **kwargs):
+    def add_multi_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], time_list=[6.8,6.9], tspan=1e-3, norm=1, res=0, verbose=1, savedata=False, **kwargs):
         # KSTAR diagnostics
         if dev == 'KSTAR':
             if 'ECEI' in clist[0]:
@@ -151,7 +151,7 @@ class FluctAna(object):
             elif 'CSS' in clist[0]:
                 D = KstarCss(shot=shot, clist=clist)
             elif 'BES' in clist[0]:
-                D = KstarBes(shot=shot, clist=clist)
+                D = KstarBes(shot=shot, clist=clist, savedata=savedata)
             else:
                 D = KstarMds(shot=shot, clist=clist)
         elif dev == 'DIII-D':
@@ -542,7 +542,7 @@ class FluctAna(object):
             for c in range(cnum):
                 for t in range(bins):
                     x = D.multi_data[c,t,:]
-                    D.ax, D.spdata[c,t,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, detrend, full)
+                    D.ax, D.spdata[c,t,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, tau=0, demean=1, detrend=detrend, full=full)
 
             # update attributes
             if np.mod(nfft, 2) == 0:
@@ -1933,10 +1933,10 @@ class FluctAna(object):
             axs[1].set_ylabel('z [m]')
             if type == 'time':
                 axs[0].set_xlabel('Time [s]')
-                axs[1].set_title('ECE image at t = {:g} sec'.format(pbase[tidx]))
+                axs[1].set_title('{:d} at t = {:g} sec'.format(D.shot, pbase[tidx]))
             elif type == 'val':
                 axs[0].set_xlabel('Time lag [us]')
-                axs[1].set_title('{:s} image at time lag = {:g} us'.format(vkind, pbase[tidx]))
+                axs[1].set_title('{:d} {:s} at time lag = {:g} us'.format(D.shot, vkind, pbase[tidx]))
 
         # plot
         tidx = 0  # Initialize tidx with a default value  
