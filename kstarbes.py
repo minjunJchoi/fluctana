@@ -215,9 +215,6 @@ class KstarBes(Connection):
             self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0        
 
             # get data size
-            # idx1 = round((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-            # # idx2 = round((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
-            # idx2 = idx1 + int(tspan*self.fs)
             tnum = int(tspan*self.fs)
 
             # get multi time and data 
@@ -228,7 +225,6 @@ class KstarBes(Connection):
                 for j, tp in enumerate(time_list):
                     # get tidx 
                     idx1 = round((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-                    # idx2 = round((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
                     idx2 = idx1 + tnum
 
                     # load time
@@ -259,10 +255,7 @@ class KstarBes(Connection):
         if os.path.exists(self.fname):
             # open file   
             with h5py.File(self.fname, 'r') as fin:
-                for c, cname in enumerate(self.clist):
-                    # self.rpos[c] = np.array(fin.get(cname+'_RPOS')) / 1000 # [mm] -> [m]
-                    # self.zpos[c] = np.array(fin.get(cname+'_ZPOS')) / 1000 # [mm] -> [m]
-                    
+                for c, cname in enumerate(self.clist):                   
                     dset = fin[cname]
                     self.rpos[c] = dset.attrs['RPOS'] # [m]
                     self.zpos[c] = dset.attrs['ZPOS'] # [m]
