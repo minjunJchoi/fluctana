@@ -165,7 +165,7 @@ def qspec_lw(X_qdft, Y_qdft, M=None):
     return qspec_xy
 
 
-def fftbins(x, dt, nfft, window, overlap, tau=0, demean=1, detrend=0, full=0):
+def fftbins(x, dt, nfft, window, overlap, tau=0, detrend=0, full=0):
     # IN : 1 x tnum data
     # OUT : bins x faxis fftdata
     tnum = len(x)
@@ -196,9 +196,9 @@ def fftbins(x, dt, nfft, window, overlap, tau=0, demean=1, detrend=0, full=0):
 
         sx = x[idx1:idx2]
 
-        if demean == 1:
+        if detrend == 0:
             sx = signal.detrend(sx, type='constant')  # subtract mean
-        if detrend == 1:
+        elif detrend == 1:
             sx = signal.detrend(sx, type='linear')
 
         sx = sx * win  # apply window function

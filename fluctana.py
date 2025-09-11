@@ -470,7 +470,7 @@ class FluctAna(object):
 
 ############################# spectral methods #############################
 
-    def fftbins(self, nfft, window, overlap, tau=0, demean=1, detrend=0, full=0):
+    def fftbins(self, nfft, window, overlap, tau=0, detrend=0, full=0):
         # IN : self, data set number, nfft, window name, detrend or not
         # OUT : bins x N FFT of time series data; frequency axis
         # self.list_data()
@@ -498,7 +498,7 @@ class FluctAna(object):
 
             for c in range(cnum):
                 x = D.data[c,:]
-                D.ax, D.spdata[c,:,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, tau=tau, demean=demean, detrend=detrend, full=full)
+                D.ax, D.spdata[c,:,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, tau=tau, detrend=detrend, full=full)
 
             # update attributes
             if np.mod(nfft, 2) == 0:
@@ -542,7 +542,7 @@ class FluctAna(object):
             for c in range(cnum):
                 for t in range(bins):
                     x = D.multi_data[c,t,:]
-                    D.ax, D.spdata[c,t,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, tau=0, demean=1, detrend=detrend, full=full)
+                    D.ax, D.spdata[c,t,:], D.win_factor = sp.fftbins(x, dt, nfft, window, overlap, tau=0, detrend=detrend, full=full)
 
             # update attributes
             if np.mod(nfft, 2) == 0:
