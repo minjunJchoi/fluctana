@@ -154,15 +154,19 @@ class DiiidData():
         self.apos = np.zeros(cnum)  # angle [rad]
 
         # ECE
-        if self.clist[0].startswith('ece'):
+        if self.clist[0].upper().startswith('ECE') or self.clist[0].upper().startswith('TECE'):
             R0 = 1.67 # [m]
             m = 2
-            Bt = 1.9 # [T]
+            Bt = 1.9 ################## [T]
+            print(f'[Warning]: ECE positions are calculated using Bt={Bt} T')
             ece_freq = np.concatenate((np.arange(83.5, 98.5 + 1, 1), np.arange(98.5, 113.5 + 1, 1), np.arange(115.5, 129.5 + 2, 2))) # RF frequency (center [GHz])
             ece_rpos = 27.99*m*Bt*R0/ece_freq # [m]
 
             for c, cname in enumerate(self.clist):
-                self.rpos[c] = ece_rpos[int(int(cname[3:]) - 1)]
+                if self.clist[0].upper().startswith('ECE') and len(self.clist[0]) < 6:
+                    self.rpos[c] = ece_rpos[int(int(cname[3:]) - 1)]
+                else:
+                    self.rpos[c] = ece_rpos[int(int(cname[-2:]) - 1)]
 
     def expand_clist(self, clist):
         # IN : List of channel names (e.g. 'LFS1201-1208').

@@ -236,53 +236,60 @@ class KstarEceiRemote(Connection):
 
         return self.time, self.data
 
-    # def get_multi_data(self, time_list=None, tspan=1e-3, norm=0, res=0, verbose=1):
-    #     if norm == 0:
-    #         if verbose == 1: print('Data is not normalized')
-    #     elif norm == 1:
-    #         if verbose == 1: print('Data is normalized by time average')
+    def get_multi_data(self, time_list=None, tspan=1e-3, norm=0, res=0, verbose=1):
+        if norm == 0:
+            if verbose == 1: print('Data is not normalized')
+        elif norm == 1:
+            if verbose == 1: print('Data is normalized by time average')
 
-    #     self.time_list = time_list
+        self.time_list = time_list
 
-    #     # open file   
-    #     with h5py.File(self.fname, 'r') as fin:
+        # open file   
+        with h5py.File(self.fname, 'r') as fin:
 
-    #         # get fs
-    #         full_time = np.array(fin.get('TIME'))
-    #         self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0        
+            # get fs
+            full_time = np.array(fin.get('TIME'))
+            self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0        
 
-    #         # get data size
-    #         idx1 = round((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-    #         idx2 = round((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
-    #         tnum = len(full_time[idx1:idx2+1])
+            # get data size
+            tnum = int(tspan*self.fs)
 
-    #         # get multi time and data 
-    #         self.multi_time = np.zeros((len(time_list), tnum))
-    #         self.multi_data = np.zeros((len(self.clist), len(time_list), tnum))
+            # offset time index
+            oidx1 = round((-0.08 + 1e-8 - full_time[0])*self.fs) 
+            oidx2 = round((-0.02 - 1e-8 - full_time[0])*self.fs)
 
-    #         for i, cname in enumerate(self.clist):
-    #             for j, tp in enumerate(time_list):
-    #                 # get tidx 
-    #                 idx1 = round((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-    #                 idx2 = round((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+            # get multi time and data 
+            self.multi_time = np.zeros((len(time_list), tnum))
+            self.multi_data = np.zeros((len(self.clist), len(time_list), tnum))
 
-    #                 # load time
-    #                 if i == 0:
-    #                     self.multi_time[j,:] = full_time[idx1:idx2+1]
+            for i, cname in enumerate(self.clist):
+                for j, tp in enumerate(time_list):
+                    # get tidx 
+                    idx1 = round((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
+                    idx2 = idx1 + tnum
 
-    #                 # load data
-    #                 v = np.array(fin.get(cname)[idx1:idx2+1])
+                    # load time
+                    if i == 0:
+                        self.multi_time[j,:] = full_time[idx1:idx2]
 
-    #                 # normalize by std if norm == 1
-    #                 if norm == 1:
-    #                     v = v/np.mean(v) - 1
+                    # load offset data
+                    ov = np.array(fin.get(cname)[oidx1:oidx2]) / 1e6 # offset [int32] -> [V]
 
-    #                 # add data 
-    #                 self.multi_data[i,j,:] = v
+                    # load data
+                    v = np.array(fin.get(cname)[idx1:idx2]) / 1e6 # signal [int32] -> [V]
+                    
+                    # remove offest
+                    v = v - np.median(ov)
 
-    #             print('Data added', cname)
+                    # normalization 
+                    if norm == 1:
+                        v = v/np.mean(v) - 1                    
 
-    #     return self.multi_time, self.multi_data
+                    # add data 
+                    self.multi_data[i,j,:] = v
+                print('Data added', cname)
+
+        return self.multi_time, self.multi_data
 
     def find_bad_channel(self):
         # auto-find bad 

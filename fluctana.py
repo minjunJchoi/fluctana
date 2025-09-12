@@ -144,8 +144,10 @@ class FluctAna(object):
     def add_multi_data(self, dev='KSTAR', shot=23359, clist=['ECEI_GT1201'], time_list=[6.8,6.9], tspan=1e-3, norm=1, res=0, verbose=1, savedata=False, **kwargs):
         # KSTAR diagnostics
         if dev == 'KSTAR':
-            if 'ECEI' in clist[0]:
+            if 'ECEI' in clist[0] and shot < 35000:
                 D = KstarEcei(shot=shot, clist=clist)
+            elif 'ECEI' in clist[0] and shot > 35000:
+                D = KstarEceiRemote(shot=shot, clist=clist, savedata=savedata)                
             elif 'MIR' in clist[0]:
                 D = KstarMir(shot=shot, clist=clist)
             elif 'CSS' in clist[0]:
@@ -417,7 +419,7 @@ class FluctAna(object):
         for c in range(len(D.clist)):
             for t in range(len(D.multi_time)):
                 x = np.copy(D.multi_data[c,t,:])
-                D.multi_data[c,:] = freq_filter.apply(x)
+                D.multi_data[c,t,:] = freq_filter.apply(x)
 
         print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
