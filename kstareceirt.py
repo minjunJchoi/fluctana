@@ -21,7 +21,7 @@ from MDSplus import Connection
 
 # ECEI tree 
 ECEI_TREE = 'ECEI'
-ECEI_PATH = '/home/users/mjchoi/ecei_data/' # on nKSTAR
+ECEI_PATH = '/home/users/mjchoi/data/KSTAR/ecei_data/' # on nKSTAR
 # ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
 # on uKSTAR
