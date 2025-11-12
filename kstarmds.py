@@ -46,10 +46,14 @@ POST_NODE = {'ECH_VFWD1':'/1000', 'EC1_RFFWD1':'/1000', 'LH1_AFWD':'/200', 'SM_V
 # nodes NOT support segment reading in 2018
 NSEG_NODE = ['NB11_pnb', 'NB12_pnb', 'ECH_VFWD1'] # etc
 
+# MDSplus server address
+MDSPLUS_SERVER = os.environ.get('MDSPLUS_SERVER', 'mdsr.kstar.kfe.re.kr:8005')
+
 class KstarMds(Connection):
     def __init__(self, shot=1234, tree=None, clist=['abc']):
         # from iKSTAR
-        super(KstarMds,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
+        super(KstarMds,self).__init__(MDSPLUS_SERVER)  # call __init__ in Connection
+
         # from opi to CSS Host PC
         # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot

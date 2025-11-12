@@ -24,10 +24,13 @@ ECEI_TREE = 'ECEI'
 ECEI_PATH = '/home/users/mjchoi/data/KSTAR/ecei_data/' # on nKSTAR
 # ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
+# MDSplus server address
+MDSPLUS_SERVER = os.environ.get('MDSPLUS_SERVER', 'mdsr.kstar.kfe.re.kr:8005')
+
 # on uKSTAR
 class KstarEceiRemote(Connection):
     def __init__(self, shot, clist, savedata=False):
-        super(KstarEceiRemote,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
+        super(KstarEceiRemote,self).__init__(MDSPLUS_SERVER)  # call __init__ in Connection 
 
 # on local machine
 # class KstarEceiRemote(object):

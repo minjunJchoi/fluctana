@@ -5,6 +5,8 @@
 # Acknowledgement : Special thanks to Dr. W. Lee, Mr. D.J. Lee, and Mr. T.G. Lee
 #
 
+import os 
+
 from MDSplus import Connection
 # from MDSplus import DisconnectFromMds
 # from MDSplus._mdsshr import MdsException
@@ -15,10 +17,13 @@ import matplotlib.pyplot as plt
 # nodes in CSS tree
 CSS_TREE = ['CSS_I{:02d}:FOO'.format(i) for i in range(1,5)] + ['CSS_Q{:02d}:FOO'.format(i) for i in range(1,5)]
 
+# MDSplus server address
+MDSPLUS_SERVER = os.environ.get('MDSPLUS_SERVER', 'mdsr.kstar.kfe.re.kr:8005')
+
 class KstarCss(Connection):
     def __init__(self, shot, clist):
         # from iKSTAR
-        super(KstarCss,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
+        super(KstarCss,self).__init__(MDSPLUS_SERVER)  # call __init__ in Connection
         # from opi to CSS Host PC
         # super(KstarMds,self).__init__('172.17.102.69:8000')  # call __init__ in Connection
         self.shot = shot

@@ -9,6 +9,8 @@ Last updated
 2024.11.26 : version 0.10; cold resonance positions
 """
 
+import os
+
 import filtdata as ft
 
 from MDSplus import Connection
@@ -26,10 +28,13 @@ BES_PATH = '/home/users/mjchoi/bes_data/' # on nKSTAR
 BES_PATH = '/UKSTAR_HOME/mjchoi/data/KSTAR/bes_data/' # on uKSTAR
 # BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data/' # on local machine
 
+# MDSplus server address
+MDSPLUS_SERVER = os.environ.get('MDSPLUS_SERVER', 'mdsr.kstar.kfe.re.kr:8005')
+
 # on uKSTAR
 class KstarBes(Connection):
     def __init__(self, shot, clist, savedata):
-        super(KstarBes,self).__init__('mdsr.kstar.kfe.re.kr:8005')  # call __init__ in Connection
+        super(KstarBes,self).__init__(MDSPLUS_SERVER)  # call __init__ in Connection
 
 # on local machine
 # class KstarBes(object):
