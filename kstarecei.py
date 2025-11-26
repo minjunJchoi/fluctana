@@ -7,6 +7,7 @@
 # Last updated
 #  2018.02.15 : version 0.10; cold resonance positions
 
+import os
 import numpy as np
 import h5py
 
@@ -47,7 +48,8 @@ class KstarEcei(object):
         elif 30540 < shot:
             self.data_path = '/eceidata2/exp_2022/'
 
-        # self.data_path = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
+        if not os.path.exists(self.data_path):
+            self.data_path = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
         self.clist = self.expand_clist(clist)
 
