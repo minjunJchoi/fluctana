@@ -5,7 +5,7 @@ from scipy.ndimage import generic_filter
 # functions to massage the raw data including data from bad channels.
 
 def fill_bad_channel(pdata, rpos, zpos, good_channels, cutoff):
-    # cutoff = 0.003 [m]
+    # cutoff = 0.0345 [m]
     # ## fake data
     # dist = np.sqrt((rpos - 1.8)**2 + (zpos - 0)**2)
     # pdata = 0.1*(1 - (dist/0.5)**2)
@@ -23,15 +23,16 @@ def fill_bad_channel(pdata, rpos, zpos, good_channels, cutoff):
 
     return pdata
 
-def interp_pdata(pdata, rpos, zpos, istep, imethod):
+def interp_pdata(pdata, rpos, zpos, istep, imethod, aspect_ratio=1.3):
     # interpolation
     # istep = 0.002 [m] radial resolution 
     # imethod = 'cubic'
+    # aspect ratio is the ratio between vertical channel spacing and radial channel spacing
 
-    ri = np.arange(np.min(rpos), np.max(rpos), istep)
-    zi = np.arange(np.min(zpos), np.max(zpos), istep*(np.max(zpos)-np.min(zpos))/(np.max(rpos)-np.min(rpos)))
+    ri = np.arange(np.min(rpos), np.max(rpos) + istep, istep)
+    zi = np.arange(np.min(zpos), np.max(zpos) + istep*aspect_ratio, istep*aspect_ratio)
     ri, zi = np.meshgrid(ri, zi)
-    pi = griddata((rpos,zpos),pdata,(ri,zi),method=imethod)
+    pi = griddata((rpos,zpos), pdata, (ri,zi), method=imethod)
 
     return ri, zi, pi
 

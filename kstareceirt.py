@@ -19,10 +19,11 @@ import filtdata as ft
 
 from MDSplus import Connection
 
-# ECEI tree 
+# ECEI tree on MDSplus server, ECEI data path
 ECEI_TREE = 'ECEI'
 ECEI_PATH = '/home/users/mjchoi/data/KSTAR/ecei_data/' # on nKSTAR
-# ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
+if not os.path.exists(ECEI_PATH):
+    ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
 
 # MDSplus server address
 MDSPLUS_SERVER = os.environ.get('MDSPLUS_SERVER', 'mdsr.kstar.kfe.re.kr:8005')
@@ -333,6 +334,8 @@ class KstarEceiRemote(Connection):
                     self.rpos[c] = dset.attrs['RPOS'] # [m]
                     self.zpos[c] = dset.attrs['ZPOS'] # [m]
                     self.apos[c] = dset.attrs['APOS'] # [rad]
+
+                print('ECEI file = {}'.format(self.fname))
         else:
             me = 9.109e-31        # electron mass
             e = 1.602e-19       # charge
@@ -364,6 +367,8 @@ class KstarEceiRemote(Connection):
 
                 # get vertical position and angle at rpos
                 self.zpos[c], self.apos[c] = self.beam_path(self.rpos[c], vn)
+
+            print(f'ECEI from MDSplus server {MDSPLUS_SERVER}, tree {ECEI_TREE}, shot {self.shot}')
 
     def show_ch_position(self):
         fig, (a1) = plt.subplots(1,1, figsize=(6,6))

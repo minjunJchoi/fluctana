@@ -27,8 +27,7 @@ def play(shot, trange, dname, flimits=[0,20], vlimits=[-0.1,0.1]):
     # ## SVD filter
     # A.svd_filt(dnum=0, cutoff=0.9)
 
-    # A.iplot(dnum=0,snum=0,vlimits=[-0.1,0.1],istep=0.002,imethod='cubic',cutoff=0.03,pmethod='scatter')
-    A.iplot(dnum=0,snum=0,type='time',vlimits=vlimits)
+    A.iplot(dnum=0,snum=0,type='time',vlimits=vlimits,istep=0.005,imethod='linear',bcut=0.0345,msize=5,pmethod='image')
 
 if __name__ == "__main__":
     play(shot=22289,trange=[2.716,2.718],dname='GT',flimits=[5,9],vlimits=[-0.05,0.05])
