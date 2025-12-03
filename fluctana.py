@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.animation as animation
 
 import pickle
 
@@ -1873,161 +1874,16 @@ class FluctAna(object):
             plt.ylabel('Frequency [Hz]')
 
             plt.show()
-
-    # def iplot(self, dnum=0, snum=0, type='time', vlimits=[-0.1, 0.1], istep=0.002, aspect_ratio=1.3, imethod='linear', bcut=0.0345, msize=5, pmethod='image', cline=False, fig=None, axs=None, **kwargs):
-    #     # keyboard interactive image plot
         
-    #     # sample
-    #     if type == 'time':
-    #         pbase = self.Dlist[dnum].time
-    #         psample = self.Dlist[dnum].data[snum,:]
-    #     elif type == 'val':
-    #         pbase = self.Dlist[dnum].ax*1e+6
-    #         psample = self.Dlist[dnum].val[snum,:]
-    #         vkind = self.Dlist[dnum].vkind
-    #     pname = self.Dlist[dnum].clist[snum]
-
-    #     # # CM = plt.cm.get_cmap('RdYlBu_r')
-    #     try:
-    #         matlab_cmap = np.loadtxt('matlab_cmap.dat')
-    #         CM = LinearSegmentedColormap.from_list("matlab_cmap", matlab_cmap)
-    #     except FileNotFoundError:
-    #         CM = LinearSegmentedColormap.from_list("custom_cmap", ["black", "blue", "blue", "blue", "purple", "purple", "darkred", "red", "orange", "orange", "darkgoldenrod", "yellow", "yellow", "yellow", "white"])
-
-    #     # rmin, rmax, zmin, zmax
-    #     bdry = [1e4, -1e4, 1e4, -1e4]
-
-    #     # define 2D plot function
-    #     def plot2D(axs, tidx, D, bdry=[1.3, 2.3, -0.5, 0.5], clear=True):
-    #         # take data 
-    #         if type == 'time':
-    #             D.pdata = D.data[:,tidx]
-    #         elif type == 'val':
-    #             D.pdata = D.val[:,tidx]
-            
-    #         # get channel positions
-    #         rpos = D.rpos[:]
-    #         zpos = D.zpos[:]
-
-    #         # fill bad channel
-    #         D.pdata = ms.fill_bad_channel(D.pdata, rpos, zpos, D.good_channels, bcut)
-
-    #         # interpolation and smoothing 
-    #         if istep > 0:
-    #             ri, zi, pi = ms.interp_pdata(D.pdata, rpos, zpos, istep, imethod, aspect_ratio=aspect_ratio)
-    #             if msize > 0:
-    #                 pi = ms.nanmedian_filter(pi, size=msize)
-
-    #         # save current axis limits
-    #         has_plot = (len(axs[1].collections) > 0 or len(axs[1].images) > 0)
-    #         if has_plot:
-    #             saved_xlim = axs[0].get_xlim()
-    #             saved_ylim = axs[0].get_ylim()
-
-    #         # plot
-    #         if clear: 
-    #             axs[0].clear()
-    #             axs[1].clear()
-    #             # axs[2].clear()
-
-    #             axs[0].plot(pbase, psample)
-    #             axs[0].axvline(x=pbase[tidx], color='g')
-
-    #             axs[0].set_title(f'{D.shot} {pname}')
-    #             axs[1].set_xlabel('R [m]')
-    #             axs[1].set_ylabel('z [m]')
-    #             if type == 'time':
-    #                 axs[0].set_xlabel('Time [s]')
-    #                 axs[1].set_title('{:d} at t = {:.6f} sec'.format(D.shot, pbase[tidx]))
-    #             elif type == 'val':
-    #                 axs[0].set_xlabel('Time lag [us]')
-    #                 axs[1].set_title('{:d} {:s} at time lag = {:g} us'.format(D.shot, vkind, pbase[tidx]))                    
-        
-    #             # restore axis limits
-    #             if has_plot:
-    #                 axs[0].set_xlim(saved_xlim)
-    #                 axs[0].set_ylim(saved_ylim)
-
-    #         # 2D plot
-    #         if istep > 0:
-    #             if pmethod == 'scatter':
-    #                 im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
-    #             elif pmethod == 'contour':
-    #                 if cline: axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=0.5, linestyles=cline, colors='k')
-    #                 im = axs[1].contourf(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
-    #             elif pmethod == 'image':
-    #                 im = axs[1].imshow(pi, extent=(ri.min(), ri.max(), zi.min(), zi.max()), vmin=vlimits[0], vmax=vlimits[1], cmap=CM, aspect='auto', origin='lower')
-    #         else:
-    #             im = axs[1].scatter(rpos, zpos, 500, D.pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
-
-    #         axs[1].set_aspect('equal')
-    #         axs[1].set_xlim([bdry[0], bdry[1]])
-    #         axs[1].set_ylim([bdry[2], bdry[3]])
-    #         plt.colorbar(im, cax=axs[2])
-
-    #         # for c_idx, good in enumerate(D.good_channels):
-    #         #     if good == 0:
-    #         #         axs[1].plot(D.rpos[c_idx], D.zpos[c_idx], 'kx', markersize=8)
-
-    #     # plot
-    #     tidx = 0  # Initialize tidx with a default value  
-    #     tstep = int(input('Enter the jump step (idx): '))  # jumping index # tstep = 10
-    #     print('Click on the top axis to plot the image in the window')
-    #     print('Press right/left arrow key to plot the next/previous image')
-    #     print('Press up/down arrow key to increase/decrease the jump step')
-
-    #     # make axes
-    #     fig, axs = make_axes(len(self.Dlist[dnum].clist), ptype='iplot', fig=fig, axs=axs)
-
-    #     def on_key(event):
-    #         nonlocal tidx, tstep
-    #         if event.key == 'right':
-    #             tidx = (tidx + tstep) % len(pbase)
-    #         elif event.key == 'left':
-    #             tidx = (tidx - tstep) % len(pbase)
-    #         elif event.key == 'up':
-    #             tstep = int(tstep * 1.5)
-    #             print(f'Jump step (idx) = {tstep}')
-    #         elif event.key == 'down':
-    #             tstep = int(tstep / 1.5)
-    #             print(f'Jump step (idx) = {tstep}')
-    #         elif event.key == 'escape':
-    #             plt.close(fig)
-
-    #         # plot2D(axs, tidx, D, vlimits, istep, msize, pmethod, cline)                
-    #         # plot2D(axs, tidx, D)
-    #         for d, D in enumerate(self.Dlist):
-    #             clear = True if d == 0 else False
-    #             plot2D(axs, tidx, D, bdry=bdry, clear=clear)
-    #         fig.canvas.draw()        
-
-    #     def on_click(event):
-    #         nonlocal tidx
-    #         if event.inaxes == axs[0]:
-    #             selected_x, _ = event.xdata, event.ydata
-    #             tidx = (np.abs(pbase - selected_x)).argmin()
-
-    #         for d, D in enumerate(self.Dlist):
-    #             clear = True if d == 0 else False
-    #             bdry[0] = np.min([bdry[0], np.min(D.rpos)])
-    #             bdry[1] = np.max([bdry[1], np.max(D.rpos)])
-    #             bdry[2] = np.min([bdry[2], np.min(D.zpos)])
-    #             bdry[3] = np.max([bdry[3], np.max(D.zpos)])
-
-    #             plot2D(axs, tidx, D, bdry=bdry, clear=clear)            
-    #         fig.canvas.draw()        
-
-    #     fig.canvas.mpl_connect('key_press_event', on_key)
-    #     fig.canvas.mpl_connect('button_press_event', on_click)
-
-    #     plt.show()
-        
-    def iplot(self, dnum=0, snum=0, plot_type='time', vlimits=None, istep=0.005, 
+    def iplot(self, dnum=0, snum=0, plot_type='time', istep=0.005, 
             aspect_ratio=1.3, imethod='linear', bcut=0.0345, msize=3, 
-            pmethod='image', cline=False, fig=None, axs=None, tstep=10, **kwargs):
-        
+            pmethod='image', cline=False, fig=None, axs=None, tstep=10, movtag=None, **kwargs):
+        if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
+        if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
+        if 'vlimits' in kwargs: vlimits = kwargs['vlimits']
+
         # plot value limits
-        if vlimits is None:
+        if 'vlimits' not in kwargs: 
             vlimits = [-0.1, 0.1]
         
         # sample data for plotting
@@ -2044,8 +1900,8 @@ class FluctAna(object):
         try:
             matlab_cmap = np.loadtxt('matlab_cmap.dat')
             CM = LinearSegmentedColormap.from_list("matlab_cmap", matlab_cmap)
-        except (FileNotFoundError, OSError): # OSError 추가
-            CM = LinearSegmentedColormap.from_list("custom_cmap", ["black", "blue", "purple", "red", "yellow", "white"])
+        except (FileNotFoundError):
+            CM = LinearSegmentedColormap.from_list("custom_cmap", ["black", "blue", "blue", "blue", "purple", "purple", "darkred", "red", "orange", "orange", "darkgoldenrod", "yellow", "yellow", "yellow", "white"])
 
         # make axes
         if fig is None or axs is None:
@@ -2057,9 +1913,13 @@ class FluctAna(object):
             bdry[0] = min(bdry[0], np.min(D.rpos))
             bdry[1] = max(bdry[1], np.max(D.rpos))
             bdry[2] = min(bdry[2], np.min(D.zpos))
-            bdry[3] = max(bdry[3], np.max(D.zpos))        
-            axs[1].set_xlim([bdry[0], bdry[1]])
-            axs[1].set_ylim([bdry[2], bdry[3]])
+            bdry[3] = max(bdry[3], np.max(D.zpos))
+        if 'xlimits' in kwargs:  # xlimits
+            bdry[0] = xlimits[0]
+            bdry[1] = xlimits[1]
+        if 'ylimits' in kwargs:  # ylimits
+            bdry[2] = ylimits[0]
+            bdry[3] = ylimits[1]
 
         # 2D plot
         def plot2D(axs, tidx, D, clear=True):
@@ -2127,15 +1987,14 @@ class FluctAna(object):
                 im = axs[1].scatter(rpos, zpos, 500, D.pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
             axs[1].set_aspect('equal')
 
+            # set axis limits
+            axs[1].set_xlim([bdry[0], bdry[1]])
+            axs[1].set_ylim([bdry[2], bdry[3]])
+
             # color bar
             axs[2].clear()
             plt.colorbar(im, cax=axs[2])
         # ---------------------------------------------------------
-
-        tidx = 0
-        print(f'Initial jump step: {tstep}')
-        print('Controls: [a/d] Prev/Next, [w/x] Step Size, [mouse click] Jump to time, [q] Quit')
-
         def on_key(event):
             nonlocal tidx, tstep
             if event.key == 'd':
@@ -2144,10 +2003,10 @@ class FluctAna(object):
                 tidx = (tidx - tstep) % len(pbase)
             elif event.key == 'w':
                 tstep = max(2, int(tstep * 1.5)) # at least 2
-                print(f'Jump step (idx) = {tstep}')
+                print(f'Jump step [idx] = {tstep}')
             elif event.key == 'x':
                 tstep = max(1, int(tstep / 1.5)) # at least 1
-                print(f'Jump step (idx) = {tstep}')
+                print(f'Jump step [idx] = {tstep}')
             elif event.key == 'escape':
                 plt.close(fig)
                 return
@@ -2167,11 +2026,31 @@ class FluctAna(object):
                 plot2D(axs, tidx, D, clear=clear)            
             fig.canvas.draw()        
 
-        fig.canvas.mpl_connect('key_press_event', on_key)
-        fig.canvas.mpl_connect('button_press_event', on_click)
+        def update(tidx):
+            for d, D in enumerate(self.Dlist):
+                clear = (d == 0)
+                plot2D(axs, tidx, D, clear=clear)
+            return axs
+                
+        ## using PillowWriter
+        if movtag is not None:
+            tidx_list = np.arange(0, len(pbase), tstep, dtype='int64')
+            ani = animation.FuncAnimation(fig, update, frames=tidx_list, blit=False)
+            # W = animation.PillowWriter(fps=8)
+            # mov_fname = f'data/ECEI_movie_{self.Dlist[0].shot}_{movtag}.gif'
+            W = animation.FFMpegWriter(fps=8)
+            mov_fname = f'data/ECEI_movie_{self.Dlist[0].shot}_{movtag}.mp4'
+            ani.save(mov_fname, writer=W)
+            print(f'Saved movie: {mov_fname}')
+        else:
+            tidx = 0
+            print(f'Initial jump step [idx]: {tstep}')
+            print('Controls: [a/d] Prev/Next, [w/x] Step Size, [mouse click] Jump to time, [q] Quit')
 
-        plt.show()
+            fig.canvas.mpl_connect('key_press_event', on_key)
+            fig.canvas.mpl_connect('button_press_event', on_click)
 
+            plt.show()
 
 ############################# test functions ###################################
 

@@ -24,9 +24,9 @@ import h5py
 
 # BES tree
 BES_TREE = 'KSTAR'
-BES_PATH = '/home/users/mjchoi/bes_data/' # on nKSTAR
-BES_PATH = '/UKSTAR_HOME/mjchoi/data/KSTAR/bes_data/' # on uKSTAR
-# BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data/' # on local machine
+BES_PATH = '/home/users/mjchoi/data/KSTAR/bes_data/' # on nKSTAR
+if not os.path.exists(BES_PATH):
+    BES_PATH = '/Users/mjchoi/Work/data/KSTAR/bes_data/' # on local machine
 
 # MDSplus server address
 MDSPLUS_SERVER = os.environ.get('MDSPLUS_SERVER', 'mdsr.kstar.kfe.re.kr:8005')
