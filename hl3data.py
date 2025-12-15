@@ -15,7 +15,9 @@ import matplotlib.pyplot as plt
 import filtdata as ft
 
 # HL3 data path 
-HL3_PATH = '/home/users/mjchoi/data/HL-3/' 
+HL3_PATH = '/home/users/mjchoi/data/HL-3/' # on nKSTAR
+if not os.path.exists(HL3_PATH):
+    HL3_PATH = '/Users/mjchoi/Work/data/HL-3/' # on local machine
 
 class Hl3Data():
     def __init__(self, shot, clist):

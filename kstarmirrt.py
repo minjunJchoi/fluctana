@@ -1,12 +1,16 @@
 """
 Author : Minjun J. Choi (mjchoi@kfe.re.kr)
 
-Description : This code reads the KSTAR ECEI data for shot number > 35000 (2024 fall campaign ~)
+Description : This code reads the KSTAR MIR data for shot number > 35000 (2024 fall campaign ~)
 
 Acknowledgement : Dr. J. Lee
 
 Last updated
 2024.11.26 : version 0.10; cold resonance positions
+
+MIR_0101: MIR_I01_01:FOO + 1.0j*MIR_Q01_01:FOO
+MIR_I01_01:FOO
+MIR_Q04_16:FOO
 """
 
 import os
@@ -19,43 +23,37 @@ import filtdata as ft
 
 from MDSplus import Connection
 
-# ECEI tree on MDSplus server, ECEI data path
-ECEI_TREE = 'ECEI'
-ECEI_PATH = '/home/users/mjchoi/data/KSTAR/ecei_data/' # on nKSTAR
-if not os.path.exists(ECEI_PATH):
-    ECEI_PATH = '/Users/mjchoi/Work/data/KSTAR/ecei_data/' # on local machine
+# MIR tree on MDSplus server, MIR data path
+MIR_TREE = 'MIR'
+MIR_PATH = '/home/users/mjchoi/data/KSTAR/mir_data/' # on nKSTAR
+if not os.path.exists(MIR_PATH):
+    MIR_PATH = '/Users/mjchoi/Work/data/KSTAR/mir_data/' # on local machine
 
 # MDSplus server address
 MDSPLUS_SERVER = os.environ.get('MDSPLUS_SERVER', 'mdsr.kstar.kfe.re.kr:8005')
 
-# on uKSTAR
-class KstarEceiRemote(Connection):
+# on nKSTAR
+class KstarMirRemote(Connection):
     def __init__(self, shot, clist, savedata=False):
-        super(KstarEceiRemote,self).__init__(MDSPLUS_SERVER)  # call __init__ in Connection 
+        super(KstarMirRemote,self).__init__(MDSPLUS_SERVER)  # call __init__ in Connection 
 
         self.shot = shot
 
         self.clist = self.expand_clist(clist)
 
-        self.cnidx1 = 7
-        self.dev = self.clist[0][5:7]
-
         # hdf5 file name
-        self.fname = "{:s}{:06d}/ECEI.{:06d}.{:s}.h5".format(ECEI_PATH, shot, shot, self.dev)
+        self.fname = "{:s}{:06d}/MIR.{:06d}.h5".format(MIR_PATH, shot, shot)
 
-        # get channel posistions
-        self.channel_position()
+        # # get channel posistions
+        # self.channel_position()
 
         # save MDSplus data in hdf5 format if necessary
         if os.path.exists(self.fname) == False and savedata == True:
-            print('Reformat ECEI data to hdf5 file') 
+            print('Reformat MIR data to hdf5 file') 
             self.reformat_hdf5()
 
         # data quality
         self.good_channels = np.ones(len(self.clist))
-        self.offlev = np.zeros(len(self.clist))
-        self.offstd = np.zeros(len(self.clist))
-        self.siglev = np.zeros(len(self.clist))
         self.sigstd = np.zeros(len(self.clist))
 
         self.time = None
@@ -112,22 +110,20 @@ class KstarEceiRemote(Connection):
         self.trange = trange
 
         # norm = 0 : no normalization
-        # norm = 1 : normalization by trange average
-        # norm = 2 : normalization by atrange average
+        # norm = 1 : normalization by trange std
+        # norm = 2 : normalization by atrange std
         # res  = 0 : no resampling
         if norm == 0:
-            if verbose == 1: print('Data is not normalized ECEI')
+            if verbose == 1: print('Data is not normalized MIR')
         elif norm == 1:
-            if verbose == 1: print('Data is normalized by trange average ECEI')
+            if verbose == 1: print('Data is normalized by trange std MIR')
         elif norm == 2:
-            if verbose == 1: print('Data is normalized by atrange average ECEI')
-        elif norm == 3:
-            if verbose == 1: print('Data is normalized by the low pass signal')
+            if verbose == 1: print('Data is normalized by atrange std MIR')
 
         if os.path.exists(self.fname):
             # read data from hdf5
             with h5py.File(self.fname, 'r') as fin:
-                print('Read ECEI data from hdf5 file')
+                print('Read MIR data from hdf5 file')
                 # read time base and get tidx 
                 self.time = np.array(fin.get('TIME'))
 
@@ -138,9 +134,6 @@ class KstarEceiRemote(Connection):
                 idx1 = round((max(trange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
                 idx2 = round((min(trange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)
 
-                oidx1 = round((max(-0.08,self.time[0]) + 1e-8 - self.time[0])*self.fs) 
-                oidx2 = round((min(-0.02,self.time[-1]) - 1e-8 - self.time[0])*self.fs)
-
                 aidx1 = round((max(atrange[0],self.time[0]) + 1e-8 - self.time[0])*self.fs) 
                 aidx2 = round((min(atrange[1],self.time[-1]) - 1e-8 - self.time[0])*self.fs)
 
@@ -150,27 +143,34 @@ class KstarEceiRemote(Connection):
                 # get data
                 for i, cname in enumerate(self.clist):
                     # load data
-                    ov = np.array(fin.get(cname)[oidx1:oidx2+1]) / 1e6 # offset [int32] -> [V]
-                    v = np.array(fin.get(cname)[idx1:idx2+1]) / 1e6 # signal [int32] -> [V]
-                    
-                    self.offlev[i] = np.median(ov)
-                    self.offstd[i] = np.std(ov)
+                    # v = np.array(fin.get(cname)[idx1:idx2+1]) / 1e6 # signal [int32] -> [V]
+                    # self.sigstd[i] = np.std(v)
 
-                    v = v - self.offlev[i]
+                    fn = int(cname[4:6])
+                    vn = int(cname[6:8])
 
-                    self.siglev[i] = np.median(v)
-                    self.sigstd[i] = np.std(v)
+                    inode = 'MIR_I{:02d}_{:02d}'.format(fn,vn)
+                    qnode = 'MIR_Q{:02d}_{:02d}'.format(fn,vn)
 
-                    # normalization 
+                    iv = np.array(fin.get(inode)[idx1:idx2+1]) / 1e6 # signal [int32] -> [V]
+                    qv = np.array(fin.get(qnode)[idx1:idx2+1]) / 1e6 # signal [int32] -> [V]
+
+                    # remove offset
+                    iv = iv - np.mean(iv)
+                    qv = qv - np.mean(qv)
+
                     if norm == 1:
-                        v = v/np.mean(v) - 1
+                        iv = iv/np.std(iv)
+                        qv = qv/np.std(qv)
                     elif norm == 2:
-                        av = np.array(fin.get(cname)[aidx1:aidx2+1]) / 1e6 # atrange signal [int32] -> [V]
-                        v = v/(np.mean(av) - self.offlev[i]) - 1
-                    elif norm == 3:
-                        base_filter = ft.FirFilter('FIR_pass', self.fs, 0, 10, 0.01)
-                        base = base_filter.apply(v).real
-                        v = v/base - 1
+                        iav = np.array(fin.get(inode)[aidx1:aidx2+1]) / 1e6 # signal [int32] -> [V]
+                        qav = np.array(fin.get(qnode)[aidx1:aidx2+1]) / 1e6 # signal [int32] -> [V]
+                        iv = iv/np.std(iav)
+                        qv = qv/np.std(qav)
+
+                    # complex iv, qv
+                    v = iv + 1.0j*qv
+                    print('Consider pre-filtering of iv and qv (threshold fft) and return iv + 1.0j*qv')
 
                     # expand dimension - concatenate
                     v = np.expand_dims(v, axis=0)
@@ -179,42 +179,39 @@ class KstarEceiRemote(Connection):
                     else:
                         self.data = np.concatenate((self.data, v), axis=0)
         else:
-            print('Load ECEI data from MDSplus server')
+            print('Load MIR data from MDSplus server')
             # load data from MDSplus
-            self.openTree(ECEI_TREE, self.shot)
+            self.openTree(MIR_TREE, self.shot)
 
             # time 
-            tnode = f'setTimeContext({trange[0]},{trange[1]},{res}),dim_of(\{self.clist[0]}:FOO)'
+            (fn, vn) = (int(self.clist[0][4:6], int(self.clist[0][6:8]))
+            tnode = f'setTimeContext({trange[0]},{trange[1]},{res}),dim_of(\MIR_I{fn:02d}_{vn:02d}:FOO)'
             self.time = self.get(tnode).data()
             self.fs = round(1/(self.time[1] - self.time[0])/1000)*1000.0
 
             # data
             for i, cname in enumerate(self.clist):
-                onode = f'setTimeContext(-0.08,-0.02,{res}),\{cname}:FOO'
-                ov = self.get(onode).data()
+                (fn, vn) = (int(cname[4:6]), int(cname[6:8]))
+                inode = f'setTimeContext({trange[0]},{trange[1]},{res}),\MIR_I{fn:02d}_{vn:02d}:FOO'
+                qnode = f'setTimeContext({trange[0]},{trange[1]},{res}),\MIR_Q{fn:02d}_{vn:02d}:FOO'
 
-                dnode = f'setTimeContext({trange[0]},{trange[1]},{res}),\{cname}:FOO'
-                v = self.get(dnode).data()
-                
-                self.offlev[i] = np.median(ov)
-                self.offstd[i] = np.std(ov)
+                iv = self.get(inode).data()
+                qv = self.get(qnode).data()
 
-                v = v - self.offlev[i]
+                # remove offset
+                iv = iv - np.mean(iv)
+                qv = qv - np.mean(qv)
 
-                self.siglev[i] = np.median(v)
-                self.sigstd[i] = np.std(v)
-
-                # normalization 
                 if norm == 1:
-                    v = v/np.mean(v) - 1
+                    iv = iv/np.std(iv)
+                    qv = qv/np.std(qv)
                 elif norm == 2:
-                    anode = f'setTimeContext({atrange[0]},{atrange[1]},{res}),\{cname}:FOO'
+                    ianode = f'setTimeContext({atrange[0]},{atrange[1]},{res}),\MIR_I{fn:02d}_{vn:02d}:FOO'
                     av = self.get(anode).data()
-                    v = v/(np.mean(av) - self.offlev[i]) - 1
-                elif norm == 3:
-                    base_filter = ft.FftFilter('FFT_pass', self.fs, 0, 10)
-                    base = base_filter.apply(v).real
-                    v = v/base - 1
+                    iav = np.array(fin.get(inode)[aidx1:aidx2+1]) / 1e6 # signal [int32] -> [V]
+                    qav = np.array(fin.get(qnode)[aidx1:aidx2+1]) / 1e6 # signal [int32] -> [V]
+                    iv = iv/np.std(iav)
+                    qv = qv/np.std(qav)
 
                 # expand dimension - concatenate
                 v = np.expand_dims(v, axis=0)

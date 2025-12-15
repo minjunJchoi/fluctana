@@ -232,13 +232,9 @@ class FluctAna(object):
             rpos_full = fdata[1]
             zpos_full = fdata[2]
 
-            if len(rpos_full) == len(D.rpos):
-                D.rpos = rpos_full
-                D.zpos = zpos_full
-            else:
-                clist_full = D.expand_clist(clist_full)
-                D.rpos = np.array([rpos_full[clist_full.index(i)] for i in D.clist])
-                D.zpos = np.array([zpos_full[clist_full.index(i)] for i in D.clist])
+            clist_full = D.expand_clist(clist_full)
+            D.zpos = np.array([zpos_full[clist_full.index(i)] for i in D.clist])
+            D.rpos = np.array([rpos_full[clist_full.index(i)] for i in D.clist])
 
         if verbose == 1:
             plt.plot(D.rpos, D.zpos, 'ro')
@@ -253,7 +249,18 @@ class FluctAna(object):
 
         if new == 0: # use calibration factors saved file
             with open(calib_factor_fname, 'rb') as fin:
-                [calib_factor] = pickle.load(fin)
+                [clist_full, calib_factor_full] = pickle.load(fin)
+
+            # calib_factor = np.array([calib_factor_full[clist_full.index(i), 0] for i in D.clist])
+            # calib_factor = np.expand_dims(calib_factor, axis=1)
+
+            calib_factor = np.zeros((D.data.shape[0],1))
+            for c, cname in enumerate(D.clist):
+                if cname not in clist_full:
+                    print('Channel {:s} is not found in {:s}'.format(cname, calib_factor_fname))
+                    D.good_channels[c] = 0
+                else:
+                    calib_factor[c, 0] = calib_factor_full[clist_full.index(cname), 0]
 
             D.data = D.data * calib_factor
 
@@ -261,16 +268,27 @@ class FluctAna(object):
         elif new == 1: # use absolute data saved file (e.g., ecei_pos*.pkl (syndia))
             with open(abs_fname, 'rb') as fin:
                 fdata = pickle.load(fin)
-                abs_data = fdata[-1]
+                clist_full = D.expand_clist(fdata[0])
+                abs_data_full = fdata[-1]
+
+            # abs_data = np.array([abs_data_full[clist_full.index(i)] for i in D.clist])
 
             raw_data = np.mean(D.data, axis=1)
+
+            abs_data = np.zeros_like(raw_data)
+            for c, cname in enumerate(D.clist):
+                if cname not in clist_full:
+                    print('Channel {:s} is not found in {:s}'.format(cname, abs_fname))
+                    D.good_channels[c] = 0
+                else:
+                    abs_data[c] = abs_data_full[clist_full.index(cname)]
 
             calib_factor = np.expand_dims(abs_data/raw_data, axis=1)
 
             D.data = D.data * calib_factor
 
             with open(calib_factor_fname, 'wb') as fout:
-                pickle.dump([calib_factor], fout)
+                pickle.dump([D.clist, calib_factor], fout)
 
             print('Data calibrated with {:s}'.format(abs_fname))
             print('Calibration factors are saved in {:s}'.format(calib_factor_fname))
@@ -1877,7 +1895,7 @@ class FluctAna(object):
         
     def iplot(self, dnum=0, snum=0, plot_type='time', istep=0.005, 
             aspect_ratio=1.3, imethod='linear', bcut=0.0345, msize=3, 
-            pmethod='image', cline=False, fig=None, axs=None, tstep=10, movtag=None, **kwargs):
+            pmethod='image', clevels=False, fig=None, axs=None, tstep=10, movtag=None, geq=None, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
         if 'xlimits' in kwargs: xlimits = kwargs['xlimits']
         if 'vlimits' in kwargs: vlimits = kwargs['vlimits']
@@ -1972,28 +1990,35 @@ class FluctAna(object):
                     axs[0].set_xlim(saved_xlim)
                     axs[0].set_ylim(saved_ylim)
 
-            # 2D plotting
+            # EFIT plot
+            if geq is not None:
+                axs[1].contour(geq.data['r'][0], geq.data['z'][0], geq.f_normal(geq.data['r'][0], geq.data['z'][0]), levels=geq.clevels, linewidths=0.5, colors='k', linestyles='--')
+                axs[1].plot(geq.get('rbbbs'), geq.get('zbbbs'), 'k')
+
+            # 2D data plot
             im = None
             if istep > 0:
                 if pmethod == 'scatter':
                     im = axs[1].scatter(ri.ravel(), zi.ravel(), 5, pi.ravel(), marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
                 elif pmethod == 'contour':
-                    if cline: 
-                        axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=0.5, linestyles=cline, colors='k')
+                    if clevels: 
+                        CS = axs[1].contour(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], linewidths=1.5, levels=clevels, colors='k')
+                        # axs[1].clabel(CS, inline=True, fontsize=10)
                     im = axs[1].contourf(ri, zi, pi, 50, vmin=vlimits[0], vmax=vlimits[1], cmap=CM)
                 elif pmethod == 'image':
                     im = axs[1].imshow(pi, extent=(ri.min(), ri.max(), zi.min(), zi.max()), vmin=vlimits[0], vmax=vlimits[1], cmap=CM, aspect='equal', origin='lower')
             else:
                 im = axs[1].scatter(rpos, zpos, 500, D.pdata, marker='s', vmin=vlimits[0], vmax=vlimits[1], cmap=CM, edgecolors='none')
-            axs[1].set_aspect('equal')
-
-            # set axis limits
-            axs[1].set_xlim([bdry[0], bdry[1]])
-            axs[1].set_ylim([bdry[2], bdry[3]])
 
             # color bar
             axs[2].clear()
             plt.colorbar(im, cax=axs[2])
+
+            # set axis limits
+            axs[1].set_xlim([bdry[0], bdry[1]])
+            axs[1].set_ylim([bdry[2], bdry[3]])
+            axs[1].set_aspect('equal')
+
         # ---------------------------------------------------------
         def on_key(event):
             nonlocal tidx, tstep
