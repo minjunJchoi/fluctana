@@ -1,33 +1,87 @@
+import argparse
 import sys, os
 sys.path.insert(0, os.pardir)
 from fluctana import *
+from geqdsk_dk_MDS import geqdsk_dk_MDS
 
-## HOW TO RUN
-# ipython3
-# > import check_ecei_image as ei
-# > ei.play(shot=22289,trange=[2.716,2.718],dname='GT',flimits=[5,9],vlimits=[-0.05,0.05])
 
-def play(shot, trange, dname, flimits=[0,20], vlimits=[-0.1,0.1]):
-    # call fluctana
-    A = FluctAna()
-    # add data
-    clist = ['ECEI_{:s}0101-2408'.format(dname)]
-    A.add_data(dev='KSTAR', shot=shot, clist=clist, trange=trange, norm=1)
+#### =============================== Check ECEI  =====================
+parser = argparse.ArgumentParser(description="ECEI")
+parser.add_argument("-shot", type=int, default=22289, help="Shot number")
+parser.add_argument("-trange", nargs=2, type=float, default=[2.716, 2.718], help="Time range [ms]")
+parser.add_argument("-atrange", nargs=2, type=float, default=None, help="Time range for averaging [ms]")
+parser.add_argument("-tstep", type=int, default=100, help="Movie time step [idx]")
+parser.add_argument("-dnames", type=str, default=['GT', 'GR'], help="ECEI device names")
+parser.add_argument("-vlimits", nargs=2, type=float, default=[-0.05, 0.05], help="Color range")
+parser.add_argument("-flimits", nargs=2, type=float, default=[5, 9], help="Frequency range")
+parser.add_argument("-efit", type=str, default=None, help="EFIT tree name")
+parser.add_argument("--save", action="store_true", help="Save images")
+a = parser.parse_args()
 
-    # ## FIR band pass/block filter  
-    # A.filt(0,'FIR_pass',flimits[0]*1000.0,0,0.01) # smaller b is sharper
-    # A.filt(0,'FIR_pass',0,flimits[1]*1000.0,0.01) # smaller b is sharper
+E = FluctAna()
+for dnum, dname in enumerate(a.dnames):
+    # # Read normalized data (by the time average)
+    # if dname == 'GT':
+    #     clist = [f'ECEI_{dname}0101-2408']
+    # elif dname == 'GR':
+    #     clist = [f'ECEI_{dname}0101-2408']
+    clist = [f'ECEI_{dname}0101-2408']
+    if a.atrange is None:
+        E.add_data(dev='KSTAR', shot=a.shot, clist=clist, trange=a.trange, norm=1)
+    else:
+        E.add_data(dev='KSTAR', shot=a.shot, clist=clist, trange=a.trange, atrange=a.atrange, norm=2)
 
-    ## (brick) FFT band pass/block filter  
-    A.filt(dnum=0,name='FFT_pass',fL=flimits[0]*1000,fH=flimits[1]*1000)
+    # # Read not normalized data (for the calibrated images)
+    # E.add_data(dev='KSTAR', shot=a.shot, clist=clist, trange=a.trange, norm=0)
 
-    # ## Threshold FFT filter (fL--fH : white noise range)
-    # A.filt(dnum=0,name='Threshold_FFT',fL=flimits[0]*1000,fH=flimits[1]*1000,b=3,nbins=100)
+    # # Channel position correction file names
+    # cpc_fn = f'data/ecei_pos_37389_ECEI_{dname}0101-2408_{int(cpc_time*1000)}ms_b1.01_max_EQ_PRL.pkl'
+    # E.ch_pos_correction(dnum=dnum, fname=cpc_fn)
 
-    # ## SVD filter
-    # A.svd_filt(dnum=0, cutoff=0.9)
+    # Low pass filtering (this is a brick wall filter!!!)
+    E.filt(dnum=dnum, name='FFT_pass', fL=a.flimits[0]*1000, fH=a.flimits[1]*1000) 
 
-    A.iplot(dnum=0,snum=0,type='time',vlimits=vlimits,istep=0.005,imethod='linear',bcut=0.0345,msize=5,pmethod='image')
+    # # Subsample or downsmaple data
+    # E.subsample(dnum=dnum, twin=twin, tstep=tstep)
+    # E.downsample(dnum=0, q=q, verbose=1)
 
-if __name__ == "__main__":
-    play(shot=22289,trange=[2.716,2.718],dname='GT',flimits=[5,9],vlimits=[-0.05,0.05])
+    # # Mark bad channels manually 
+    # if dname == 'GT':
+    #     bad_str = '0101, 0104, 0106, 0206, 0306, 0406, 0504, 0505, 0506, 0507, 0606, 0704, 0706, 0806, 0901, 0902, 0903, 0904, 0905, 0906, 1002, 1006, 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1206, 1301, 1302, 1305, 1306, 1307, 1405, 1406, 1501, 1505, 1506, 1601, 1602, 1606, 1701, 1801, 1802, 1806, 1902, 1906, 1907, 1908, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2106, 2202, 2205, 2206, 2301, 2302, 2304, 2306, 2307, 2402, 2406'
+    # elif dname == 'GR':
+    #     bad_str = '0102, 0103, 0104, 0105, 0106, 0107, 0108, 0201, 0301, 0401, 0402, 0501, 0502, 0601, 0602, 0701, 0702, 0703, 0704, 0705, 0707, 0801, 0802, 0803, 0804, 0805, 0806, 0901, 0902, 0903, 1001, 1002, 1003, 1004, 1006, 1101, 1102, 1201, 1202, 1203, 1301, 1302, 1401, 1402, 1403, 1404, 1501, 1502, 1601, 1602, 1603, 1606, 1701, 1702, 1801, 1802, 1803, 1804, 1901, 1902, 2001, 2002, 2101, 2102, 2201, 2202, 2301, 2302, 2303, 2304, 2305, 2306, 2307, 2308, 2401, 2402, 2403, 2404, 2405, 2406, 2407, 2408'
+    # bad_cnames = [s.strip() for s in bad_str.split(',')]
+    # for bad_cname in bad_cnames:
+    #     if f'ECEI_{dname}' + bad_cname in E.Dlist[dnum].clist:
+    #         ch_num = E.Dlist[dnum].clist.index(f'ECEI_{dname}' + bad_cname)
+    #         E.Dlist[dnum].good_channels[ch_num] = 0
+    #     # print(f'{bad_cname}, {E.Dlist[dnum].clist[ch_num]}')
+
+    # # Channel position correction
+    # A.ch_pos_correction(dnum=0, fname=cpc_fname)
+
+    # # Do calibration 
+    # A.calibration(dnum=0, new=1, calib_factor_fname=calib_factor_fname, abs_fname=cpc_fname) # run this first to find calibration factors
+    # # A.calibration(dnum=0, new=0, calib_factor_fname=calib_factor_fname) # run this after calib factors are found
+
+# ## EFIT (this requires geadks_dk_MDS.py; Please contact trhee@kfe.re.kr for this)
+# if a.efit is not None:
+#     efit_time = np.mean(a.trange)
+#     geddq = geqdsk_dk_MDS(a.shot, efit_time, treename=a.efit)
+#     geq.clevels = np.arange(0.1, 1.2, 0.1)
+# else:
+#     geq = None
+geq = None
+
+## Plot 
+if a.save:
+    # E.iplot(dnum=0,snum=14,tstep=500,vlimits=a.vlimits,istep=0.005,aspect_ratio=1.3,imethod='linear',bcut=0.0345,msize=3,pmethod='image',movtag=f'{a.pulse}ms')
+    E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.25,0.25],geq=geq,
+            imethod='linear',bcut=0.015,msize=0,pmethod='contour',clevels=[0.027],movtag=f'{a.pulse}ms')
+else:
+    E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.25,0.25],geq=geq,
+            imethod='linear',bcut=0.015,msize=0,pmethod='contour',clevels=[0.027])
+    # E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.25,0.25],geq=geq,
+    #         imethod='linear',bcut=0.015,msize=0,pmethod='image',clevels=[0.027])
+
+
