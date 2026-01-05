@@ -1,17 +1,19 @@
-import argparse
 import sys, os
 sys.path.insert(0, os.pardir)
 from fluctana import *
-from geqdsk_dk_MDS import geqdsk_dk_MDS
+import argparse
+# from geqdsk_dk_MDS import geqdsk_dk_MDS
 
 
-#### =============================== Check ECEI  =====================
+## HOW TO RUN
+## python3 check_ecei_image.py -shot 22289 -trange 2.716 2.718 -tstep 10 -dlist GT -vlimits -0.05 0.05 -flimits 5 9
+
 parser = argparse.ArgumentParser(description="ECEI")
 parser.add_argument("-shot", type=int, default=22289, help="Shot number")
 parser.add_argument("-trange", nargs=2, type=float, default=[2.716, 2.718], help="Time range [ms]")
 parser.add_argument("-atrange", nargs=2, type=float, default=None, help="Time range for averaging [ms]")
-parser.add_argument("-tstep", type=int, default=100, help="Movie time step [idx]")
-parser.add_argument("-dnames", type=str, default=['GT', 'GR'], help="ECEI device names")
+parser.add_argument("-tstep", type=int, default=10, help="Movie time step [idx]")
+parser.add_argument("-dlist", nargs='+', type=str, default=['GT', 'GR'], help="ECEI device names")
 parser.add_argument("-vlimits", nargs=2, type=float, default=[-0.05, 0.05], help="Color range")
 parser.add_argument("-flimits", nargs=2, type=float, default=[5, 9], help="Frequency range")
 parser.add_argument("-efit", type=str, default=None, help="EFIT tree name")
@@ -19,7 +21,7 @@ parser.add_argument("--save", action="store_true", help="Save images")
 a = parser.parse_args()
 
 E = FluctAna()
-for dnum, dname in enumerate(a.dnames):
+for dnum, dname in enumerate(a.dlist):
     # # Read normalized data (by the time average)
     # if dname == 'GT':
     #     clist = [f'ECEI_{dname}0101-2408']
@@ -37,6 +39,10 @@ for dnum, dname in enumerate(a.dnames):
     # # Channel position correction file names
     # cpc_fn = f'data/ecei_pos_37389_ECEI_{dname}0101-2408_{int(cpc_time*1000)}ms_b1.01_max_EQ_PRL.pkl'
     # E.ch_pos_correction(dnum=dnum, fname=cpc_fn)
+
+    # # Do calibration for not normalized data with "syndia" output 
+    # E.calibration(dnum=0, new=1, calib_factor_fname=calib_factor_fname, abs_fname=cpc_fname) # run this first to find calibration factors
+    # # E.calibration(dnum=0, new=0, calib_factor_fname=calib_factor_fname) # run this after calib factors are found
 
     # Low pass filtering (this is a brick wall filter!!!)
     E.filt(dnum=dnum, name='FFT_pass', fL=a.flimits[0]*1000, fH=a.flimits[1]*1000) 
@@ -57,13 +63,6 @@ for dnum, dname in enumerate(a.dnames):
     #         E.Dlist[dnum].good_channels[ch_num] = 0
     #     # print(f'{bad_cname}, {E.Dlist[dnum].clist[ch_num]}')
 
-    # # Channel position correction
-    # A.ch_pos_correction(dnum=0, fname=cpc_fname)
-
-    # # Do calibration 
-    # A.calibration(dnum=0, new=1, calib_factor_fname=calib_factor_fname, abs_fname=cpc_fname) # run this first to find calibration factors
-    # # A.calibration(dnum=0, new=0, calib_factor_fname=calib_factor_fname) # run this after calib factors are found
-
 # ## EFIT (this requires geadks_dk_MDS.py; Please contact trhee@kfe.re.kr for this)
 # if a.efit is not None:
 #     efit_time = np.mean(a.trange)
@@ -74,14 +73,17 @@ for dnum, dname in enumerate(a.dnames):
 geq = None
 
 ## Plot 
+# clevels = [0.025] # values for contour lines 
+clevels = None 
+
 if a.save:
     # E.iplot(dnum=0,snum=14,tstep=500,vlimits=a.vlimits,istep=0.005,aspect_ratio=1.3,imethod='linear',bcut=0.0345,msize=3,pmethod='image',movtag=f'{a.pulse}ms')
-    E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.25,0.25],geq=geq,
-            imethod='linear',bcut=0.015,msize=0,pmethod='contour',clevels=[0.027],movtag=f'{a.pulse}ms')
+    E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.2,0.2],geq=geq,
+            imethod='linear',bcut=0.015,msize=0,pmethod='contour',clevels=clevels,movtag=f'movtag')
 else:
-    E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.25,0.25],geq=geq,
-            imethod='linear',bcut=0.015,msize=0,pmethod='contour',clevels=[0.027])
-    # E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.25,0.25],geq=geq,
+    E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.2,0.2],geq=geq,
+            imethod='linear',bcut=0.015,msize=0,pmethod='contour',clevels=clevels)
+    # E.iplot(dnum=0,snum=14,tstep=a.tstep,vlimits=a.vlimits,istep=0.01,aspect_ratio=1.3,ylimits=[-0.2,0.2],geq=geq,
     #         imethod='linear',bcut=0.015,msize=0,pmethod='image',clevels=[0.027])
 
 

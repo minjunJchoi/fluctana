@@ -1,35 +1,39 @@
 import sys, os
 sys.path.insert(0, os.pardir)
 from fluctana import *
+import argparse
+
 
 ## HOW TO RUN
 # For data before 2018
-# ./python3 check_ecei_pos.py 10186 L,H,G
+# python3 check_ecei_pos.py -shot 10186 -dlist L H G
 
 # For data since 2018
-# ./python3 check_ecei_pos.py 22568 GT,GR,HT
+# python3 check_ecei_pos.py -shot 22568 -dlist GT GR 
 
-# For data since 2024
-# ./python3 check_ecei_pos.py 37389 GT,GR,HT save(if necessary)
+# For data since 2024 (and also to save data in hdf5 format)
+# python3 check_ecei_pos.py -shot 37389 -dlist GT GR HT --save 
 
-shot = int(sys.argv[1])
-if len(sys.argv) >= 3:
-    dlist = sys.argv[2].split(',') 
-elif len(sys.argv) == 2:
-    if shot < 19391:
-        dlist = ['L','H','G']
+parser = argparse.ArgumentParser(description="ECEI position")
+parser.add_argument("-shot", type=int, default=22289, help="Shot number")
+parser.add_argument("-dlist", nargs='+', type=str, default=None, help="ECEI device list")
+parser.add_argument("--save", action="store_true", help="Save images")
+a = parser.parse_args()
+
+if a.dlist is not None:
+    if a.shot < 19391:
+        a.dlist = ['L','H','G']
     else:
-        dlist = ['GT','GR','HT']
-savedata = True if sys.argv[-1] == 'save' else False
+        a.dlist = ['GT','GR','HT']
 
 # plot channels
 fig, (a1) = plt.subplots(1,1, figsize=(6,6))
-for d, dname in enumerate(dlist):
+for d, dname in enumerate(a.dlist):
     clist = ['ECEI_{:s}0101-2408'.format(dname)]
-    if shot < 35000:
-        E = KstarEcei(shot, clist)
+    if a.shot < 35000:
+        E = KstarEcei(a.shot, clist)
     else:
-        E = KstarEceiRemote(shot, clist, savedata=savedata)
+        E = KstarEceiRemote(a.shot, clist, savedata=a.save)
          
     a1.plot(E.rpos, E.zpos, 'o')
 

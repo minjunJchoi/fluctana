@@ -1310,7 +1310,7 @@ class FluctAna(object):
 
             D.val[c] = st.kurtosis(x, detrend)
 
-    def hurst(self, dnum=0, cnl='all', bins=30, detrend=1, fitrange=[10,1000], **kwargs):
+    def hurst(self, dnum=0, cnl='all', bins=30, detrend=1, fitrange=[10,1000], qrange=None, **kwargs):
         D = self.Dlist[dnum]
 
         D.vkind = 'hurst'
@@ -1320,9 +1320,17 @@ class FluctAna(object):
 
         if cnl == 'all': cnl = range(cnum)
 
-        # axis
-        bsize = int(1.0*len(D.time)/bins)
-        ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
+        if qrange is None: 
+            ## Calculation using R/S method
+            # axis
+            bsize = int(1.0*len(D.time)/bins)
+            ax = np.unique(np.int32(10**np.arange(np.log10(5), np.log10(bsize), 0.05)))
+        else:
+            ## Structure function (SF) method
+            # Array of the delay time index 
+            idx1 = 1
+            idx2 = int(len(D.time)/2 - 20)
+            ax = np.unique(np.int32(10**np.arange(np.log10(idx1), np.log10(idx2)+0.05, 0.05)))
 
         # data dimension
         D.ers = np.zeros((cnum, len(ax)))
@@ -1335,8 +1343,26 @@ class FluctAna(object):
             t = D.time
             x = D.data[c,:]
 
-            D.ax, D.ers[c,:], D.std[c,:], \
-            D.val[c], D.fit[c,:] = st.hurst(t, x, bins, detrend, fitrange, **kwargs)
+            if qrange is None:
+                ## R/S method 
+                D.ax, D.ers[c,:], D.std[c,:], \
+                D.val[c], D.fit[c,:] = st.hurst(t, x, bins=bins, detrend=detrend, fitrange=fitrange, **kwargs)
+            else:
+                ## SF method 
+                tax, qs, Sqt, mean_S, std_S, fit_list, hurst_exp = st.gen_hurst(t, x, qrange=qrange, fitrange=fitrange, verbose=True)
+
+                # If the raw data Hurst exponent of SF method is too small -> data is stationary 
+                # Use cumulative sum of the data (non-stationary) to calculate SF Hurst exponent 
+                if hurst_exp < 0.15: 
+                    x = (x - np.mean(x))/np.std(x)
+                    tax, qs, Sqt, mean_S, std_S, fit_list, hurst_exp = st.gen_hurst(t, np.cumsum(x), qrange=qrange, fitrange=fitrange, rescale=False, verbose=True)
+
+                D.ax = tax
+                D.ers[c,:] = mean_S
+                D.std[c,:] = std_S
+                D.val[c] = fit_list[-1][0] # Fit of averaged SF
+                D.fit[c,:] = 10**(fit_list[-1][1]) * tax**(fit_list[-1][0])
+                # D.val[c] = hurst_exp # Fit of qs, zs 
 
     def chplane(self, dnum=0, cnl='all', d=6, bins=1, rescale=0, verbose=1, fig=None, axs=None, **kwargs):
         # CH plane [Rosso PRL 2007]
@@ -1893,7 +1919,7 @@ class FluctAna(object):
 
             plt.show()
         
-    def iplot(self, dnum=0, snum=0, plot_type='time', istep=0.005, 
+    def iplot(self, dnum=0, snum=0, type='time', istep=0.005, 
             aspect_ratio=1.3, imethod='linear', bcut=0.0345, msize=3, 
             pmethod='image', clevels=False, fig=None, axs=None, tstep=10, movtag=None, geq=None, **kwargs):
         if 'ylimits' in kwargs: ylimits = kwargs['ylimits']
@@ -1905,10 +1931,10 @@ class FluctAna(object):
             vlimits = [-0.1, 0.1]
         
         # sample data for plotting
-        if plot_type == 'time':
+        if type == 'time':
             pbase = self.Dlist[dnum].time
             psample = self.Dlist[dnum].data[snum,:]
-        elif plot_type == 'val':
+        elif type == 'val':
             pbase = self.Dlist[dnum].ax * 1e+6
             psample = self.Dlist[dnum].val[snum,:]
             vkind = self.Dlist[dnum].vkind
@@ -1942,9 +1968,9 @@ class FluctAna(object):
         # 2D plot
         def plot2D(axs, tidx, D, clear=True):
             # select data
-            if plot_type == 'time':
+            if type == 'time':
                 D.pdata = D.data[:, tidx]
-            elif plot_type == 'val':
+            elif type == 'val':
                 D.pdata = D.val[:, tidx]
             
             rpos = D.rpos[:]
@@ -1978,10 +2004,10 @@ class FluctAna(object):
                 axs[1].set_xlabel('R [m]')
                 axs[1].set_ylabel('z [m]')
                 
-                if plot_type == 'time':
+                if type == 'time':
                     axs[0].set_xlabel('Time [s]')
                     axs[1].set_title(f'{D.shot} at t = {pbase[tidx]:.6f} sec')
-                elif plot_type == 'val':
+                elif type == 'val':
                     axs[0].set_xlabel('Time lag [us]')
                     axs[1].set_title(f'{D.shot} {vkind} at lag = {pbase[tidx]:g} us') 
 
@@ -2036,9 +2062,12 @@ class FluctAna(object):
                 plt.close(fig)
                 return
 
-            for d, D in enumerate(self.Dlist):
-                clear = (d == 0)
-                plot2D(axs, tidx, D, clear=clear)
+            if type == 'time':
+                for d, D in enumerate(self.Dlist):
+                    clear = (d == 0)
+                    plot2D(axs, tidx, D, clear=clear)
+            elif type == 'val':
+                plot2D(axs, tidx, self.Dlist[dnum], clear=True)
             fig.canvas.draw()        
 
         def on_click(event):
@@ -2046,15 +2075,21 @@ class FluctAna(object):
             if event.inaxes == axs[0]:
                 tidx = (np.abs(pbase - event.xdata)).argmin()
 
-            for d, D in enumerate(self.Dlist):
-                clear = (d == 0)
-                plot2D(axs, tidx, D, clear=clear)            
+            if type == 'time':
+                for d, D in enumerate(self.Dlist):
+                    clear = (d == 0)
+                    plot2D(axs, tidx, D, clear=clear)
+            elif type == 'val':
+                plot2D(axs, tidx, self.Dlist[dnum], clear=True)
             fig.canvas.draw()        
 
         def update(tidx):
-            for d, D in enumerate(self.Dlist):
-                clear = (d == 0)
-                plot2D(axs, tidx, D, clear=clear)
+            if type == 'time':
+                for d, D in enumerate(self.Dlist):
+                    clear = (d == 0)
+                    plot2D(axs, tidx, D, clear=clear)
+            elif type == 'val':
+                plot2D(axs, tidx, self.Dlist[dnum], clear=True)
             return axs
                 
         ## using PillowWriter

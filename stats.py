@@ -34,12 +34,70 @@ def kurtosis(x, detrend=1):
     return kurt
 
 
-def hurst(t, x, bins=30, detrend=1, fitrange=[10,1000], **kwargs):
-    # R/S method for fGm
-    # (generalized hurst exponent for fBm)
+# def hurst(t, x, bins=30, detrend=1, fitrange=[10,1000], **kwargs):
+#     # R/S method for fGm
+#     # (generalized hurst exponent for fBm)
+#     # axis
+#     bsize = int(1.0*len(t)/bins)
+#     ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
+
+#     ers = np.zeros((bins, len(ax)))
+
+#     for b in range(bins):
+#         idx1 = b*bsize
+#         idx2 = idx1 + bsize
+
+#         sx = x[idx1:idx2]
+
+#         if detrend == 1:
+#             sx = signal.detrend(sx, type='linear')
+
+#         for i in range(len(ax)):
+#             ls = int( ax[i] ) # length of each sub-region
+#             ns = int( 1.0*ax[-1]/ls ) # number of sub-region
+
+#             delta = np.zeros((ls + 1, 1))
+#             for j in range(ns):
+#                 jdx1 = j*ls
+#                 jdx2 = jdx1 + ls
+
+#                 ssx = sx[jdx1:jdx2]
+
+#                 delta[1:,0] = np.cumsum(ssx) - np.cumsum(np.ones(ls))*sum(ssx)/ls
+
+#                 r = np.max(delta) - np.min(delta)
+#                 s = np.sqrt(np.sum(ssx**2)/ls - (np.sum(ssx)/ls)**2)
+
+#                 ers[b,i] = ers[b,i] + r/s/ns
+
+#     # time lag axis
+#     dt = t[1] - t[0]
+#     tax = ax*dt*1e6 # [us]
+#     # ERS
+#     mean_ers = np.mean(ers, 0)
+#     std_ers = np.std(ers, axis=0)
+
+#     ptime = tax # time lag [us]
+#     pdata = mean_ers
+#     fidx = (fitrange[0] <= ptime) * (ptime <= fitrange[1])
+#     fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
+#     fit_data = 10**(fit[1])*ptime**(fit[0])
+
+#     # Hurst exponent
+#     hurst_exp = fit[0]
+
+#     return tax, mean_ers, std_ers, hurst_exp, fit_data
+
+
+def hurst(t, x, bins=30, detrend=0, fitrange=[10,1000], **kwargs):
+    # standard hurst exponent estimation using the R/S method for stationary processes such as fGm
+    # generalized hurst exponent estimation using structure function analysis for non-stationary processes such as fBm
+    # structure function analysis tells whether the process is stationary or not
+
     # axis
     bsize = int(1.0*len(t)/bins)
-    ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
+    # ax = np.floor( 10**(np.arange(1.0, np.log10(bsize), 0.01)) )
+    ax = np.unique(np.int32(10**np.arange(np.log10(5), np.log10(bsize), 0.05)))
 
     ers = np.zeros((bins, len(ax)))
 
@@ -73,21 +131,108 @@ def hurst(t, x, bins=30, detrend=1, fitrange=[10,1000], **kwargs):
     # time lag axis
     dt = t[1] - t[0]
     tax = ax*dt*1e6 # [us]
+
     # ERS
     mean_ers = np.mean(ers, 0)
     std_ers = np.std(ers, axis=0)
 
-    ptime = tax # time lag [us]
-    pdata = mean_ers
-    fidx = (fitrange[0] <= ptime) * (ptime <= fitrange[1])
-    fit = np.polyfit(np.log10(ptime[fidx]), np.log10(pdata[fidx]), 1)
-    fit_data = 10**(fit[1])*ptime**(fit[0])
+    # Fit
+    fidx = (fitrange[0] <= tax) * (tax <= fitrange[1])
+    fit = np.polyfit(np.log10(tax[fidx]), np.log10(mean_ers[fidx]), 1)
+    fit_data = 10**(fit[1])*tax**(fit[0])
 
     # Hurst exponent
     hurst_exp = fit[0]
 
     return tax, mean_ers, std_ers, hurst_exp, fit_data
 
+def plot_strc_func(tax, Sqt, qs, fit_list, fitrange=[10,1000]):
+    fidx = (fitrange[0] <= tax) * (tax <= fitrange[1])
+
+    # Prepare figure
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
+
+    zs = np.zeros(len(qs))
+    for j, q in enumerate(qs):
+        ax1.plot(tax, Sqt[j,:], 'o-', label=f'S(q={q})')
+        fit = fit_list[j]
+        zs[j] = fit[0]
+
+        ax1.plot(tax[fidx], 10**(fit[1]) * tax[fidx]**(fit[0]), '--', color='k', label=f'Slope at q={q}: {fit[0]:.4f}')
+
+    ax1.set_xlabel('Time lag [us]')
+    ax1.set_ylabel('S(q)')
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_title(f'Structure function')
+
+    ax2.plot(qs, zs, 's-')
+    fit = np.polyfit(qs, zs, 1)
+    ax2.plot(qs, fit[0]*qs + fit[1], '--', color='k', label=f'Hurst exponent: {fit[0]:.4f}')
+    ax2.legend()
+    ax2.set_xlabel('q')
+    ax2.set_ylabel('qH(q)')
+    ax2.set_title(f'Hurst exponent')
+    plt.tight_layout()
+    plt.show()  
+
+def gen_hurst(t, x, qrange=[0.5, 5.0], fitrange=[10,1000], rescale=True, verbose=False):
+    ## Structure function method 
+    dt = t[1] - t[0] # time step [sec]
+
+    # Rescale the data
+    if rescale:
+        x = (x - np.mean(x))/np.std(x)  # normalize the data to have zero mean and unit variance
+
+    # Array of the order of the structure function
+    qs = np.arange(qrange[0], qrange[1]+0.5, 0.5) 
+
+    # # Array of the delay time index 
+    idx1 = 1
+    idx2 = int(len(x)/2 - 20)
+    ax = np.unique(np.int32(10**np.arange(np.log10(idx1), np.log10(idx2)+0.05, 0.05)))
+
+    # Array of time delay [us]
+    tax = ax * dt * 1e6 
+
+    # Identify fit range index 
+    fidx = (fitrange[0] <= tax) * (tax <= fitrange[1])
+
+    # Array of Slope 
+    zs = np.zeros(len(qs))
+    
+    # Structure function array
+    Sqt = np.zeros((len(qs), len(ax))) 
+    rescaled_Sqt = np.zeros((len(qs), len(ax))) 
+    fit_list = []
+    for j, q in enumerate(qs):
+        for i, d in enumerate(ax):
+            # the structure function
+            Sqt[j,i] = np.mean(np.abs(x[int(d):] - x[:-int(d)])**q)
+
+        # Fit and get the slope
+        fit = np.polyfit(np.log10(tax[fidx]), np.log10(Sqt[j,fidx]), 1)
+        zs[j] = fit[0]
+        fit_list.append(fit)
+
+        # Take 1/q power of Sqt for mean_S and std_S
+        rescaled_Sqt[j,:] = Sqt[j,:]**(1/q) 
+
+    mean_S = np.mean(rescaled_Sqt, axis=0)  # average over q
+    std_S = np.std(rescaled_Sqt, axis=0)  # standard deviation over q
+
+    # Get fit of averaged SF
+    fit = np.polyfit(np.log10(tax[fidx]), np.log10(mean_S[fidx]), 1)
+    fit_list.append(fit)
+
+    # Fit the slope with respect to q
+    fit = np.polyfit(qs, zs, 1)
+    hurst_exp = fit[0]
+
+    if verbose:
+        plot_strc_func(tax, Sqt, qs, fit_list, fitrange=fitrange)
+
+    return tax, qs, Sqt, mean_S, std_S, fit_list, hurst_exp 
 
 def bp_prob(x, d=6, bins=1):
     # BP_probability
