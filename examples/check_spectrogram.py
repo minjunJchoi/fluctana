@@ -26,7 +26,7 @@ A.list_data()
 
 # xspec parameters 
 # frequency resolution ~ sampling frequency / nfft
-nfft = 8192
+nfft = 2048
 # temporal resolution 
 overlap = 0.8 # finest overlap = (nfft-1.0)/nfft
 # for full frequency range, full=1 (e.g. MIR). Else full=0.
