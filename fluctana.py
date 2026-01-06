@@ -5,6 +5,7 @@
 # Acknowledgement : Dr. S. Zoletnik and Prof. Y.-c. Ghim
 #
 
+import os
 import numpy as np
 from scipy import signal
 import math
@@ -2094,13 +2095,17 @@ class FluctAna(object):
                 
         ## using PillowWriter
         if movtag is not None:
+            os.makedirs('./data', exist_ok=True)
             tidx_list = np.arange(0, len(pbase), tstep, dtype='int64')
             ani = animation.FuncAnimation(fig, update, frames=tidx_list, blit=False)
-            # W = animation.PillowWriter(fps=8)
-            # mov_fname = f'data/ECEI_movie_{self.Dlist[0].shot}_{movtag}.gif'
-            W = animation.FFMpegWriter(fps=8)
-            mov_fname = f'data/ECEI_movie_{self.Dlist[0].shot}_{movtag}.mp4'
-            ani.save(mov_fname, writer=W)
+            try: 
+                W = animation.FFMpegWriter(fps=8)
+                mov_fname = f'./data/ECEI_movie_{self.Dlist[0].shot}_{movtag}.mp4'
+                ani.save(mov_fname, writer=W)
+            except:
+                W = animation.PillowWriter(fps=8)
+                mov_fname = f'data/ECEI_movie_{self.Dlist[0].shot}_{movtag}.gif'
+                ani.save(mov_fname, writer=W)
             print(f'Saved movie: {mov_fname}')
         else:
             tidx = 0

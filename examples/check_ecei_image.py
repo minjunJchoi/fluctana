@@ -2,11 +2,11 @@ import sys, os
 sys.path.insert(0, os.pardir)
 from fluctana import *
 import argparse
-# from geqdsk_dk_MDS import geqdsk_dk_MDS
+from geqdsk_dk_MDS import geqdsk_dk_MDS
 
 
 ## HOW TO RUN
-## python3 check_ecei_image.py -shot 22289 -trange 2.716 2.718 -tstep 10 -dlist GT -vlimits -0.05 0.05 -flimits 5 9
+## python3 check_ecei_image.py -shot 22289 -trange 2.716 2.718 -tstep 10 -dlist GT -vlimits -0.05 0.05 -flimits 5 9 -efit EFIT01
 
 parser = argparse.ArgumentParser(description="ECEI")
 parser.add_argument("-shot", type=int, default=22289, help="Shot number")
@@ -63,14 +63,13 @@ for dnum, dname in enumerate(a.dlist):
     #         E.Dlist[dnum].good_channels[ch_num] = 0
     #     # print(f'{bad_cname}, {E.Dlist[dnum].clist[ch_num]}')
 
-# ## EFIT (this requires geadks_dk_MDS.py; Please contact trhee@kfe.re.kr for this)
-# if a.efit is not None:
-#     efit_time = np.mean(a.trange)
-#     geddq = geqdsk_dk_MDS(a.shot, efit_time, treename=a.efit)
-#     geq.clevels = np.arange(0.1, 1.2, 0.1)
-# else:
-#     geq = None
-geq = None
+## EFIT (this uses geqdsk_dk_MDS.py (trhee@kfe.re.kr)
+if a.efit is not None:
+    efit_time = np.mean(a.trange)
+    geq = geqdsk_dk_MDS(a.shot, efit_time, treename=a.efit)
+    geq.clevels = np.arange(0.1, 1.2, 0.1)
+else:
+    geq = None
 
 ## Plot 
 # clevels = [0.025] # values for contour lines 

@@ -6,4 +6,4 @@ examples/.ipynb_checkpoints/
 .ftpconfig
 .vscode
 __pycache__
-.gitignore
+examples/data/
