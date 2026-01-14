@@ -5,7 +5,7 @@ import argparse
 import matplotlib.gridspec as gridspec
 
 from geqdsk_dk_MDS import geqdsk_dk_MDS
-from geqdsk_dk import geqdsk_dk
+from geqdsk_dk3 import geqdsk_dk
 
 
 parser = argparse.ArgumentParser(description="Check KSTAR plasma control")
@@ -198,7 +198,6 @@ efit_ref_fn = '/abcd/efg'
 efit_ref_zoff = 0.06 # [m]
 if os.path.exists(efit_ref_fn) is True:
     geq_ref = geqdsk_dk(filename=efit_ref_fn)
-    # efit_ax.contour(geq_ref.data['r'][0], geq_ref.data['z'][0], geq_ref.f_normal(geq_ref.data['r'][0], geq_ref.data['z'][0]), levels=np.arange(0,1.2,0.1), linewidths=0.5, colors='g', linestyles='dashed')
     efit_ax.plot(geq_ref.get('rbbbs'), geq_ref.get('zbbbs') + efit_ref_zoff, 'g')
 
 ## Add data, Post-process, Plot 
@@ -273,11 +272,9 @@ def plot_EFIT_eq(efit_ax, selected_time):
 
         # Reference EFIT
         if os.path.exists(efit_ref_fn) is True:
-            # efit_ax.contour(geq_ref.data['r'][0], geq_ref.data['z'][0], geq_ref.f_normal(geq_ref.data['r'][0], geq_ref.data['z'][0]), levels=np.arange(0,1.2,0.1), linewidths=0.5, colors='g', linestyles='dashed')
             efit_ax.plot(geq_ref.get('rbbbs'), geq_ref.get('zbbbs') + efit_ref_zoff, 'g')
 
-        # print(geq.data['r'][0].shape, geq.data['z'][0].shape, geq.f_normal(geq.data['r'][0], geq.data['z'][0]).shape)
-        efit_ax.contour(geq.data['r'][0], geq.data['z'][0], geq.f_normal(geq.data['r'][0], geq.data['z'][0]), levels=np.arange(0,1.2,0.1), linewidths=0.5, colors=colors[s], linestyles='dashed')
+        efit_ax.contour(geq.data['r'][0], geq.data['z'][0], geq._psi_spline_normal(geq.data['r'][0], geq.data['z'][0]).T, levels=np.arange(0,1.2,0.1), linewidths=0.5, colors=colors[s], linestyles='dashed')
         efit_ax.plot(geq.get('rbbbs'), geq.get('zbbbs'), colors[s])
 
         ## Set titles

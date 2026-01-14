@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import numpy as np;
-from geqdsk_dk import geqdsk_dk;
+from geqdsk_dk3 import geqdsk_dk;
 import imp, os, sys;
 """
 Class for equilibrium magnetic quantities from MDSplus equilibrium  
