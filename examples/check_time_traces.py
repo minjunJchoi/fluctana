@@ -47,7 +47,7 @@ A.filt(dnum=0, name='FFT_pass', fL=0*1000, fH=3*1000) # 0--3 kHz filtering
 
 ## Load CES data
 ces_clist = ces_channel_selection(a.shot, a.Rrange)
-A.add_data(dev='KSTAR', shot=a.shot, clist=ces_clist, trange=a.trange, norm=0, res=0)
+A.add_data(dev='KSTAR', shot=a.shot, clist=ces_clist, trange=a.trange, norm=0, res=0.001)
 # A.filt(dnum=1, name='FFT_pass', fL=0*1000, fH=3*1000) # 0--3 kHz not necessary for CES data
 
 # Plot data
