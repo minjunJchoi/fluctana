@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(description="Coherence, Cross power, Cross phas
 parser.add_argument("-slist", nargs='+', type=int, default=[10186], help="Shot number list")
 parser.add_argument("-tlist", nargs='+', type=float, default=[15.95, 17], help="Time points [sec] list")
 parser.add_argument("-twin", type=float, default=0.1, help="Time window [sec]")
+parser.add_argument("-nfft", type=int, default=512, help="Number of FFT points")
 parser.add_argument("-ref_clist", nargs='+', type=str, default=['ECEI_L1303-1403'], help="Reference channel list")
 parser.add_argument("-cmp_clist", nargs='+', type=str, default=['ECEI_L1403-1503'], help="Comparison channel list")
 parser.add_argument("--co", action="store_true", help="Coherence")
@@ -28,7 +29,7 @@ for shot in a.slist:
 
 
 # # do fft; full = 0 (0 ~ fN) or 1 (-fN ~ fN)
-A.fftbins(nfft=256,window='hann',overlap=0.5,detrend=0,full=0)
+A.fftbins(nfft=a.nfft,window='hann',overlap=0.5,detrend=0,full=0)
 
 # # do cwt; full = 0 (0 ~ fN) or 1 (-fN ~ fN)
 # # A.cwt(df=5000,full=0,tavg=2000)
@@ -37,8 +38,13 @@ A.fftbins(nfft=256,window='hann',overlap=0.5,detrend=0,full=0)
 if a.co:
     for dnum in range(1, len(A.Dlist), 2):
         A.coherence(done=dnum - 1, dtwo=dnum)
-        if dnum < len(A.Dlist) - 1: # before last loop
-            fig, axs = A.mplot(dnum=dnum, type='val', show=0)
+        if dnum == 1:
+            if len(A.Dlist) == 2: # only one loop
+                A.mplot(dnum=dnum, type='val', show=1)
+            else:
+                fig, axs = A.mplot(dnum=dnum, type='val', show=0)
+        elif dnum < len(A.Dlist) - 1: 
+            A.mplot(dnum=dnum, type='val', show=0, fig=fig, axs=axs)
         else:
             A.mplot(dnum=dnum, type='val', show=1, fig=fig, axs=axs)
 
@@ -46,8 +52,13 @@ if a.co:
 if a.pw:
     for dnum in range(1, len(A.Dlist), 2):
         A.cross_power(done=dnum - 1, dtwo=dnum)
-        if dnum < len(A.Dlist) - 1: # before last loop
-            fig, axs = A.mplot(dnum=dnum, type='val', show=0)
+        if dnum == 1:
+            if len(A.Dlist) == 2: # only one loop
+                A.mplot(dnum=dnum, type='val', show=1)
+            else:
+                fig, axs = A.mplot(dnum=dnum, type='val', show=0)
+        elif dnum < len(A.Dlist) - 1: 
+            A.mplot(dnum=dnum, type='val', show=0, fig=fig, axs=axs)
         else:
             A.mplot(dnum=dnum, type='val', show=1, fig=fig, axs=axs)
 
@@ -55,7 +66,12 @@ if a.pw:
 if a.ph:
     for dnum in range(1, len(A.Dlist), 2):
         A.cross_phase(done=dnum - 1, dtwo=dnum)
-        if dnum < len(A.Dlist) - 1: # before last loop
-            fig, axs = A.mplot(dnum=dnum, type='val', show=0)
+        if dnum == 1:
+            if len(A.Dlist) == 2: # only one loop
+                A.mplot(dnum=dnum, type='val', show=1)
+            else:
+                fig, axs = A.mplot(dnum=dnum, type='val', show=0)
+        elif dnum < len(A.Dlist) - 1: 
+            A.mplot(dnum=dnum, type='val', show=0, fig=fig, axs=axs)
         else:
             A.mplot(dnum=dnum, type='val', show=1, fig=fig, axs=axs)
