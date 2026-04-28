@@ -233,9 +233,7 @@ class KstarMds(Connection):
         self.fs = round(1/(full_time[1] - full_time[0])/1000)*1000.0
 
         # get data size
-        idx1 = int((time_list[0] - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-        idx2 = int((time_list[0] + tspan/2 - 1e-8 - full_time[0])*self.fs) 
-        tnum = len(full_time[idx1:idx2+1])
+        tnum = int(tspan * self.fs)        
         
         # --- loop starts --- # assuming all good channels 
         self.multi_time = np.zeros((len(time_list), tnum))
@@ -255,14 +253,14 @@ class KstarMds(Connection):
                 
                 # tidx
                 idx1 = int((tp - tspan/2 + 1e-8 - full_time[0])*self.fs) 
-                idx2 = int((tp + tspan/2 - 1e-8 - full_time[0])*self.fs) 
+                idx2 = idx1 + tnum
 
                 # get time
                 if i == 0:
-                    self.multi_time[j,:] = full_time[idx1:idx2+1]
+                    self.multi_time[j,:] = full_time[idx1:idx2]
 
                 # load data
-                v = full_data[idx1:idx2+1]
+                v = full_data[idx1:idx2].copy()
                 
                 # normalize by std if norm == 1
                 if norm == 1:

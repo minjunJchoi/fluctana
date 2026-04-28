@@ -429,7 +429,7 @@ def fisher_measure(pi):
     return fim
 
 
-def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], verbose=1, **kwargs):
+def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], verbose=True, **kwargs):
     # intermittency parameter from multi-fractal analysis [Carreras PoP 2000]
     # this ranges from 0 (mono-fractal) to 1
     # add D fitting later
@@ -450,7 +450,7 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], 
     # first axes
     # x = signal.detrend(x, type='linear')
 
-    if verbose == 1:
+    if verbose:
         fig = plt.figure(facecolor='w', figsize=(8,12))
         plt.subplots_adjust(bottom = 0.05, top = 0.95, hspace = 0.5, wspace = 0.3)
         axes1 = plt.subplot(5,1,1)
@@ -475,10 +475,10 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], 
             eTq[t, k] = np.mean(eT**(q)) # Eq.(10)
 
     # second axes
-    if verbose == 1: plt.subplot(5,1,2)
+    if verbose: plt.subplot(5,1,2)
     # calculate K
     for k, q in enumerate(qax):
-        if verbose == 1: plt.plot(nTax, eTq[:,k], 'o')
+        if verbose: plt.plot(nTax, eTq[:,k], 'o')
 
         # fit range
         nT1 = fitrange[0]/N
@@ -494,13 +494,13 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], 
 
         fx = np.arange(nTax.min(), nTax.max(), 1.0/N)
         fy = np.exp(fit_func(np.log(fx)))
-        if verbose == 1:
+        if verbose:
             plt.plot(fx, fy)
 
             plt.axvline(x=nT1, color='r')
             plt.axvline(x=nT2, color='r')
 
-    if verbose == 1:
+    if verbose:
         plt.title('Linear fit of loglog plot is -K(q)')
         plt.xlabel('T/N')
         plt.ylabel('eTq moments')
@@ -520,13 +520,14 @@ def intermittency(t, x, bins=20, overlap=0.2, qstep=0.3, fitrange=[20.0,100.0], 
             C[k] = Kgrad[k]
 
             intmit = C[k]
-            print('C({:g}) intermittency parameter is {:g}'.format(q, intmit))
+            if verbose:
+                print('C({:g}) intermittency parameter is {:g}'.format(q, intmit))
         else:
             C[k] = K[k] / (q - 1)
 
         D[k] = 1 - C[k]
 
-    if verbose == 1:
+    if verbose:
         # fourth axes
         plt.subplot(5,1,4)
         plt.plot(qax, C, '-o')

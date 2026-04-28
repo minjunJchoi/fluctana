@@ -439,7 +439,7 @@ class FluctAna(object):
         for c in range(len(D.clist)):
             for t in range(len(D.multi_time)):
                 x = np.copy(D.multi_data[c,t,:])
-                D.multi_data[c,t,:] = freq_filter.apply(x)
+                D.multi_data[c,t,:] = freq_filter.apply(x).real
 
         print('dnum {:d} filter {:s} with fL {:g} fH {:g} b {:g}'.format(dnum, name, fL, fH, b))
 
