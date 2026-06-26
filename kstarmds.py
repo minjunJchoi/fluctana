@@ -143,9 +143,13 @@ class KstarMds(Connection):
                     if self.tree == 'EFIT01': # time unit in sec
                         self.time = self.time*0.001
 
-                    # get fs
-                    self.fs = round(1/(self.time[-1] - self.time[-2])/10)*10.0
-
+                    # get fs; need to consider missing points in EFIT data
+                    time_diffs = np.diff(self.time[:min(100,len(self.time))])
+                    values, counts = np.unique(time_diffs, return_counts=True)
+                    max_count_idx = np.argmax(counts)
+                    true_time_step = values[max_count_idx]
+                    self.fs = round(1/true_time_step/10) * 10.0
+                    
                     # find offest index for ECE
                     if res != 0 and 'ECE' == self.clist[0][0:3]: 
                         oidx = (self.time >= -0.5)*(self.time <= -0.1)
