@@ -366,6 +366,9 @@ class KstarMds(Connection):
             except:
                 pass
 
+    def expand_clist(self, clist):
+        return clist
+
 
 def find_tree(cname):
     # cname -> node
