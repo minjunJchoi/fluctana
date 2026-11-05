@@ -29,6 +29,7 @@ from diiiddata import DiiidData
 from diiidbes import DiiidBes
 from diiidecei import DiiidEcei
 from hl3data import Hl3Data
+from westdata import WestData
 
 import specs as sp
 import stats as st
@@ -139,6 +140,8 @@ class FluctAna(object):
                     D = DiiidData(shot=shot, clist=clist)
             elif dev == 'HL-3':
                 D = Hl3Data(shot=shot, clist=clist)
+            elif dev == 'WEST':
+                D = WestData(shot=shot, tree=tree, clist=clist)
 
         D.get_data(trange, norm=norm, atrange=atrange, res=res, verbose=verbose)
         self.Dlist.append(D)

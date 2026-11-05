@@ -25,13 +25,13 @@ except ImportError:
 VAR_NODE = {'ne':'DENR0F', 'Da04':'FS04', 'NBI_15L':'PINJ_15L', 'NBI_15R':'PINJ_15R', 'n1_amp':'n1rms', 'n2_amp':'n2rms'}
 
 class DiiidData():
-    def __init__(self, shot, clist):
+    def __init__(self, shot, clist, trange=[2,4]):
         self.shot = shot
 
         self.clist = self.expand_clist(clist)
 
         # get channel posistions
-        self.channel_position()
+        self.channel_position(trange)
 
         # data quality
         self.good_channels = np.ones(len(self.clist))
@@ -115,6 +115,7 @@ class DiiidData():
         # idl.close()
 
         # remove positions of excluded channels
+        self.channel_position(trange) # update channel positions with trange
         cidx = self.rpos >= 0
         self.rpos = self.rpos[cidx]
         self.zpos = self.zpos[cidx]
@@ -147,7 +148,7 @@ class DiiidData():
                 self.good_channels[c] = 0
                 print('SAT signal data  channel {:s}, offstd = {:g}%, siglevel = {:g} V'.format(self.clist[c], self.sigstd[c], self.siglev[c]))
 
-    def channel_position(self):  # Needs updates ####################
+    def channel_position(self, trange):  # Needs updates ####################
         cnum = len(self.clist)
         self.rpos = np.zeros(cnum)  # R [m]
         self.zpos = np.zeros(cnum)  # z [m]
@@ -157,8 +158,14 @@ class DiiidData():
         if self.clist[0].upper().startswith('ECE') or self.clist[0].upper().startswith('TECE'):
             R0 = 1.67 # [m]
             m = 2
-            Bt = 1.9 ################## [T]
-            print(f'[Warning]: ECE positions are calculated using Bt={Bt} T')
+            # Bt = 1.9 ################## [T]
+            # print(f'[Warning]: ECE positions are calculated using Bt={Bt} T')
+            temp = om.OMFITmdsValue(server='DIII-D', shot=self.shot, TDI='bt')
+            time_bt, data_bt = temp.dim_of(0), temp.data()
+            idx = np.where((time_bt >= trange[0])*(time_bt <= trange[1]))
+            Bt = np.mean(data_bt[idx])
+            print(f'ECE positions are calculated using B ~ Bt = {Bt} T for trange {trange}')
+            
             ece_freq = np.concatenate((np.arange(83.5, 98.5 + 1, 1), np.arange(98.5, 113.5 + 1, 1), np.arange(115.5, 129.5 + 2, 2))) # RF frequency (center [GHz])
             ece_rpos = 27.99*m*Bt*R0/ece_freq # [m]
 

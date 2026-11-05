@@ -336,8 +336,10 @@ class KstarMds(Connection):
         cnum = len(self.clist)
         for c in range(cnum):
             # set rnode 
-            if 'CES' == self.clist[0][0:3]: # CES
-                rnode = '\{:s}RT{:}'.format(self.clist[c][:4],self.clist[c][6:])
+            if 'CES_' == self.clist[0][0:4]: # CES (mod)
+                rnode = '\CES_RT{:}'.format(self.clist[c][6:])
+            elif 'CESNN_' == self.clist[0][0:6]: # CES (nn)
+                rnode = '\CES_RT{:}'.format(self.clist[c][8:])
             elif 'ECE' == self.clist[0][0:3]: # ECE
                 rnode = '\{:s}:RPOS2ND'.format(self.clist[c])
 
