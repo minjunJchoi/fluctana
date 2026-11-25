@@ -620,6 +620,45 @@ def add_eq_to_hdf5(shot, t_offset=32.2, occ=1):
     print('Added EQ_{:d} with {:s} channels to {:s}'.format(occ, ', '.join(EQ_CHANNELS.keys()), fname))
 
 
+def get_eq(shot, occ=1, t_offset=32.2):
+    # IN : shot, occ (0 : NICE without, 1 : with polarimetry constraints), t_offset
+    # OUT : dict of equilibrium profiles and 2D data (the quantities of add_eq_to_hdf5), None if not available
+    #       TIME [nt] (t_offset subtracted), R, Z [nr, nz], PSI [nt, nr, nz], PSI_BND [nt], RHO_TOR, Q, R_IN, R_OUT [nt, nrho],
+    #       WALL_R, WALL_Z, OCCURRENCE (occurrence actually read)
+    # read from hdf5 group EQ_{occ} (EQ_{1-occ} if occ does not exist) if exists, otherwise from IMAS (imas_west)
+    keys = ['TIME', 'R', 'Z', 'PSI', 'PSI_BND', 'RHO_TOR', 'Q', 'R_IN', 'R_OUT', 'WALL_R', 'WALL_Z']
+
+    fname = "{:s}{:06d}/WEST.{:06d}.h5".format(WEST_PATH, shot, shot)
+    if os.path.exists(fname):
+        with h5py.File(fname, 'r') as fin:
+            for o in [occ, 1 - occ]:
+                if 'EQ_{:d}/Q'.format(o) in fin:
+                    grp = fin['EQ_{:d}'.format(o)]
+                    eq = {k: np.array(grp[k]) for k in keys if k in grp}
+                    eq['TIME'] = eq['TIME'] + fin.attrs.get('T_OFFSET', t_offset) - t_offset # time of the file converted to t_offset
+                    eq['OCCURRENCE'] = o
+                    return eq
+
+    # without hdf5 equilibrium : IMAS
+    if iw is None:
+        print('No equilibrium for {:d} (no EQ group in hdf5 and no imas_west)'.format(shot))
+        return None
+    for o in [occ, 1 - occ]:
+        if check_imas_data(shot, 'equilibrium/time', occurrence=o) == False:
+            continue
+        equi = iw.get(shot, 'equilibrium', imas_occurrence=o)
+        wall = iw.get(shot, 'wall', imas_occurrence=0)
+        lim = wall.description_2d[0].limiter.unit[0].outline
+        return {'TIME': np.asarray(equi.time) - t_offset,
+                'R': np.asarray(equi.interp2D.r), 'Z': np.asarray(equi.interp2D.z), 'PSI': np.asarray(equi.interp2D.psi),
+                'PSI_BND': np.asarray(equi.boundary.psi), 'RHO_TOR': np.asarray(equi.profiles_1d.rho_tor),
+                'Q': np.asarray(equi.profiles_1d.q), 'R_IN': np.asarray(equi.profiles_1d.r_inboard),
+                'R_OUT': np.asarray(equi.profiles_1d.r_outboard), 'WALL_R': np.asarray(lim.r), 'WALL_Z': np.asarray(lim.z),
+                'OCCURRENCE': o}
+    print('No equilibrium occurrence {:d} or {:d} for {:d}'.format(occ, 1 - occ, shot))
+    return None
+
+
 if __name__ == "__main__":
     pass
     
@@ -850,26 +889,32 @@ if __name__ == "__main__":
 
 
 
-    # #### Download WEST data to hdf5 file 
+    #### Download WEST data to hdf5 file 
+    # shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972, 57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073, 58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084, 58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
+    # shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972]
+    # shot_list = [57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073]
+    # shot_list = [58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084]
+    # shot_list = [58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
+    # shot_list = [61490, 61504, 64428, 64429, 64442, 64445]
+    # shot_list = [65387]
+    # shot_list = [61506,63702]
+    shot_list = [61643,61642,61641,61506,61647,61649,61505,61640,61504,61503,61502,61508,61639]
+
+    for shot in shot_list:
+        trange = get_plasma_time(shot, verbose=1)
+        pos_range = get_plasma_time(shot, frac=0.7, verbose=1)
+        imas_to_hdf5(shot, trange=trange, t_offset=32.2, pos_trange=pos_range)
+
+
+
+
+    # #### Add equilibrium to hdf5 file 
     # shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972, 57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073, 58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084, 58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
     # # shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972]
     # # shot_list = [57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073]
     # # shot_list = [58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084]
-    # shot_list = [58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
-    # # shot_list = [57928]
-    # for shot in shot_list:
-    #     trange = get_plasma_time(shot, verbose=1)
-    #     pos_range = get_plasma_time(shot, frac=0.7, verbose=1)
-    #     imas_to_hdf5(shot, trange=trange, t_offset=32.2, pos_trange=pos_range)
-
-
-
-    #### Add equilibrium to hdf5 file 
-    # shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972, 57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073, 58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084, 58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
-    # # shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972]
-    # # shot_list = [57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073]
-    # # shot_list = [58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084]
-    # shot_list = [58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
+    # # shot_list = [58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
+    # shot_list = [61490, 61504, 64428, 64429, 64442, 64445]
     # for shot in shot_list:
     #     for occ in [0, 1]:
     #         if check_imas_data(shot, 'equilibrium/time', occurrence=occ) == False:
@@ -884,7 +929,9 @@ if __name__ == "__main__":
 
 
 
-    ### Add selected channels to existing hdf5 file
-    shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972, 57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073, 58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084, 58086, 58087, 58088, 58090, 58091, 65415, 65434, 65427]
-    for shot in shot_list:
-        imas_to_hdf5(shot, trange=[0,25], t_offset=32.2, clists=[['P_rad', 'P_rad_core']])
+    # ### Add selected channels to existing hdf5 file
+    # shot_list = [57928, 57929, 57931, 57932, 57934, 57935, 57971, 57972, 57973, 57977, 57979, 57980, 57982, 57983, 58072, 58073, 58074, 58075, 58079, 58080, 58081, 58082, 58083, 58084, 58086, 58087, 58088, 58090, 58091]
+    # shot_list.extend([65415, 65434, 65427])
+    # shot_list.extend([61490, 61504, 64428, 64429, 64442, 64445])
+    # for shot in shot_list:
+    #     imas_to_hdf5(shot, trange=[0,25], t_offset=32.2, clists=[['P_rad', 'P_rad_core']])
