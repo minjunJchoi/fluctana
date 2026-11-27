@@ -159,8 +159,8 @@ class WestData():
                     self.imas_occ = dset.attrs['OCCURRENCE']
 
                     # load data
-                    v = np.array(dset['DATA'][idx1:idx2])
-                    av = np.array(dset['DATA'])[aidx] if norm == 2 else None
+                    v = clean_flags(cname, np.array(dset['DATA'][idx1:idx2]))
+                    av = clean_flags(cname, np.array(dset['DATA'])[aidx]) if norm == 2 else None
 
                     if verbose == 1: print("Read {:d} - {:s} : {:s} (number of data points = {:d}), t_offset = {:.1f}".format(self.shot, self.ids_name, cname, len(v), self.t_offset))
 
@@ -173,6 +173,7 @@ class WestData():
             for cname in self.clist.copy():
                 try:
                     t, v, self.ids = self.read_imas_signal(cname, ids=self.ids)
+                    v = clean_flags(cname, v)
 
                     # the first successfully read channel sets time base
                     if len(data) == 0:
@@ -442,6 +443,21 @@ def cname_to_imas_ch_info(cname, ids=None):
             k = line_list.index(line_name)
 
     return ch, k
+
+
+#### error (flag) values
+# P_LH1, P_LH2 : lh_antennas power_launched has error values of -0.9 -- -3.3 MW (mostly while the antenna is off,
+#                e.g. at 50 Hz in 63702 2.8--6.1 s); replaced by NaN (sum channels with np.nansum)
+FLAG_LIMITS = {'P_LH': -1e5} # cname prefix : data below this value is an error value
+
+def clean_flags(cname, v):
+    # IN : cname, data
+    # OUT : data (float) with the error values replaced by NaN (unchanged for other channels)
+    for prefix, limit in FLAG_LIMITS.items():
+        if cname.startswith(prefix):
+            v = np.array(v, dtype=float)
+            v[v < limit] = np.nan
+    return v
 
 
 #### time index and normalization
